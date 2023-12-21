@@ -10,9 +10,10 @@ import 'package:cashu_dart/core/nuts/DHKE.dart';
 import 'package:cashu_dart/core/nuts/nut_01.dart';
 import 'package:cashu_dart/core/nuts/nut_03.dart';
 import 'package:cashu_dart/core/nuts/nut_04.dart';
-import 'package:cashu_dart/core/wallet.dart';
+import 'package:cashu_dart/core/nuts/nut_06.dart';
 import 'package:cashu_dart/model/history_entry.dart';
 import 'package:cashu_dart/utils/tools.dart';
+import 'package:pointycastle/ecc/curves/secp256k1.dart';
 
 import '../business/proof/proof_store_helper.dart';
 import '../business/wallet/wallet_manager.dart';
@@ -27,81 +28,27 @@ class CashuAPI {
 
   static test() async {
     // const mint = 'https://legend.lnbits.com/cashu/api/v1/AptDNABNBXv8gpuywhx6NV';
-    // const mint = 'https://testnut.cashu.space';
-    const mint = 'https://mint.tangjinxing.com';
+    const mint = 'https://testnut.cashu.space';
+    // const mint = 'https://mint.tangjinxing.com';
 
     const amount = 8;
 
-    var hash = 'uV24oe4OPsbKDNnx_4Gs9DB5QaL9OB9GwDEUsTwj';
-    var pr = 'lnbc80n1pjcz4eqsp5jlttpuukequamn66k5yp5t268yyx6frywg0tshz6aun9lpk8tx7qpp5w27hyee0k0cxrhnlzt4dmj8jergy5jtc97rm4fk9knq23x4ycekqdq4gdshx6r4ypjx2ur0wd5hgxqzjccqpjrzjqwkf0wuqadvvmfuq5vqnq99q8qgkk8mn4zuxfc3uuykcsrjhj5pp7zchcuqqvscqqyqqqqqqqqqqqssq9q9qxpqysgqll8yjp90jep0szzzxgjyrxuprytvjwv6nu0c8v7nr24l0lntmq4jf5sppvmm5uk7gssr2ny3ey40awef896ekcmu6xwe3c7j8z2gndgqkccyqv';
+    var hash = 'Ldaa6xB81bhUHYyES-EgGhsZ6_sTkJINjv_9hINe';
+    var pr = 'lnbc80n1pjc9guhsp5rvv0v5dy4nruqnflhx27mqrqes64xp47u4gq6c89dp2kzxrzpm3qpp50f8lykw5vppgvluj9evv8tfkd0pejpk3zudulz5rsr0q98mz86sqdq4gdshx6r4ypjx2ur0wd5hgxqzjccqpjrzjq0rlz0ft303xlj642d3lj3vakvza269hdqle7llxv2p034ns4mjawzel0sqqtjsqqyqqqqqqqqqqraqq9q9qxpqysgqza0td7x55xqj6z0eyv8yfvendv07t2lrury5kfhxx4xsufuhpzz9y6hlv4n934550qzhqe6j3ls60rrrmnm84nat75a329s4t0a6wggqwk48tr';
 
-    // # Test 1
-    // mint private key: 0000000000000000000000000000000000000000000000000000000000000001
-    // x: "test_message"
-    // r: 0000000000000000000000000000000000000000000000000000000000000001 # hex encoded
-    // B_: 02a9acc1e48c25eeeb9289b5031cc57da9fe72f3fe2861d264bdc074209b107ba2
-    // C_: 02a9acc1e48c25eeeb9289b5031cc57da9fe72f3fe2861d264bdc074209b107ba2
+    // print('zhw=================>${await Nut1.requestKeys(mintURL: mint)}');
+    // print('zhw=================>${await Nut2.requestKeysetsState(mintURL: mint)}');
+    final quoteInfo = await Nut4.requestMintQuote(mintURL: mint, amount: amount);
+    print('zhw=================>$quoteInfo');
+    final quote = quoteInfo?.quote ?? '';
+    final proofs = await CashuHelper.requestTokensFromMint(
+      mint: IMint(mintURL: mint),
+      amount: amount,
+      quoteID: quote,
+    );
+    print('zhw=================>$proofs');
 
-    // final secret = 'test_message'.asBytes();
-    // final k = BigInt.parse('0000000000000000000000000000000000000000000000000000000000000001', radix: 16);
-    // final r = BigInt.parse('0000000000000000000000000000000000000000000000000000000000000001', radix: 16);
-    // final (B_, r1) = DHKE.blindMessage(secret, r);
-    // // final C = DHKE.unblinding('02a9acc1e48c25eeeb9289b5031cc57da9fe72f3fe2861d264bdc074209b107ba2', r, K);
-    // final Y = DHKE.hashToCurve(secret);
-    // final kY = Y * k;
-    // final kYHex = DHKE.ecPointToHex(kY!);
-    //
-    // print('zhw==================>B_: $B_');
-    // print('zhw==================>kYHex: $kYHex');
-
-    // C_hex: 02a1b31f77f54fdcbfb34dfa1c033d27688957234784e2a23c25a9516d8519f1ff
-    // r: 16863800887508975808622723758543050731680603100263938423696807071558323865712
-    // K: 036d83948e3621ce30faf1d0792fa1473cf030b4b0766bfda5a279242092985329
-
-    // secret: Gh4LAhoODA0DGAoVHx8WBh4XGwcDAQIGDRMaGBoNBgQ=
-    // C(error): 03e753437dd2c501c91bbf422832d1e692c235252eea0d209d5a8d36e23ec629bf
-    // C(expect): 03ba31cad67cd727d9a86759a41dca12ec353b80666787c3cc8084c3ce16244e03
-
-
-
-    // final invoice = await Nut3.requestMintInvoice(mintURL: mint, amount: amount);
-    // hash = invoice?.hashValue ?? hash;
-    // pr = invoice?.pr ?? pr;
-    // print('zhw===========>hash: $hash');
-    // print('zhw===========>pr: ${invoice?.pr}');
-    // //
-    // var proofs = await CashuHelper.requestTokensFromMint(
-    //   mintURL: mint,
-    //   amount: amount,
-    //   hash: hash,
-    // ) ?? [];
-    // print('zhw===========>proofs11: $proofs');
-
-
-    // pay for ln invoice
-    // final newInvoice = await Nut3.requestMintInvoice(mintURL: mint, amount: amount - 50);
-    // final newHash = newInvoice?.hashValue ?? '';
-    // final newPr = newInvoice?.pr ?? '';
-    //
-    // final result = await CashuHelper.payingTheInvoice(
-    //   mintURL: mint,
-    //   pr: newPr,
-    //   proofs: proofs ?? [],
-    //   feeReserve: 3,
-    // );
-    // print('zhw==============>$result');
-
-
-    // splite
-    var proofs = [
-      Proof(
-        id: '8wktXIto+zu/',
-        amount: '8',
-        secret: 'Gh4LAhoODA0DGAoVHx8WBh4XGwcDAQIGDRMaGBoNBgQ=',
-        C: '03e753437dd2c501c91bbf422832d1e692c235252eea0d209d5a8d36e23ec629bf',
-      )];
-    proofs = await CashuHelper.splitProofs(mintURL: mint, proofs: proofs, supportAmount: 4);
-    print('zhw===========>proofs22: $proofs');
+    // Nut3.swap(mintURL: mint, proofs: proofs, outputs: outputs)
   }
 
   static Future<List<IMint>> localMintList() {

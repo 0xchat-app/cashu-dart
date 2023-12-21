@@ -66,34 +66,23 @@ class Nut0 {
 }
 
 class BlindedMessage {
-
   BlindedMessage({
+    required this.id,
     required this.amount,
     required this.B_,
   });
 
+  final String id;
   final num amount;
   final String B_;
 
-  factory BlindedMessage.fromServerMap(Map json) =>
-      BlindedMessage(
-        amount: Tools.getValueAs<int>(json, 'amount', 0),
-        B_: Tools.getValueAs<String>(json, 'B_', ''),
-      );
-
-  Map<String, String> toJson() => {
-    'amount': amount.toString(),
-    'B_': B_,
-  };
-
   @override
   String toString() {
-    return '${super.toString()}, amount: $amount, B_: $B_';
+    return '${super.toString()}, id: $id, amount: $amount, B_: $B_';
   }
 }
 
 class BlindedSignature {
-
   BlindedSignature({
     required this.id,
     required this.amount,
@@ -127,7 +116,6 @@ class BlindedSignature {
 
 @reflector
 class Proof extends DBObject {
-
   Proof({
     required this.id,
     required this.amount,
@@ -179,13 +167,19 @@ class Proof extends DBObject {
 }
 
 class Token {
-  Token({this.token = const [], this.memo = ''});
+  Token({
+    this.token = const [],
+    this.memo = '',
+    this.unit = '',
+  });
 
   /// token entries
   final List<TokenEntry> token;
 
   /// a message to send along with the token
   final String memo;
+
+  final String unit;
 
   BigInt get sumProofsValue => token.fold(BigInt.zero, (pre, entry) => pre + entry.sumProofsValue);
 
@@ -202,18 +196,20 @@ class Token {
     }
     return Token(
       token: token,
-      memo: json['memo'] ?? '',
+      memo: json['memo']?.toString() ?? '',
+      unit: json['unit']?.toString() ?? '',
     );
   }
 
   Map toJson() => {
     'token': token.map((e) => e.toJson()).toList(),
     'memo': memo,
+    'unit': unit,
   };
 
   @override
   String toString() {
-    return '${super.toString()}, token: $token';
+    return '${super.toString()}, memo: $memo, token: $token';
   }
 }
 

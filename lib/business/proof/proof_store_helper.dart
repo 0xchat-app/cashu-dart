@@ -1,6 +1,7 @@
 
 import 'package:cashu_dart/business/mint/mint_store.dart';
 import 'package:cashu_dart/business/proof/proof_store.dart';
+import 'package:cashu_dart/core/keyset_store.dart';
 import 'package:cashu_dart/utils/tools.dart';
 
 import '../../core/nuts/nut_00.dart';
@@ -11,9 +12,8 @@ class ProofStoreHelper {
     required BigInt amount,
     bool orderAsc = false
   }) async {
-
-    final mintIds = (await MintStore.getMintIdsByUrl(mintURL)).map((e) => e.id).toList();
-    final usableProofs = await ProofStore.getProofs(ids: mintIds);
+    final keysets = await KeysetStore.getKeyset(mintURL: mintURL);
+    final usableProofs = await ProofStore.getProofs(ids: keysets.map((e) => e.id).toList());
     final List<Proof> proofsToSend = [];
     BigInt amountAvailable = BigInt.zero;
 
@@ -31,5 +31,4 @@ class ProofStoreHelper {
 
     return proofsToSend;
   }
-
 }

@@ -59,8 +59,8 @@ class CashuTokenHelper {
       for (final t in decoded.token) {
         if (t.proofs.isEmpty) continue;
 
-        var wallet = await WalletManager.shared.getWallet(t.mint);
-        var usedSecrets = await wallet.checkProofsSpent(t.proofs.map((p) => p.secret).toList());
+        var wallet = await WalletManager.shared.getMint(t.mint);
+        var usedSecrets = null;//await wallet.checkProofsSpent(t.proofs.map((p) => p.secret).toList());
 
         if (usedSecrets.length == t.proofs.length) {
           continue;
@@ -121,10 +121,7 @@ class CashuTokenHelper {
     if (decoded == null || decoded.token.isEmpty) return ;
 
     for (final token in decoded.token) {
-      final ids = token.proofs.map((x) => x.id).toList();
-      for (final id in ids) {
-        await MintStore.addMint(token.mint, id);
-      }
+      await MintStore.addMint(token.mint);
       // final validProofs = token.proofs.where((p) => p.C.isNotEmpty && p.amount > 0 && p.secret.isNotEmpty && p.id.isNotEmpty).toList();
       // await ProofStore.addProofs(validProofs);
     }

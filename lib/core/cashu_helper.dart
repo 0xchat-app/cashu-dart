@@ -1,17 +1,19 @@
 
 import 'dart:math';
-import 'dart:typed_data';
 
-import 'package:cashu_dart/core/nuts/nut_00.dart';
-import 'package:cashu_dart/core/nuts/nut_05.dart';
-import 'package:cashu_dart/core/nuts/nut_06.dart';
+import 'package:cashu_dart/core/keyset_store.dart';
 import 'package:cashu_dart/core/nuts/nut_08.dart';
 
+import '../model/mint_model.dart';
 import '../utils/tools.dart';
 import 'nuts/DHKE.dart';
 import 'nuts/define.dart';
+import 'nuts/nut_00.dart';
 import 'nuts/nut_01.dart';
+import 'nuts/nut_02.dart';
+import 'nuts/nut_03.dart';
 import 'nuts/nut_04.dart';
+import 'nuts/nut_05.dart';
 
 typedef PayingTheInvoiceResponse = (
   bool paid,
@@ -22,21 +24,50 @@ typedef PayingTheInvoiceResponse = (
 class CashuHelper {
 
   static Future<List<Proof>?> requestTokensFromMint({
-    required String mintURL,
+    required IMint mint,
     required int amount,
-    required String hash,
-    MintKeys? keys,
+    required String quoteID,
   }) async {
+
+    // check quote state
+    // final quoteInfo = await Nut4.checkMintQuoteState(
+    //   mintURL: mint.mintURL,
+    //   quoteID: quoteID,
+    // );
+    // if (quoteInfo == null) return null;
+    // if (quoteInfo.expiry < 1 || quoteInfo.paid) return null;
+
+    // get keyset from local
+    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL);
+    final keysetInfo = keysets.where((element) => element.active).firstOrNull;
+    if (keysetInfo == null) {
+      KeysetStore.fetchFromMint(mint.mintURL);
+      await Nut1.requestKeys(mintURL: mint.mintURL);
+      return null;
+    }
+
+    final keyset = keysetInfo.keyset;
+    if (keyset.isEmpty) {
+      final result = (await Nut1.requestKeys(mintURL: mint.mintURL, keysetId: keysetInfo.id))?.firstOrNull;
+      if (result != null) {
+        keyset.addAll(result.keys);
+        KeysetStore.addOrReplaceKeysets([keysetInfo]);
+      } else {
+        return null;
+      }
+    }
+
     final ( blindedMessages, secrets, rs, _ ) =
-      CashuHelperPrivateEx._createBlindedMessages(amount: amount);
+    CashuHelperPrivateEx._createBlindedMessages(
+      keysetId: keysetInfo.id,
+      amount: amount,
+    );
 
-    keys ??= await Nut1.getKeys(mintURL: mintURL);
-    if (keys == null) return null;
-
+    // request token
     final promises = await Nut4.requestTokensFromMint(
-      mintURL: mintURL,
+      mintURL: mint.mintURL,
+      quote: quoteID,
       blindedMessages: blindedMessages,
-      hash: hash,
     );
     if (promises == null) return null;
 
@@ -44,127 +75,138 @@ class CashuHelper {
       promises: promises,
       rs: rs,
       secrets: secrets,
-      keys: keys,
+      keys: keyset,
     );
 
     return proofs;
   }
-
-  static Future<PayingTheInvoiceResponse> payingTheInvoice({
-    required String mintURL,
-    required String pr,
-    required List<Proof> proofs,
-    int? feeReserve,
-    MintKeys? keys,
-  }) async {
-
-    final failResult = (false, '', <Proof>[]);
-
-    keys ??= await Nut1.getKeys(mintURL: mintURL);
-    if (keys == null) return failResult;
-
-    feeReserve ??= await Nut5.checkingLightningFees(
-      mintURL: mintURL,
-      pr: pr,
-    );
-
-    if (feeReserve == null) return failResult;
-
-    final ( blindedMessages, secrets, rs, _ ) =
-      CashuHelperPrivateEx._createBlankOutputs(feeReserve);
-
-    final response = await Nut8.payingTheInvoice(
-      mintURL: mintURL,
-      pr: pr,
-      proofs: proofs,
-      outputs: blindedMessages,
-    );
-    if (response == null) return failResult;
-
-    final ( paid, preimage, change ) = response;
-    final newProofs = DHKE.constructProofs(
-      promises: change,
-      rs: rs,
-      secrets: secrets,
-      keys: keys,
-    ) ?? [];
-
-    return (
-      paid,
-      preimage,
-      newProofs
-    );
-  }
-
-  static Future<List<Proof>> splitProofs({
-    required String mintURL,
-    required List<Proof> proofs,
-    int? supportAmount,
-    MintKeys? keys,
-  }) async {
-
-    keys ??= await Nut1.getKeys(mintURL: mintURL);
-    if (keys == null) return [];
-
-    final proofsTotalAmount = proofs.fold<BigInt>(BigInt.zero, (pre, proof) {
-      final amount = BigInt.tryParse(proof.amount) ?? BigInt.zero;
-      return pre + amount;
-    });
-
-    final amount = supportAmount ?? proofsTotalAmount.toInt();
-    List<BlindedMessage> blindedMessages = [];
-    List<Uint8List> secrets = [];
-    List<BigInt> rs = [];
-    {
-      final ( $1, $2, $3, _ ) = CashuHelperPrivateEx._createBlindedMessages(
-        amount: amount,
-      );
-      blindedMessages.addAll($1);
-      secrets.addAll($2);
-      rs.addAll($3);
-    }
-    {
-      final ( $1, $2, $3, _ ) = CashuHelperPrivateEx._createBlindedMessages(
-        amount: proofsTotalAmount.toInt() - amount,
-      );
-      blindedMessages.addAll($1);
-      secrets.addAll($2);
-      rs.addAll($3);
-    }
-
-    final promises = await Nut6.split(
-      mintURL: mintURL,
-      proofs: proofs,
-      outputs: blindedMessages,
-    ) ?? [];
-
-    final newProofs = DHKE.constructProofs(
-      promises: promises,
-      rs: rs,
-      secrets: secrets,
-      keys: keys,
-    ) ?? [];
-
-    return newProofs;
-  }
+  //
+  // static Future<PayingTheInvoiceResponse> meltToken({
+  //   required String mintURL,
+  //   required String quoteID,
+  //   required List<Proof> proofs,
+  //   MintKeys? keys,
+  // }) async {
+  //
+  //   final failResult = (false, '', <Proof>[]);
+  //
+  //   // check quote state
+  //   final quoteInfo = await Nut5.checkMintQuoteState(
+  //     mintURL: mintURL,
+  //     quoteID: quoteID,
+  //   );
+  //   if (quoteInfo == null) return failResult;
+  //   if (quoteInfo.expiry < 1 || quoteInfo.paid) return failResult;
+  //
+  //   final fee = int.parse(quoteInfo.fee);
+  //
+  //   keys ??= await Nut1.requestKeys(mintURL: mintURL);
+  //   if (keys == null) return failResult;
+  //   final keysetId = Nut2.deriveKeySetId(keys);
+  //
+  //   final ( blindedMessages, secrets, rs, _ ) =
+  //     CashuHelperPrivateEx._createBlankOutputs(
+  //       keysetId: keysetId,
+  //       amount: fee,
+  //     );
+  //
+  //   final response = await Nut8.payingTheInvoice(
+  //     mintURL: mintURL,
+  //     quote: quoteID,
+  //     inputs: proofs,
+  //     outputs: blindedMessages,
+  //   );
+  //   if (response == null) return failResult;
+  //
+  //   final ( paid, preimage, change ) = response;
+  //   final newProofs = DHKE.constructProofs(
+  //     promises: change,
+  //     rs: rs,
+  //     secrets: secrets,
+  //     keys: keys,
+  //   ) ?? [];
+  //
+  //   return (
+  //     paid,
+  //     preimage,
+  //     newProofs
+  //   );
+  // }
+  //
+  // static Future<List<Proof>> swapProofs({
+  //   required String mintURL,
+  //   required List<Proof> proofs,
+  //   int? supportAmount,
+  //   MintKeys? keys,
+  // }) async {
+  //
+  //   keys ??= await Nut1.requestKeys(mintURL: mintURL);
+  //   if (keys == null) return [];
+  //   final keysetId = Nut2.deriveKeySetId(keys);
+  //
+  //   final proofsTotalAmount = proofs.fold<BigInt>(BigInt.zero, (pre, proof) {
+  //     final amount = BigInt.tryParse(proof.amount) ?? BigInt.zero;
+  //     return pre + amount;
+  //   });
+  //
+  //   final amount = supportAmount ?? proofsTotalAmount.toInt();
+  //   List<BlindedMessage> blindedMessages = [];
+  //   List<String> secrets = [];
+  //   List<BigInt> rs = [];
+  //   {
+  //     final ( $1, $2, $3, _ ) = CashuHelperPrivateEx._createBlindedMessages(
+  //       keysetId: keysetId,
+  //       amount: amount,
+  //     );
+  //     blindedMessages.addAll($1);
+  //     secrets.addAll($2);
+  //     rs.addAll($3);
+  //   }
+  //   {
+  //     final ( $1, $2, $3, _ ) = CashuHelperPrivateEx._createBlindedMessages(
+  //       keysetId: keysetId,
+  //       amount: proofsTotalAmount.toInt() - amount,
+  //     );
+  //     blindedMessages.addAll($1);
+  //     secrets.addAll($2);
+  //     rs.addAll($3);
+  //   }
+  //
+  //   final promises = await Nut3.swap(
+  //     mintURL: mintURL,
+  //     proofs: proofs,
+  //     outputs: blindedMessages,
+  //   ) ?? [];
+  //
+  //   final newProofs = DHKE.constructProofs(
+  //     promises: promises,
+  //     rs: rs,
+  //     secrets: secrets,
+  //     keys: keys,
+  //   ) ?? [];
+  //
+  //   return newProofs;
+  // }
 
 }
 
 extension CashuHelperPrivateEx on CashuHelper {
 
   static BlindedMessageData _createRandomBlindedMessages({
+    required String keysetId,
     required List<int> amounts,
   }) {
     List<BlindedMessage> blindedMessages = [];
-    List<Uint8List> secrets = [];
+    List<String> secrets = [];
     List<BigInt> rs = [];
 
     for (final amount in amounts) {
-      final secret = DHKE.randomPrivateKey();
-      final (B_, r) = DHKE.blindMessage(secret);
+      final secret = DHKE.randomPrivateKey().asBase64String();
+      final (B_, r) = DHKE.blindMessage(secret.asBytes());
       if (B_.isEmpty) continue;
 
       final blindedMessage = BlindedMessage(
+        id: keysetId,
         amount: amount,
         B_: B_,
       );
@@ -182,10 +224,14 @@ extension CashuHelperPrivateEx on CashuHelper {
   }
 
   static BlindedMessageData _createBlindedMessages({
+    required String keysetId,
     required int amount,
   }) {
     List<int> amounts = splitAmount(amount);
-    return _createRandomBlindedMessages(amounts: amounts);
+    return _createRandomBlindedMessages(
+      keysetId: keysetId,
+      amounts: amounts,
+    );
   }
 
   static List<int> splitAmount(int value) {
@@ -200,12 +246,18 @@ extension CashuHelperPrivateEx on CashuHelper {
     return chunks;
   }
 
-  static BlindedMessageData _createBlankOutputs(int feeReserve) {
+  static BlindedMessageData _createBlankOutputs({
+    required String keysetId,
+    required int amount,
+  }) {
     var count = 1;
-    if (feeReserve != 0) {
-      count = max(1, (log(feeReserve) / ln2).ceil());
+    if (amount != 0) {
+      count = max(1, (log(amount) / ln2).ceil());
     }
     final amounts = List.generate(count, (index) => 0);
-    return _createRandomBlindedMessages(amounts: amounts);
+    return _createRandomBlindedMessages(
+      keysetId: keysetId,
+      amounts: amounts,
+    );
   }
 }

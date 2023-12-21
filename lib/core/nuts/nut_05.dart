@@ -1,21 +1,88 @@
 
 import '../../utils/network/http_client.dart';
 import '../../utils/tools.dart';
+import 'define.dart';
+import 'nut_00.dart';
+
+class MeltQuotePayload {
+  MeltQuotePayload(this.quote, this.amount, this.fee, this.paid, this.expiry);
+  final String quote;
+  final String amount;
+  final String fee;
+  final bool paid;
+  final int expiry;
+
+  static MeltQuotePayload? fromServerMap(Map json) {
+    final quote = Tools.getValueAs<String>(json, 'quote', '');
+    final amount = Tools.getValueAs<int>(json, 'amount', 0).toString();
+    final fee = Tools.getValueAs<int>(json, 'fee', 0).toString();
+    final paid = Tools.getValueAs<bool>(json, 'paid', false);
+    final expiry = Tools.getValueAs<int>(json, 'expiry', 0);
+    if (quote.isEmpty || expiry == 0) return null;
+    return MeltQuotePayload(quote, amount, fee, paid, expiry);
+  }
+}
 
 class Nut5 {
-  /// Estimate fees for a given LN invoice
-  /// Returns estimated Fee
-  static Future<int?> checkingLightningFees({
+  static Future<MeltQuotePayload?> requestMeltQuote({
     required String mintURL,
-    required String pr,
+    required String request,
+    String method = 'bolt11',
+    String unit = 'sat',
   }) async {
     return HTTPClient.post(
-      '$mintURL/checkfees',
-      params: {'pr': pr},
+      nutURLJoin(mintURL, 'melt/quote/$method'),
+      query: {
+        'request': request.toString(),
+        'unit': unit,
+      },
       modelBuilder: (json) {
         if (json is! Map) return null;
-        final fee = Tools.getValueAs<int?>(json, 'fee', null);
-        return fee;
+        return MeltQuotePayload.fromServerMap(json);
+      },
+    );
+  }
+
+  static Future<MeltQuotePayload?> checkMintQuoteState({
+    required String mintURL,
+    required String quoteID,
+    String method = 'bolt11',
+  }) async {
+    return HTTPClient.get(
+      nutURLJoin(mintURL, 'melt/quote/$method/$quoteID'),
+      modelBuilder: (json) {
+        if (json is! Map) return null;
+        return MeltQuotePayload.fromServerMap(json);
+      },
+    );
+  }
+
+  @Deprecated('Use Nut8.payingTheQuote instead.')
+  static Future<(bool paid, String paymentPreimage)?> meltToken({
+    required String mintURL,
+    required String quote,
+    required List<Proof> inputs,
+    required List<BlindedMessage> outputs,
+    String method = 'bolt11',
+  }) async {
+    return HTTPClient.post(
+      nutURLJoin(mintURL, 'melt/quote/$method'),
+      params: {
+        'quote': quote,
+        'inputs': inputs.map((e) {
+          return {
+            'id': e.id,
+            'amount': num.tryParse(e.amount) ?? 0,
+            'secret': e.secret,
+            'C': e.C,
+          };
+        }).toList(),
+      },
+      modelBuilder: (json) {
+        if (json is! Map) return null;
+        final paid = Tools.getValueAs<bool>(json, 'paid', false);
+        final preimage = Tools.getValueAs<String>(json, 'preimage', '');
+        return (paid, preimage);
       },
     );
   }

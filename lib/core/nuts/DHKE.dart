@@ -66,7 +66,7 @@ class DHKE {
     var Y = hashToCurve(secret);
 
     // 生成随机私钥 r
-    r ??= randomPrivateKey().asBigInt();
+    r ??= BigInt.from(1); // randomPrivateKey().asBigInt();
 
     // 计算椭圆曲线上的点 rG
     final domainParams = ECCurve_secp256k1();
@@ -86,9 +86,6 @@ class DHKE {
 
   // unblinding: C_ - rK = kY + krG - krG = kY = C
   static ECPoint? unblindingSignature(String C_hex, BigInt r, String K_hex) {
-    print('zhw=================>C_hex: ${C_hex}');
-    print('zhw=================>r: ${r}');
-    print('zhw=================>K: ${K_hex}');
     final C_ = pointFromHex(C_hex);
     final rK = pointFromHex(K_hex) * r;
     if (rK == null) return null;
@@ -98,7 +95,7 @@ class DHKE {
   static List<Proof>? constructProofs({
     required List<BlindedSignature> promises,
     required List<BigInt> rs,
-    required List<Uint8List> secrets,
+    required List<String> secrets,
     required MintKeys keys,
   }) {
     final List<Proof> proofs = [];
@@ -112,12 +109,10 @@ class DHKE {
       }
       final C = unblindingSignature(promise.C_, r, K);
       if (C == null) return null;
-      print('zhw=========>hex:${secret.asHex()}');
-      print('zhw=========>base64:${secret.asBase64String()}');
       final unblindingProof = Proof(
         id: promise.id,
         amount: promise.amount,
-        secret: secret.asBase64String(),
+        secret: secret,
         C: ecPointToHex(C),
       );
       proofs.add(unblindingProof);

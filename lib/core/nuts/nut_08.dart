@@ -1,6 +1,7 @@
 
 import '../../utils/network/http_client.dart';
 import '../../utils/tools.dart';
+import 'define.dart';
 import 'nut_00.dart';
 
 typedef MeltResponse = (
@@ -10,18 +11,18 @@ typedef MeltResponse = (
 );
 
 class Nut8 {
-  /// Ask mint to perform a melt operation.
-  /// This pays a lightning invoice and destroys tokens matching its amount + fees
-  static Future<MeltResponse?> payingTheInvoice({
+  static Future<MeltResponse?> payingTheQuote({
     required String mintURL,
-    required String pr,
-    required List<Proof> proofs,
+    required String quote,
+    required List<Proof> inputs,
     required List<BlindedMessage> outputs,
+    String method = 'bolt11',
   }) async {
     return HTTPClient.post(
-      '$mintURL/melt',
+      nutURLJoin(mintURL, 'melt/$method'),
       params: {
-        'proofs': proofs.map((e) {
+        'quote': quote,
+        'inputs': inputs.map((e) {
           return {
             'id': e.id,
             'amount': num.tryParse(e.amount) ?? 0,
@@ -29,8 +30,13 @@ class Nut8 {
             'C': e.C,
           };
         }).toList(),
-        'outputs': outputs.map((e) => e.toJson()).toList(),
-        'pr': pr,
+        'outputs': outputs.map((e) {
+          return {
+            'id': e.id,
+            'amount': e.amount,
+            'B_': e.B_,
+          };
+        }).toList(),
       },
       modelBuilder: (json) {
         if (json is! Map) return null;

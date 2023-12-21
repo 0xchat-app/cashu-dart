@@ -51,6 +51,10 @@ extension StringHexEx on String {
 
   BigInt asBigInt() => BigInt.tryParse(this) ?? BigInt.zero;
 
+  Uint8List base64AsBytes() {
+    return base64.decode(this);
+  }
+
   Uint8List asBytes() {
     return Uint8List.fromList(utf8.encode(this));
   }

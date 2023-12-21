@@ -1,30 +1,47 @@
 
 import '../../utils/network/http_client.dart';
+import '../../utils/tools.dart';
+import 'define.dart';
 
 typedef MintKeys = Map<String, String>;
 
+class MintKeysPayload {
+  MintKeysPayload(this.id, this.unit, this.keys);
+  final String id;
+  final String unit;
+  final MintKeys keys;
+
+  static MintKeysPayload? fromServerMap(json) {
+    final id = Tools.getValueAs(json, 'id', '');
+    final unit = Tools.getValueAs(json, 'unit', '');
+    final keys = Tools.getValueAs<Map>(json, 'keys', {})
+        .map((key, value) => MapEntry(key.toString(), value.toString()));
+    if (id.isEmpty || unit.isEmpty || keys.isEmpty) return null;
+    return MintKeysPayload(id, unit, keys);
+  }
+
+  @override
+  String toString() {
+    return '${super.toString()}, id: $id, unit: $unit';
+  }
+}
+
 class Nut1 {
-  /// Get the mints public keys
-  /// [keysetId] optional param to get the keys for a specific keyset. If not specified, the keys from the active keyset are fetched
-  /// Returns the mints public keys
-  static Future<MintKeys?> getKeys({required String mintURL, String? keysetId}) async {
-    var endpoint = '';
+  static Future<List<MintKeysPayload>?> requestKeys({required String mintURL, String? keysetId}) async {
+    var endpoint = nutURLJoin(mintURL, 'keys');
     if (keysetId != null) {
       keysetId = Uri.encodeComponent(keysetId);
-      endpoint = '$mintURL/keys/$keysetId';
-    } else {
-      endpoint = '$mintURL/keys';
+      endpoint = '$endpoint/$keysetId';
     }
     return HTTPClient.get(
       endpoint,
       modelBuilder: (json) {
-        if (json is Map) {
-          return json.map((key, value) {
-            return MapEntry(key.toString(), value.toString());
-          }).cast<String, String>();
-        } else {
-          return null;
-        }
+        if (json is! Map) return null;
+        final keysets = Tools.getValueAs(json, 'keysets', []);
+        return keysets.map((e) => MintKeysPayload.fromServerMap(e))
+            .where((element) => element != null)
+            .cast<MintKeysPayload>()
+            .toList();
       },
     );
   }

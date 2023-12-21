@@ -1,11 +1,8 @@
 
-import 'package:cashu_dart/core/mint.dart';
 import 'package:cashu_dart/utils/list_extension.dart';
 
-import '../../model/define.dart';
 import '../../model/mint_model.dart';
 import '../../utils/database/db.dart';
-import '../../utils/tools.dart';
 
 class MintStore {
 
@@ -26,14 +23,8 @@ class MintStore {
     }
   }
 
-  static Future<IMint?> addMint(String mintURL, [String id = '']) async {
-    if (id.isEmpty) {
-      final MintKeys? keys = await CashuMint(mintURL).getKeys();
-      id = keys?.deriveKeysetId() ?? id;
-    }
-    if (id.isEmpty) return null;
-
-    final mint = IMint(id: id, mintURL: mintURL);
+  static Future<IMint?> addMint(String mintURL) async {
+    final mint = IMint(mintURL: mintURL);
     var rowsAffected = await CashuDB.sharedInstance.insert<IMint>(mint,);
     return rowsAffected == 1 ? mint : null;
   }
