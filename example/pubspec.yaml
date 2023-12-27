@@ -14,9 +14,6 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  flutter:
-    sdk: flutter
-
   cashu_dart:
     # When depending on this package from a real application you should use:
     #   cashu_dart: ^x.y.z

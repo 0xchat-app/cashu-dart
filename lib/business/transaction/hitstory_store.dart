@@ -16,15 +16,10 @@ class HistoryStore {
   }
 
   /// get history entries
- static Future<List<IHistoryEntry>> getHistory() async {
+  static Future<List<IHistoryEntry>> getHistory() async {
     return await CashuDB.sharedInstance.objects<IHistoryEntry>(
       orderBy: 'timestamp desc',
     );
-  }
-
-  /// get history entries with keys
-  static Future<List<IHistoryEntry>> getHistoryWithKeys() async {
-    return await CashuDB.sharedInstance.objects<IHistoryEntry>();
   }
 
   /// update history entries

@@ -135,6 +135,8 @@ class Proof extends DBObject {
   /// The unblinded signature for this secret, signed by the mints private key.
   final String C;
 
+  int get amountNum => int.tryParse(amount) ?? 0;
+
   @override
   Map<String, Object?> toMap() => {
     'id': id,

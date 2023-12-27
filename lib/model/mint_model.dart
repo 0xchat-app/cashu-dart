@@ -1,4 +1,7 @@
 
+import 'package:cashu_dart/model/mint_info.dart';
+
+import '../business/mint/mint_helper.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
@@ -6,14 +9,28 @@ import '../utils/tools.dart';
 @reflector
 class IMint extends DBObject {
 
-  IMint({required this.mintURL, this.name = ''});
+  IMint({
+    required String mintURL,
+    this.name = '',
+  }) : mintURL = MintHelper.getMintURL(mintURL);
 
   final String mintURL;
 
-  final String name;
+  String name;
 
   /// key: unit, value: keysetId
-  final Map<String, String> keysetIds = {};
+  final Map<String, String> _keysetIds = {};
+
+  int balance = 0;
+
+  MintInfo? info;
+
+  String? keysetId(String unit) => _keysetIds[unit];
+  void updateKeysetId(String keysetId, String unit) {
+    if (keysetId.isEmpty) return ;
+    _keysetIds[unit] = keysetId;
+  }
+  void cleanKeysetId() => _keysetIds.clear();
 
   @override
   Map<String, Object?> toMap() => {
@@ -32,10 +49,10 @@ class IMint extends DBObject {
   }
 
   static List<String?> primaryKey() {
-    return ['id'];
+    return ['mintURL'];
   }
 
   static List<String?> ignoreKey() {
-    return ['keysetIds'];
+    return ['_keysetIds, _balance, info'];
   }
 }

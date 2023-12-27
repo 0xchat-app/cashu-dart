@@ -82,7 +82,7 @@ class Nut4 {
       },
       modelBuilder: (json) {
         if (json is! Map) return null;
-        final promises = Tools.getValueAs<List>(json, 'promises', []);
+        final promises = Tools.getValueAs<List>(json, 'signatures', []);
         return promises.map((e) {
           if (e is! Map) return null;
           return BlindedSignature.fromServerMap(e);

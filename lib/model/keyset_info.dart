@@ -21,20 +21,23 @@ class KeysetInfo extends DBObject {
   bool active;
   Map<String, String> keyset = {};
 
-  String get keysetRaw => json.encode(keyset);
-  set keysetRaw(value) {
-    try {
-      keyset = json.decode(value);
-    } catch(_) {}
-  }
+  // for db column
+  String keysetRaw = '';
 
-  factory KeysetInfo.fromServerMap(Map json, String mintURL) =>
-      KeysetInfo(
-        id: Tools.getValueAs<String>(json, 'id', ''),
-        mintURL: mintURL,
-        unit: Tools.getValueAs<String>(json, 'unit', ''),
-        active: Tools.getValueAs<bool>(json, 'active', false),
-      );
+  factory KeysetInfo.fromServerMap(Map jsonMap, String mintURL) {
+    Map<String, String>? keyset;
+    try {
+      final keysetRaw = Tools.getValueAs<String>(jsonMap, 'keysetRaw', '');
+      keyset = json.decode(keysetRaw);
+    } catch(_) {}
+    return KeysetInfo(
+      id: Tools.getValueAs<String>(jsonMap, 'id', ''),
+      mintURL: mintURL,
+      unit: Tools.getValueAs<String>(jsonMap, 'unit', ''),
+      active: Tools.getValueAs<bool>(jsonMap, 'active', false),
+      keyset: keyset,
+    );
+  }
 
   @override
   String toString() {
@@ -47,20 +50,21 @@ class KeysetInfo extends DBObject {
     'mintURL': mintURL,
     'unit': unit,
     'active': active,
-    'keysetRaw': keysetRaw,
+    'keysetRaw': json.encode(keyset),
   };
 
   static KeysetInfo fromMap(Map<String, Object?> map) {
     Map<String, String> keyset = {};
     try {
-      keyset = json.decode( Tools.getValueAs(map, 'keysetRaw', ''));
+      final decoded = json.decode(Tools.getValueAs(map, 'keysetRaw', '')) as Map;
+      keyset = decoded.map((key, value) => MapEntry(key.toString(), value.toString()));
     } catch (_) {}
 
     return KeysetInfo(
       id: Tools.getValueAs(map, 'id', ''),
       mintURL: Tools.getValueAs(map, 'mintURL', ''),
       unit: Tools.getValueAs(map, 'unit', ''),
-      active: Tools.getValueAs(map, 'active', false),
+      active: Tools.getValueAs(map, 'active', 0) == 1,
       keyset: keyset,
     );
   }

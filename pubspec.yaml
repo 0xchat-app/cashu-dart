@@ -8,14 +8,13 @@ environment:
   flutter: '>=3.3.0'
 
 dependencies:
-  flutter:
-    sdk: flutter
   plugin_platform_interface: ^2.0.2
   sqflite_sqlcipher: ^2.2.1
   reflectable: ^3.0.1
   http: ^0.13.3
   crypto: ^3.0.2
   pointycastle: ^3.3.0
+  uuid: ^3.0.6
 
 dev_dependencies:
   flutter_test:

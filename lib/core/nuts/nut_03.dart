@@ -23,6 +23,7 @@ class Nut3 {
         }).toList(),
         'outputs': outputs.map((e) {
           return {
+            'id': e.id,
             'amount': e.amount,
             'B_': e.B_,
           };
@@ -30,8 +31,8 @@ class Nut3 {
       },
       modelBuilder: (json) {
         if (json is! Map) return null;
-        final promises = Tools.getValueAs<List>(json, 'promises', []);
-        return promises.map((e) {
+        final signatures = Tools.getValueAs<List>(json, 'signatures', []);
+        return signatures.map((e) {
           if (e is! Map) return null;
           return BlindedSignature.fromServerMap(e);
         }).where((e) => e != null).toList().cast();

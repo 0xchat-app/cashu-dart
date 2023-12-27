@@ -1,8 +1,6 @@
 
-import 'package:cashu_dart/core/nuts/nut_01.dart';
-import 'package:cashu_dart/utils/list_extension.dart';
-
 import '../../utils/database/db.dart';
+import '../../utils/list_extension.dart';
 import '../model/keyset_info.dart';
 
 class KeysetStore {
@@ -51,22 +49,4 @@ class KeysetStore {
 
     return keysets;
   }
-
-  static Future<List<KeysetInfo>> fetchFromMint(String mintURL) async {
-    final keys = await Nut1.requestKeys(mintURL: mintURL) ?? [];
-    final keysets = keys.map((e) => e.asKeysetInfo(mintURL)).toList();
-    addOrReplaceKeysets(keysets);
-    return keysets;
-  }
-}
-
-extension MintKeysPayloadEx on MintKeysPayload {
-  KeysetInfo asKeysetInfo(String mintURL) =>
-      KeysetInfo(
-        id: id,
-        mintURL: mintURL,
-        unit: unit,
-        active: true,
-        keyset: keys,
-      );
 }

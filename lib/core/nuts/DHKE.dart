@@ -105,7 +105,7 @@ class DHKE {
       final r = rs[i];
       final K = keys[promise.amount];
       if (K == null) {
-        throw Exception('[Cashu - constructProofs] key not found.');
+        throw Exception('[E][Cashu - constructProofs] key not found.');
       }
       final C = unblindingSignature(promise.C_, r, K);
       if (C == null) return null;

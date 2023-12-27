@@ -1,4 +1,5 @@
 
+import 'package:uuid/uuid.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
@@ -33,12 +34,12 @@ class IHistoryEntry extends DBObject {
     this.preImage,
     this.fee,
     this.isSpent,
-  }) : mintsString = mints.join(','),
-       typePlain = type.value;
+  }) : id = const Uuid().v4();
 
+  final String id;
   final num amount;
 
-  final int typePlain;
+  final int typeRaw = -1;
   final IHistoryType type;
 
   final double timestamp;
@@ -47,7 +48,7 @@ class IHistoryEntry extends DBObject {
   final String value;
 
   /// mints involved
-  final String mintsString;
+  final String mintsRaw = '';
   final List<String> mints;
 
   /// sender (nostr username)
@@ -66,10 +67,10 @@ class IHistoryEntry extends DBObject {
   @override
   Map<String, Object?> toMap() => {
     'amount': amount,
-    'typePlain': typePlain,
+    'typeRaw': type.value,
     'timestamp': timestamp,
     'value': value,
-    'mintsString': mintsString,
+    'mintsRaw': mints.join(','),
     'sender': sender,
     'recipient': recipient,
     'preImage': preImage,
@@ -79,10 +80,10 @@ class IHistoryEntry extends DBObject {
 
   static IHistoryEntry fromMap(Map<String, Object?> map) {
     final amount = map['amount']?.typedOrDefault(0) ?? 0;
-    final type = IHistoryType.fromValue(map['typePlain']);
+    final type = IHistoryType.fromValue(map['typeRaw']);
     final timestamp = map['timestamp']?.typedOrDefault(0.0) ?? 0.0;
     final value = map['value']?.typedOrDefault('') ?? '';
-    final mintsString = map['mintsString']?.typedOrDefault('') ?? '';
+    final mintsRaw = map['mintsRaw']?.typedOrDefault('') ?? '';
     final sender = map['sender'] as String?;
     final recipient = map['recipient'] as String?;
     final preImage = map['preImage'] as String?;
@@ -94,7 +95,7 @@ class IHistoryEntry extends DBObject {
       type: type,
       timestamp: timestamp,
       value: value,
-      mints: mintsString.split(','),
+      mints: mintsRaw.split(','),
       sender: sender,
       recipient: recipient,
       preImage: preImage,
@@ -109,7 +110,7 @@ class IHistoryEntry extends DBObject {
 
   //primaryKey
   static List<String?> primaryKey() {
-    return ['value', 'timestamp'];
+    return ['id'];
   }
 
   static List<String?> ignoreKey() {

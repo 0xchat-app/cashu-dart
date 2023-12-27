@@ -7,11 +7,11 @@ class Nut6 {
   static Future<MintInfo?> requestMintInfo({
     required String mintURL,
   }) async {
-    return HTTPClient.post(
+    return HTTPClient.get(
       nutURLJoin(mintURL, 'info'),
       modelBuilder: (json) {
         if (json is! Map) return null;
-        return MintInfo.fromServerMap(json);
+        return MintInfo.fromServerMap(json, mintURL);
       },
     );
   }

@@ -9,6 +9,11 @@ const nutProtocolVersion = 'v1';
 
 String nutURLJoin(String mint, String path) => '$mint/$nutProtocolVersion/$path';
 
+typedef NutsResponse<T> = (
+  T data,
+  String? errorMsg,
+);
+
 typedef BlindedMessageData = (
   /// Blinded messages sent to the mint for signing.
   List<BlindedMessage> blindedMessages,

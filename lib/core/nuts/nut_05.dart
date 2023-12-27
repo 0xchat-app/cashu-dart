@@ -15,10 +15,10 @@ class MeltQuotePayload {
   static MeltQuotePayload? fromServerMap(Map json) {
     final quote = Tools.getValueAs<String>(json, 'quote', '');
     final amount = Tools.getValueAs<int>(json, 'amount', 0).toString();
-    final fee = Tools.getValueAs<int>(json, 'fee', 0).toString();
+    final fee = Tools.getValueAs<int>(json, 'fee_reserve', 0).toString();
     final paid = Tools.getValueAs<bool>(json, 'paid', false);
     final expiry = Tools.getValueAs<int>(json, 'expiry', 0);
-    if (quote.isEmpty || expiry == 0) return null;
+    if (quote.isEmpty) return null;
     return MeltQuotePayload(quote, amount, fee, paid, expiry);
   }
 }
@@ -32,7 +32,7 @@ class Nut5 {
   }) async {
     return HTTPClient.post(
       nutURLJoin(mintURL, 'melt/quote/$method'),
-      query: {
+      params: {
         'request': request.toString(),
         'unit': unit,
       },

@@ -2,15 +2,14 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:cashu_dart/business/mint/mint_store.dart';
-import 'package:cashu_dart/business/proof/proof_store.dart';
-import 'package:cashu_dart/business/wallet/wallet_manager.dart';
-import 'package:cashu_dart/utils/tools.dart';
 
-import '../core/nuts/nut_00.dart';
-import '../model/define.dart';
+import '../../core/nuts/nut_00.dart';
+import '../../model/define.dart';
+import '../../utils/tools.dart';
+import '../mint/mint_store.dart';
+import '../wallet/cashu_manager.dart';
 
-class CashuTokenHelper {
+class TokenHelper {
 
   static const TOKEN_VERSION = 'A';
   static const TOKEN_PREFIX = 'cashu';
@@ -59,7 +58,7 @@ class CashuTokenHelper {
       for (final t in decoded.token) {
         if (t.proofs.isEmpty) continue;
 
-        var wallet = await WalletManager.shared.getMint(t.mint);
+        var wallet = await CashuManager.shared.getMint(t.mint);
         var usedSecrets = null;//await wallet.checkProofsSpent(t.proofs.map((p) => p.secret).toList());
 
         if (usedSecrets.length == t.proofs.length) {
