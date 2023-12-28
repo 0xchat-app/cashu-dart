@@ -160,12 +160,12 @@ class CashuTransactionAPI {
   static Future<IInvoice?> createLightningInvoice({
     required IMint mint,
     required int amount,
-    Function()? successCallback,
+    Function()? onSuccess,
   }) async {
     return TransactionHelper.requestCreateInvoice(
       mint: mint,
       amount: amount,
-      successCallback: successCallback,
+      onSuccess: onSuccess,
     );
   }
 }

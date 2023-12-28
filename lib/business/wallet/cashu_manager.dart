@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import '../../core/keyset_store.dart';
@@ -11,99 +10,99 @@ import '../proof/proof_helper.dart';
 import 'invoice_handler.dart';
 
 class CashuManager {
-
   static final CashuManager shared = CashuManager._internal();
   CashuManager._internal();
 
   IMint? defaultMint;
-
-  /// key: mintUrl
   final List<IMint> mints = [];
-
   InvoiceHandler invoiceHandler = InvoiceHandler();
 
   Completer setupFinish = Completer();
 
-  Future setup(String identify, {int dbVersion = 1, String? dbPassword}) async {
-
-    // DB setup
-    await CashuDB.sharedInstance.open(
-      'cashu-$identify.db',
-      version: dbVersion,
-      password: dbPassword,
-    );
-
-    // Mint setup
-    await setupMint();
-
-    // Proofs setup
-    await setupProofs();
-
-    // invoice handler setup
-    await invoiceHandler.setup();
-
-    print('[I][Cashu - setup] finished');
-    setupFinish.complete();
-  }
-
-  clean() {
-    CashuDB.sharedInstance.closDatabase();
-    mints.clear();
-    invoiceHandler.invalidate();
-  }
-
-  Future setupMint() async {
-    // get mint list from db
-    final mints = await MintStore.getMints();
-
-    if (mints.isEmpty) {
-      // add default mint if empty
-      const enutsMintURL = 'https://testnut.cashu.space';
-      final mint = await MintStore.addMint(enutsMintURL);
-      if (mint != null) {
-        mints.add(mint);
-      }
+  Future<void> setup(String identify, {int dbVersion = 1, String? dbPassword}) async {
+    try {
+      await CashuDB.sharedInstance.open('cashu-$identify.db', version: dbVersion, password: dbPassword);
+      await setupMint();
+      await setupProofs();
+      await invoiceHandler.initialize();
+      setupFinish.complete();
+      print('[I][Cashu - setup] finished');
+    } catch (e) {
+      print('[E][Cashu - setup] $e');
     }
+  }
 
-    // setup mint
-    await Future.forEach(mints, (mint) async {
-      // setup mint info
-      final info = await MintInfoStore.getMintInfo(mint.mintURL);
-      if (info != null) {
-        mint.info = info;
+  void clean() {
+    setupFinish = Completer();
+    CashuDB.sharedInstance.closeDatabase();
+    mints.clear();
+    invoiceHandler.dispose();
+  }
+
+  Future<void> setupMint() async {
+    try {
+      List<IMint> dbMints = await MintStore.getMints();
+      if (dbMints.isEmpty) {
+        dbMints = [await _addDefaultMint()];
       }
-      MintHelper.updateMintInfoFromRemote(mint);
+      await _initializeMints(dbMints);
+    } catch (e) {
+      print('[E][Cashu - setupMint] $e');
+    }
+  }
 
-      // setup mint keysetId
-      final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, active: true);
-      for (var keyset in keysets) {
-        mint.updateKeysetId(keyset.id, keyset.unit);
-      }
-      MintHelper.updateMintKeysetFromRemote(mint);
+  Future<IMint> _addDefaultMint() async {
+    final enutsMint = IMint(mintURL: 'https://testnut.cashu.space');
+    await MintStore.addMints([enutsMint]);
+    return enutsMint;
+  }
 
-      this.mints.add(mint);
-    });
-
-    // set default mint
+  Future<void> _initializeMints(List<IMint> dbMints) async {
+    for (IMint mint in dbMints) {
+      await _setupMintInfo(mint);
+      await _setupMintKeyset(mint);
+      mints.add(mint);
+    }
     defaultMint = mints.first;
   }
 
-  Future setupProofs() async {
-    final mints = [...this.mints];
-    await Future.forEach(mints, (mint) async {
-      var total = 0;
-      final proofs = await ProofHelper.getProofs(mint.mintURL);
-      for (final proof in proofs) {
-        total += proof.amountNum;
-      }
-      mint.balance = total;
-    });
+  Future<void> _setupMintInfo(IMint mint) async {
+    final info = await MintInfoStore.getMintInfo(mint.mintURL);
+    if (info != null) {
+      mint.info = info;
+    }
+    MintHelper.updateMintInfoFromRemote(mint);
+  }
+
+  Future<void> _setupMintKeyset(IMint mint) async {
+    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, active: true);
+    for (var keyset in keysets) {
+      mint.updateKeysetId(keyset.id, keyset.unit);
+    }
+    MintHelper.updateMintKeysetFromRemote(mint);
+  }
+
+  Future<void> setupProofs() async {
+    for (IMint mint in mints) {
+      await _setupProofsForMint(mint);
+    }
+  }
+
+  Future<void> _setupProofsForMint(IMint mint) async {
+    var total = 0;
+    final proofs = await ProofHelper.getProofs(mint.mintURL);
+    for (final proof in proofs) {
+      total += proof.amountNum;
+    }
+    mint.balance = total;
   }
 
   Future<IMint?> getMint(String mintURL) async {
     final url = MintHelper.getMintURL(mintURL);
-    for (var mint in mints) {
-      if (mint.mintURL == url) return mint;
+    for (IMint mint in mints) {
+      if (mint.mintURL == url) {
+        return mint;
+      }
     }
     return null;
   }
@@ -113,27 +112,24 @@ class CashuManager {
       return false;
     }
     mints.add(mint);
-    return MintStore.addMints([mint]);
+    return await MintStore.addMints([mint]);
   }
 
   Future<bool> updateMint(IMint mint) async {
     final index = mints.indexWhere((element) => element.mintURL == mint.mintURL);
-    if (index < 0) return false;
-
-    final target = mints[index];
-    if (target != mint) {
-      mints[index] = mint;
+    if (index < 0) {
+      return false;
     }
-
-    return MintStore.updateMint(mint);
+    mints[index] = mint;
+    return await MintStore.updateMint(mint);
   }
 
   Future<bool> deleteMint(IMint mint) async {
     try {
       final target = mints.firstWhere((element) => element.mintURL == mint.mintURL);
       mints.remove(target);
-      return MintStore.deleteMint(target.mintURL);
-    } catch(_) {
+      return await MintStore.deleteMint(target.mintURL);
+    } catch (_) {
       return false;
     }
   }

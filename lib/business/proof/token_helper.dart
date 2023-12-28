@@ -109,23 +109,6 @@ class TokenHelper {
     return handleTokens(token);
   }
 
-  static Future<void> addToken(dynamic token) async {
-    Token? decoded;
-    if (token is String) {
-      decoded = getDecodedToken(token);
-    } else if (token is Token) {
-      decoded = token;
-    }
-
-    if (decoded == null || decoded.token.isEmpty) return ;
-
-    for (final token in decoded.token) {
-      await MintStore.addMint(token.mint);
-      // final validProofs = token.proofs.where((p) => p.C.isNotEmpty && p.amount > 0 && p.secret.isNotEmpty && p.id.isNotEmpty).toList();
-      // await ProofStore.addProofs(validProofs);
-    }
-  }
-
   static Token? handleTokens(String token) {
     dynamic obj;
     try {

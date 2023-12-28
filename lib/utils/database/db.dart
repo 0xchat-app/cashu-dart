@@ -129,7 +129,7 @@ class CashuDB {
     return completer.future;
   }
 
-  Future<void> closDatabase() async {
+  Future<void> closeDatabase() async {
     allTablenames.clear();
     await db.close();
   }

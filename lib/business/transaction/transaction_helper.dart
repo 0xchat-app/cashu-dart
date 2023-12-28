@@ -50,7 +50,7 @@ class TransactionHelper {
   static Future<IInvoice?> requestCreateInvoice({
     required IMint mint,
     required int amount,
-    Function()? successCallback,
+    Function()? onSuccess,
   }) async {
     final invoice = await Nut4.requestMintQuote(
       mintURL: mint.mintURL,
@@ -58,7 +58,7 @@ class TransactionHelper {
     );
     if (invoice == null) return null;
     await InvoiceStore.addInvoice(invoice);
-    CashuManager.shared.invoiceHandler.addInvoice(invoice, successCallback);
+    CashuManager.shared.invoiceHandler.addInvoice(invoice, onSuccess);
     return invoice;
   }
 
