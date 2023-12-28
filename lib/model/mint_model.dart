@@ -1,10 +1,9 @@
 
-import 'package:cashu_dart/model/mint_info.dart';
-
 import '../business/mint/mint_helper.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
+import 'mint_info.dart';
 
 @reflector
 class IMint extends DBObject {
@@ -12,6 +11,7 @@ class IMint extends DBObject {
   IMint({
     required String mintURL,
     this.name = '',
+    this.balance = 0,
   }) : mintURL = MintHelper.getMintURL(mintURL);
 
   final String mintURL;
@@ -21,7 +21,7 @@ class IMint extends DBObject {
   /// key: unit, value: keysetId
   final Map<String, String> _keysetIds = {};
 
-  int balance = 0;
+  int balance;
 
   MintInfo? info;
 
@@ -33,15 +33,22 @@ class IMint extends DBObject {
   void cleanKeysetId() => _keysetIds.clear();
 
   @override
+  String toString() {
+    return '${super.toString()}, url: $mintURL, balance: $balance, info: $info';
+  }
+
+  @override
   Map<String, Object?> toMap() => {
     'mintURL': mintURL,
     'name': name,
+    'balance': balance,
   };
 
   static IMint fromMap(Map<String, Object?> map) =>
       IMint(
-        mintURL: map['mintURL']?.typedOrDefault('') ?? '',
-        name: map['name']?.typedOrDefault('') ?? '',
+        mintURL: Tools.getValueAs(map, 'mintURL', ''),
+        name: Tools.getValueAs(map, 'name', ''),
+        balance: Tools.getValueAs(map, 'balance', 0)
       );
 
   static String? tableName() {
@@ -53,6 +60,6 @@ class IMint extends DBObject {
   }
 
   static List<String?> ignoreKey() {
-    return ['_keysetIds, _balance, info'];
+    return ['_keysetIds, info'];
   }
 }

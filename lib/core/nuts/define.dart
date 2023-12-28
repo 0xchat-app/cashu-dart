@@ -32,3 +32,10 @@ typedef BlindMessageResult = (
   BigInt r
 );
 
+typedef QuoteState = (
+  String quote,
+  String request,
+  bool paid,
+  int expiry,
+);
+

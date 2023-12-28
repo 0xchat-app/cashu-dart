@@ -1,35 +1,12 @@
 
+import '../../model/invoice.dart';
 import '../../utils/network/http_client.dart';
 import '../../utils/tools.dart';
 import 'define.dart';
 import 'nut_00.dart';
 
-class MintQuotePayload {
-  MintQuotePayload(this.quote, this.request, this.paid, this.expiry);
-  final String quote;
-  final String request;
-  final bool paid;
-
-  /// Expiry timestamp in seconds, 0 means never expires
-  final int expiry;
-
-  static MintQuotePayload? fromServerMap(Map json) {
-    final quote = Tools.getValueAs<String>(json, 'quote', '');
-    final request = Tools.getValueAs<String>(json, 'request', '');
-    final paid = Tools.getValueAs<bool>(json, 'paid', false);
-    final expiry = Tools.getValueAs<int>(json, 'expiry', 0);
-    if (quote.isEmpty || request.isEmpty) return null;
-    return MintQuotePayload(quote, request, paid, expiry);
-  }
-
-  @override
-  String toString() {
-    return '${super.toString()}, quote: $quote, request: $request, paid: $paid, expiry: $expiry';
-  }
-}
-
 class Nut4 {
-  static Future<MintQuotePayload?> requestMintQuote({
+  static Future<IInvoice?> requestMintQuote({
     required String mintURL,
     required int amount,
     String method = 'bolt11',
@@ -43,12 +20,12 @@ class Nut4 {
       },
       modelBuilder: (json) {
         if (json is! Map) return null;
-        return MintQuotePayload.fromServerMap(json);
+        return IInvoice.fromServerMap(json, mintURL, amount.toString());
       },
     );
   }
 
-  static Future<MintQuotePayload?> checkMintQuoteState({
+  static Future<QuoteState?> checkMintQuoteState({
     required String mintURL,
     required String quoteID,
     String method = 'bolt11',
@@ -57,7 +34,12 @@ class Nut4 {
       nutURLJoin(mintURL, 'mint/quote/$method/$quoteID'),
       modelBuilder: (json) {
         if (json is! Map) return null;
-        return MintQuotePayload.fromServerMap(json);
+        final quote = Tools.getValueAs<String>(json, 'quote', '');
+        final request = Tools.getValueAs<String>(json, 'request', '');
+        final paid = Tools.getValueAs<bool>(json, 'paid', false);
+        final expiry = Tools.getValueAs<int>(json, 'expiry', 0);
+        if (quote.isEmpty || request.isEmpty) return null;
+        return (quote, request, paid, expiry);
       },
     );
   }

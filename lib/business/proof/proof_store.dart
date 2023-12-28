@@ -31,18 +31,21 @@ class ProofStore {
     }
   }
 
-  static Future<bool> deleteProofs(List<Proof> proofs) async {
-    if (proofs.isEmpty) return true;
-    final ids = [];
-    final secrets = [];
-    for (final proof in proofs) {
-      ids.add(proof.id);
-      secrets.add(proof.secret);
-    }
-    final rowsAffected = await CashuDB.sharedInstance.delete<Proof>(
-      where: ' id in (?) and secret in (?)',
-      whereArgs: [ids.join(','), secrets.join(',')],
-    );
-    return rowsAffected == proofs.length;
+  static Future<bool> deleteProofs(List<Proof> delProofs) async {
+    if (delProofs.isEmpty) return true;
+
+    var rowsAffected = 0;
+
+    final map = delProofs.groupBy((e) => e.id);
+    await Future.forEach(map.keys, (id) async {
+      final proofs = map[id] ?? [];
+      final secrets = proofs.map((e) => e.secret).toList();
+      rowsAffected += await CashuDB.sharedInstance.delete<Proof>(
+        where: ' id = ? and secret in (?)',
+        whereArgs: [id, secrets.join(',')],
+      );
+    });
+
+    return rowsAffected == delProofs.length;
   }
 }

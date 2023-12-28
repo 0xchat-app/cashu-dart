@@ -37,7 +37,23 @@ class MintInfo extends DBObject {
   final Map<String, Map<String, dynamic>> nuts;
 
   factory MintInfo.fromServerMap(Map json, String mintURL) {
-
+    var nuts = <String, Map<String, dynamic>>{};
+    final nutsRaw = json['nuts'];
+    if (nutsRaw is Map<String, Map<String, dynamic>>) {
+      nuts = nutsRaw;
+    } else if (nutsRaw is List) {
+      nuts = nutsRaw.fold(<String, Map<String, dynamic>>{}, (pre, e) {
+        pre[e.toString()] = {};
+        return pre;
+      });
+    }
+    var contact = <List<String>>[];
+    final contactRaw = json['contact'];
+    if (contactRaw is List<List>) {
+      contact = contactRaw.map(
+        (e) => e.map((e) => e.toString()).toList()
+      ).toList();
+    }
     return MintInfo(
       mintURL: mintURL,
       name: Tools.getValueAs(json, 'name', ''),
@@ -45,9 +61,9 @@ class MintInfo extends DBObject {
       version: Tools.getValueAs(json, 'version', ''),
       description: Tools.getValueAs(json, 'description', ''),
       descriptionLong: Tools.getValueAs(json, 'description_long', ''),
-      contact: Tools.getValueAs(json, 'contact', <List<String>>[]),
+      contact: contact,
       motd: Tools.getValueAs(json, 'motd', ''),
-      nuts: Tools.getValueAs(json, 'nuts', <String, Map<String, dynamic>>{}),
+      nuts: nuts,
     );
   }
 

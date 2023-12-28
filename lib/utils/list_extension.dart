@@ -9,4 +9,12 @@ extension ListEx<T> on List<T> {
     }
     return chunks;
   }
+
+  Map<Key, List<T>> groupBy<Key>(Key Function(T item) keyBuilder) {
+    return fold(<Key, List<T>>{}, (map, element) {
+      final key = keyBuilder(element);
+      map.putIfAbsent(key, () => []).add(element);
+      return map;
+    });
+  }
 }

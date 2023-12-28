@@ -25,6 +25,7 @@ class CashuFinancialAPI {
     int size = 10,
     String lastHistoryId = '',
   }) async {
+    await CashuManager.shared.setupFinish.future;
     final allHistory = await HistoryStore.getHistory();
 
     var startIndex = 0;
@@ -41,7 +42,7 @@ class CashuFinancialAPI {
   /// Check the availability of proofs for a given mint.
   /// Returns the amount of invalid proof, or null if the request fails.
   static Future<int?> checkProofsAvailable(IMint mint) async {
-
+    await CashuManager.shared.setupFinish.future;
     final proofs = await ProofHelper.getProofs(mint.mintURL);
     final states = await Nut7.requestTokenState(mintURL: mint.mintURL, proofs: proofs);
     if (states == null) return null;
@@ -71,7 +72,7 @@ class CashuFinancialAPI {
 
     mint.balance = validAmount;
     await CashuManager.shared.updateMint(mint);
-    await ProofHelper.tryDeleteProofs(mint.mintURL, burnedProofs, false);
+    await ProofHelper.deleteProofs(proofs: burnedProofs, mintURL: null);
 
     return burnedAmount;
   }

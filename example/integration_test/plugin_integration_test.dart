@@ -16,6 +16,6 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('getPlatformVersion test', (WidgetTester tester) async {
-    final CashuDart plugin = CashuDart();
+    
   });
 }

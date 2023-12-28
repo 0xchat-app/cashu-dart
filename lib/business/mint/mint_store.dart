@@ -29,6 +29,11 @@ class MintStore {
     return rowsAffected == 1 ? mint : null;
   }
 
+  static Future<bool> updateMint(IMint mint) async {
+    var rowsAffected = await CashuDB.sharedInstance.insert<IMint>(mint,);
+    return rowsAffected == 1;
+  }
+
   static Future<bool> addMints(List<IMint> mints) async {
     if (mints.isEmpty) return false;
     List<bool> results = [];

@@ -28,6 +28,7 @@ class CashuDB {
   }
 
   Future open(String dbPath, {int? version, String? password}) async {
+    print('zhw==============>path: ${await getDatabasesPath()}');
     if (deleteDBIfNeedMirgration) {
       bool exists = await databaseExists(dbPath);
       if (exists) {

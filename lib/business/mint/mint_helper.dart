@@ -1,4 +1,5 @@
 
+import 'package:cashu_dart/business/mint/mint_store.dart';
 import 'package:cashu_dart/core/keyset_store.dart';
 import 'package:cashu_dart/core/nuts/nut_01.dart';
 import 'package:cashu_dart/model/mint_model.dart';
@@ -34,6 +35,10 @@ class MintHelper {
     if (info == null) return false;
 
     mint.info = info;
+    if (mint.name.isEmpty) {
+      mint.name = info.name;
+      MintStore.updateMint(mint);
+    }
     MintInfoStore.addMintInfo(info);
     return true;
   }

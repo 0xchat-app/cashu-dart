@@ -8,34 +8,48 @@ import '../mint/mint_helper.dart';
 import '../mint/mint_info_store.dart';
 import '../mint/mint_store.dart';
 import '../proof/proof_helper.dart';
-import '../proof/proof_store.dart';
+import 'invoice_handler.dart';
 
 class CashuManager {
 
   static final CashuManager shared = CashuManager._internal();
   CashuManager._internal();
 
-  late IMint defaultMint;
+  IMint? defaultMint;
 
   /// key: mintUrl
   final List<IMint> mints = [];
 
-  final ProofStore proofStore = ProofStore();
+  InvoiceHandler invoiceHandler = InvoiceHandler();
 
   Completer setupFinish = Completer();
 
-  Future setup(String identify, {int? dbVersion, String? dbPassword}) async {
+  Future setup(String identify, {int dbVersion = 1, String? dbPassword}) async {
+
     // DB setup
-    await CashuDB.sharedInstance.open('cashu-$identify.db', version: dbVersion, password: dbPassword);
+    await CashuDB.sharedInstance.open(
+      'cashu-$identify.db',
+      version: dbVersion,
+      password: dbPassword,
+    );
 
     // Mint setup
-    setupMint();
+    await setupMint();
 
     // Proofs setup
-    setupProofs();
+    await setupProofs();
+
+    // invoice handler setup
+    await invoiceHandler.setup();
 
     print('[I][Cashu - setup] finished');
     setupFinish.complete();
+  }
+
+  clean() {
+    CashuDB.sharedInstance.closDatabase();
+    mints.clear();
+    invoiceHandler.invalidate();
   }
 
   Future setupMint() async {
@@ -57,9 +71,8 @@ class CashuManager {
       final info = await MintInfoStore.getMintInfo(mint.mintURL);
       if (info != null) {
         mint.info = info;
-      } else {
-        MintHelper.updateMintInfoFromRemote(mint);
       }
+      MintHelper.updateMintInfoFromRemote(mint);
 
       // setup mint keysetId
       final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, active: true);
@@ -108,10 +121,11 @@ class CashuManager {
     if (index < 0) return false;
 
     final target = mints[index];
-    if (target == mint) return true;
+    if (target != mint) {
+      mints[index] = mint;
+    }
 
-    mints[index] = mint;
-    return MintStore.addMints([mint]);
+    return MintStore.updateMint(mint);
   }
 
   Future<bool> deleteMint(IMint mint) async {

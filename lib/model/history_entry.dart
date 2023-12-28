@@ -24,6 +24,7 @@ enum IHistoryType {
 class IHistoryEntry extends DBObject {
 
   IHistoryEntry({
+    String? id,
     required this.amount,
     required this.type,
     required this.timestamp,
@@ -34,7 +35,7 @@ class IHistoryEntry extends DBObject {
     this.preImage,
     this.fee,
     this.isSpent,
-  }) : id = const Uuid().v4();
+  }) : id = id ?? const Uuid().v4();
 
   final String id;
   final num amount;
@@ -66,6 +67,7 @@ class IHistoryEntry extends DBObject {
 
   @override
   Map<String, Object?> toMap() => {
+    'id': id,
     'amount': amount,
     'typeRaw': type.value,
     'timestamp': timestamp,
@@ -79,18 +81,20 @@ class IHistoryEntry extends DBObject {
   };
 
   static IHistoryEntry fromMap(Map<String, Object?> map) {
-    final amount = map['amount']?.typedOrDefault(0) ?? 0;
+    final id = Tools.getValueAs(map, 'id', '');
+    final amount = Tools.getValueAs(map, 'amount', 0);
     final type = IHistoryType.fromValue(map['typeRaw']);
-    final timestamp = map['timestamp']?.typedOrDefault(0.0) ?? 0.0;
-    final value = map['value']?.typedOrDefault('') ?? '';
-    final mintsRaw = map['mintsRaw']?.typedOrDefault('') ?? '';
-    final sender = map['sender'] as String?;
-    final recipient = map['recipient'] as String?;
-    final preImage = map['preImage'] as String?;
-    final fee = map['fee'] as num?;
-    final isSpent = map['isSpent'] as bool?;
+    final timestamp = Tools.getValueAs(map, 'timestamp', 0.0);
+    final value = Tools.getValueAs(map, 'value', '');
+    final mintsRaw = Tools.getValueAs(map, 'mintsRaw', '');
+    final sender = Tools.getValueAs<String?>(map, 'sender', null);
+    final recipient = Tools.getValueAs<String?>(map, 'recipient', null);
+    final preImage = Tools.getValueAs<String?>(map, 'preImage', null);
+    final fee = Tools.getValueAs<num?>(map, 'fee', 0);
+    final isSpent = Tools.getValueAs<bool?>(map, 'isSpent', null);
 
     return IHistoryEntry(
+      id: id,
       amount: amount,
       type: type,
       timestamp: timestamp,

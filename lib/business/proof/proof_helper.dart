@@ -65,22 +65,25 @@ class ProofHelper {
     return (proofsToSend, proofsToKeep);
   }
 
-  static tryDeleteProofs(
-    String mintURL,
-    List<Proof> proofs,
-    [bool check = true]
-  ) async {
-    final states = await Nut7.requestTokenState(mintURL: mintURL, proofs: proofs);
-    if (states == null) return null;
-    if (states.length != proofs.length) {
-      throw Exception('[E][Cashu - checkProofsAvailable] '
-          'The length of states(${states.length}) and proofs(${proofs.length}) is not consistent');
-    }
+  static deleteProofs({
+    required List<Proof> proofs,
+    required String? mintURL,
+  }) async {
     final burnedProofs = <Proof>[];
-    for (int i = 0; i < proofs.length; i++) {
-      if (states[i] == TokenState.burned) {
-        burnedProofs.add(proofs[i]);
+    if (mintURL != null && mintURL.isNotEmpty) {
+      final states = await Nut7.requestTokenState(mintURL: mintURL, proofs: proofs);
+      if (states == null) return null;
+      if (states.length != proofs.length) {
+        throw Exception('[E][Cashu - checkProofsAvailable] '
+            'The length of states(${states.length}) and proofs(${proofs.length}) is not consistent');
       }
+      for (int i = 0; i < proofs.length; i++) {
+        if (states[i] == TokenState.burned) {
+          burnedProofs.add(proofs[i]);
+        }
+      }
+    } else {
+      burnedProofs.addAll(proofs);
     }
 
     await ProofStore.deleteProofs(burnedProofs);

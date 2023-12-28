@@ -1,5 +1,7 @@
 
 import 'package:cashu_dart/business/proof/proof_helper.dart';
+import 'package:cashu_dart/business/transaction/invoice_store.dart';
+import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
@@ -9,6 +11,7 @@ import '../../core/nuts/nut_03.dart';
 import '../../core/nuts/nut_04.dart';
 import '../../core/nuts/nut_05.dart';
 import '../../core/nuts/nut_08.dart';
+import '../../model/invoice.dart';
 import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
 import '../mint/mint_helper.dart';
@@ -17,7 +20,6 @@ import '../proof/proof_store.dart';
 typedef PayingTheInvoiceResponse = (
   bool paid,
   String preimage,
-  List<Proof> newProof,
 );
 
 class TransactionHelper {
@@ -43,6 +45,21 @@ class TransactionHelper {
     }
 
     return keysetInfo;
+  }
+
+  static Future<IInvoice?> requestCreateInvoice({
+    required IMint mint,
+    required int amount,
+    Function()? successCallback,
+  }) async {
+    final invoice = await Nut4.requestMintQuote(
+      mintURL: mint.mintURL,
+      amount: amount,
+    );
+    if (invoice == null) return null;
+    await InvoiceStore.addInvoice(invoice);
+    CashuManager.shared.invoiceHandler.addInvoice(invoice, successCallback);
+    return invoice;
   }
 
   static Future<List<Proof>?> requestTokensFromMint({
@@ -90,18 +107,33 @@ class TransactionHelper {
       keys: keyset,
     );
 
+    if (proofs != null) {
+      await ProofStore.addProofs(proofs);
+    }
+
     return proofs;
   }
 
   static Future<PayingTheInvoiceResponse> payingTheQuote({
     required IMint mint,
-    required String quoteID,
+    String request = '',
+    String quoteID = '',
     required List<Proof> proofs,
     String unit = 'sat',
     int? fee,
   }) async {
 
-    final failResult = (false, '', <Proof>[]);
+    const failResult = (false, '');
+
+    if (quoteID.isEmpty) {
+      if (request.isEmpty) return failResult;
+      final payload = await Nut5.requestMeltQuote(
+        mintURL: mint.mintURL,
+        request: request,
+      );
+      if (payload == null || payload.quote.isEmpty) return failResult;
+      quoteID = payload.quote;
+    }
 
     // update fee if null
     if (fee == null) {
@@ -143,10 +175,12 @@ class TransactionHelper {
       keys: keyset,
     ) ?? [];
 
+    await ProofStore.addProofs(newProofs);
+    ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);
+
     return (
-    paid,
-    preimage,
-    newProofs
+      paid,
+      preimage,
     );
   }
 
@@ -204,7 +238,7 @@ class TransactionHelper {
     ) ?? [];
 
     await ProofStore.addProofs(newProofs);
-    ProofHelper.tryDeleteProofs(mint.mintURL, proofs);
+    ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);
     return newProofs;
   }
 }
