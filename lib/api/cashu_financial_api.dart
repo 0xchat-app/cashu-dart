@@ -2,7 +2,6 @@
 import 'dart:math';
 
 import '../business/proof/proof_helper.dart';
-import '../business/proof/proof_store.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
 import '../core/nuts/nut_00.dart';
@@ -71,9 +70,13 @@ class CashuFinancialAPI {
     }
 
     mint.balance = validAmount;
-    await CashuManager.shared.updateMint(mint);
+    await CashuManager.shared.updateMintBalance(mint);
     await ProofHelper.deleteProofs(proofs: burnedProofs, mintURL: null);
 
     return burnedAmount;
+  }
+
+  static Future<List<Proof>> getAllUseProofs(IMint mint) {
+    return ProofHelper.getProofs(mint.mintURL);
   }
 }

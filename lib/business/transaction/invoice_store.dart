@@ -23,10 +23,10 @@ class InvoiceStore {
     final map = delInvoices.groupBy((e) => e.mintURL);
     await Future.forEach(map.keys, (mintURL) async {
       final invoices = map[mintURL] ?? [];
-      final quotes = invoices.map((e) => e.quote).toList();
+      final quotes = invoices.map((e) => '"${e.quote}"').toList().join(',');
       rowsAffected += await CashuDB.sharedInstance.delete<IInvoice>(
-        where: ' mintURL = ? and quote in (?)',
-        whereArgs: [mintURL, quotes.join(',')],
+        where: ' mintURL = ? and quote in ($quotes)',
+        whereArgs: [mintURL],
       );
     });
 

@@ -159,7 +159,7 @@ class Proof extends DBObject {
 
   //primaryKey
   static List<String?> primaryKey() {
-    return ['id'];
+    return ['id', 'secret'];
   }
 
   @override

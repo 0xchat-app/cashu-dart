@@ -22,9 +22,9 @@ class ProofStore {
 
   static Future<List<Proof>> getProofs({List<String> ids = const []}) async {
     if (ids.isNotEmpty) {
+      final quotedIds = ids.map((e) => '"$e"').toList().join(',');
       return CashuDB.sharedInstance.objects<Proof>(
-        where: ' id in (?) ',
-        whereArgs: [ids.join(',')],
+        where: ' id in ($quotedIds) ',
       );
     } else {
       return CashuDB.sharedInstance.objects<Proof>();
@@ -39,10 +39,10 @@ class ProofStore {
     final map = delProofs.groupBy((e) => e.id);
     await Future.forEach(map.keys, (id) async {
       final proofs = map[id] ?? [];
-      final secrets = proofs.map((e) => e.secret).toList();
+      final secrets = proofs.map((e) => '"${e.secret}"').toList().join(',');
       rowsAffected += await CashuDB.sharedInstance.delete<Proof>(
-        where: ' id = ? and secret in (?)',
-        whereArgs: [id, secrets.join(',')],
+        where: ' id = ? and secret in ($secrets)',
+        whereArgs: [id],
       );
     });
 

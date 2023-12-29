@@ -82,7 +82,7 @@ class IHistoryEntry extends DBObject {
 
   static IHistoryEntry fromMap(Map<String, Object?> map) {
     final id = Tools.getValueAs(map, 'id', '');
-    final amount = Tools.getValueAs(map, 'amount', 0);
+    final amount = Tools.getValueAs<num>(map, 'amount', 0);
     final type = IHistoryType.fromValue(map['typeRaw']);
     final timestamp = Tools.getValueAs(map, 'timestamp', 0.0);
     final value = Tools.getValueAs(map, 'value', '');

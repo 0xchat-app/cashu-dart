@@ -433,6 +433,9 @@ extension ExamplePageStateActionEx on ExamplePageState {
     final invoice = await CashuTransactionAPI.createLightningInvoice(
       mint: mint,
       amount: amount,
+      onSuccess: () {
+        updateUI();
+      },
     );
     if (invoice == null) {
       showMessage('Create failed', true);

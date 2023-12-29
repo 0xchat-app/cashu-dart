@@ -109,6 +109,7 @@ class TransactionHelper {
 
     if (proofs != null) {
       await ProofStore.addProofs(proofs);
+      await CashuManager.shared.updateMintBalance(mint);
     }
 
     return proofs;

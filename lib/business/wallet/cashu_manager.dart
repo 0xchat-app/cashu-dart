@@ -23,7 +23,7 @@ class CashuManager {
     try {
       await CashuDB.sharedInstance.open('cashu-$identify.db', version: dbVersion, password: dbPassword);
       await setupMint();
-      await setupProofs();
+      await setupBalance();
       await invoiceHandler.initialize();
       setupFinish.complete();
       print('[I][Cashu - setup] finished');
@@ -82,19 +82,10 @@ class CashuManager {
     MintHelper.updateMintKeysetFromRemote(mint);
   }
 
-  Future<void> setupProofs() async {
+  Future<void> setupBalance() async {
     for (IMint mint in mints) {
-      await _setupProofsForMint(mint);
+      await updateMintBalance(mint);
     }
-  }
-
-  Future<void> _setupProofsForMint(IMint mint) async {
-    var total = 0;
-    final proofs = await ProofHelper.getProofs(mint.mintURL);
-    for (final proof in proofs) {
-      total += proof.amountNum;
-    }
-    mint.balance = total;
   }
 
   Future<IMint?> getMint(String mintURL) async {
@@ -115,13 +106,26 @@ class CashuManager {
     return await MintStore.addMints([mint]);
   }
 
-  Future<bool> updateMint(IMint mint) async {
+  Future<bool> updateMintName(IMint mint) async {
     final index = mints.indexWhere((element) => element.mintURL == mint.mintURL);
     if (index < 0) {
       return false;
     }
-    mints[index] = mint;
+    mints[index].name = mint.name;
     return await MintStore.updateMint(mint);
+  }
+
+  Future updateMintBalance(IMint mint) async {
+    final index = mints.indexWhere((element) => element.mintURL == mint.mintURL);
+    if (index < 0) {
+      return false;
+    }
+    var total = 0;
+    final proofs = await ProofHelper.getProofs(mint.mintURL);
+    for (final proof in proofs) {
+      total += proof.amountNum;
+    }
+    mints[index].balance = total;
   }
 
   Future<bool> deleteMint(IMint mint) async {

@@ -47,6 +47,6 @@ class CashuMintAPI {
     await CashuManager.shared.setupFinish.future;
     if (mint.name == name) return ;
     mint.name = name;
-    CashuManager.shared.updateMint(mint);
+    CashuManager.shared.updateMintName(mint);
   }
 }

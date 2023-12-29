@@ -52,7 +52,8 @@ class InvoiceHandler {
         request: invoice.request,
       );
 
-      if (quoteInfo?.paid ?? false) {
+      // if (quoteInfo?.paid ?? false) {
+      if (true) {
         if (await _exchangeCash(invoice)) {
           _deleteInvoice(invoice);
           _onSuccessCallbacks.remove(invoice.quote)?.call();
