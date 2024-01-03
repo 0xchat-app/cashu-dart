@@ -1,5 +1,5 @@
 
-import 'package:cashu_dart/api/cashu_financial_api.dart';
+import 'package:cashu_dart/api/v1/cashu_financial_api.dart';
 import 'package:flutter/material.dart';
 import 'package:cashu_dart/model/history_entry.dart';
 

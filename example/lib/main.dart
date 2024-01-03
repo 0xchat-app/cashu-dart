@@ -1,13 +1,12 @@
 
 import 'package:cashu_dart/business/mint/mint_helper.dart';
 import 'package:cashu_dart/cashu_dart.dart';
-import 'package:cashu_dart_example/history_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
-import 'package:cashu_dart/model/mint_model.dart';
 
+import 'history_page.dart';
 import 'main.reflectable.dart';
 import 'dart:async';
 
@@ -27,6 +26,11 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
 
   Future setupComplete = CashuManager.shared.setup('test', dbVersion: 1);
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +67,12 @@ class ExamplePageState extends State<ExamplePage> {
   IMint? selectedMint;
 
   @override
+  void initState() {
+    super.initState();
+    selectedMint = Cashu.mintList().firstOrNull;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
@@ -80,14 +90,14 @@ class ExamplePageState extends State<ExamplePage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 5,),
-        Text('total balance: ${CashuFinancialAPI.totalBalance()}'),
+        Text('total balance: ${Cashu.totalBalance()}'),
         const SizedBox(height: 5,),
       ],
     );
   }
 
   Widget buildMintList() {
-    final mints = [...CashuMintAPI.mintList()];
+    final mints = [...Cashu.mintList()];
     return Container(
       color: Colors.orange,
       height: 140,
@@ -345,7 +355,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
   addMint() async {
     final mint = await showInputDialog('mint url');
     if (mint != null && mint.isNotEmpty) {
-      final newMint = await CashuMintAPI.addMint(mint);
+      final newMint = await Cashu.addMint(mint);
       if (newMint == null) {
         showMessage('Add mint fail', false);
       }
@@ -358,14 +368,14 @@ extension ExamplePageStateActionEx on ExamplePageState {
     if (mint == null) return null;
     final name = await showInputDialog('mint name');
     if (name != null && name.isNotEmpty) {
-      CashuMintAPI.editMintName(mint, name);
+      Cashu.editMintName(mint, name);
       updateUI();
     }
   }
 
   // Financial
   getHistoryList() async {
-    final history = await CashuFinancialAPI.getHistoryList();
+    final history = await Cashu.getHistoryList();
     if (mounted) {
       Navigator.push(
         context,
@@ -377,7 +387,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
   checkProofsAvailable() async {
     final mint = selectedMint;
     if (mint == null) return null;
-    CashuFinancialAPI.checkProofsAvailable(mint);
+    Cashu.checkProofsAvailable(mint);
   }
 
   // transaction
@@ -387,7 +397,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
     final input = await showInputDialog('amount');
     final amount = int.tryParse(input ?? '') ?? 0;
     if (amount == 0) return null;
-    final result = await CashuTransactionAPI.sendEcash(mint: mint, amount: amount);
+    final result = await Cashu.sendEcash(mint: mint, amount: amount);
     if (result == null) {
       showMessage('Send Ecash failed', true);
     } else {
@@ -400,7 +410,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
     if (mint == null) return null;
     final input = await showInputDialog('token');
     if (input == null || input.isEmpty) return ;
-    final result = await CashuTransactionAPI.redeemEcash(input);
+    final result = await Cashu.redeemEcash(input);
     if (result == null) {
       showMessage('Redeem failed', true);
     } else {
@@ -413,7 +423,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
     if (mint == null) return null;
     final input = await showInputDialog('invoice pr');
     if (input == null || input.isEmpty) return ;
-    final success = await CashuTransactionAPI.payingLightningInvoice(
+    final success = await Cashu.payingLightningInvoice(
       mint: mint,
       pr: input,
     );
@@ -430,7 +440,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
     final input = await showInputDialog('amount');
     final amount = int.tryParse(input ?? '') ?? 0;
     if (amount == 0) return null;
-    final invoice = await CashuTransactionAPI.createLightningInvoice(
+    final invoice = await Cashu.createLightningInvoice(
       mint: mint,
       amount: amount,
       onSuccess: () {

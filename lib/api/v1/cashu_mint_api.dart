@@ -1,9 +1,7 @@
 
-import 'package:cashu_dart/business/mint/mint_helper.dart';
-import 'package:cashu_dart/business/mint/mint_store.dart';
-import 'package:cashu_dart/business/wallet/cashu_manager.dart';
-
-import '../model/mint_model.dart';
+import '../../business/mint/mint_helper.dart';
+import '../../business/wallet/cashu_manager.dart';
+import '../../model/mint_model.dart';
 
 class CashuMintAPI {
 
