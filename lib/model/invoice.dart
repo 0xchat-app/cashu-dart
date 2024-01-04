@@ -3,8 +3,25 @@ import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
 
+abstract class Receipt {
+  String get mintURL;
+
+  String get amount;
+
+  String get paymentKey;
+
+  String get redemptionKey;
+
+  String get request;
+
+  /// Expiry timestamp in seconds, 0 means never expires
+  int get expiry;
+
+  bool get isExpired;
+}
+
 @reflector
-class IInvoice extends DBObject {
+class IInvoice extends DBObject implements Receipt {
   IInvoice({
     required this.quote,
     required this.request,
@@ -16,15 +33,19 @@ class IInvoice extends DBObject {
 
   final String quote;
 
+  @override
   final String request;
 
   final bool paid;
 
+  @override
   final String amount;
 
+  @override
   /// Expiry timestamp in seconds, 0 means never expires
   final int expiry;
 
+  @override
   final String mintURL;
 
   static IInvoice? fromServerMap(Map json, String mintURL, String amount) {
@@ -81,5 +102,16 @@ class IInvoice extends DBObject {
 
   static List<String?> ignoreKey() {
     return [];
+  }
+
+  @override
+  String get paymentKey => quote;
+
+  @override
+  String get redemptionKey => quote;
+
+  @override
+  bool get isExpired {
+    return expiry != 0 && expiry < DateTime.now().millisecondsSinceEpoch ~/ 1000;
   }
 }

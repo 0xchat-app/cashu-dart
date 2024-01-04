@@ -157,13 +157,15 @@ class CashuTransactionAPI {
   /// [mint]: The mint to issue the invoice.
   /// [amount]: The amount for the invoice.
   /// Returns the created invoice object if successful, otherwise null.
-  static Future<Receipt?> createLightningInvoice({
+  static Future<IInvoice?> createLightningInvoice({
     required IMint mint,
     required int amount,
+    Function()? onSuccess,
   }) async {
     return TransactionHelper.requestCreateInvoice(
       mint: mint,
       amount: amount,
+      onSuccess: onSuccess,
     );
   }
 }

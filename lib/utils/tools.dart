@@ -87,14 +87,3 @@ extension BigIntEx on BigInt {
   }
 }
 
-extension MintKeysEx on MintKeys {
-  String deriveKeysetId() {
-    final keys = entries.toList()..sort((a, b) => a.key.compareTo(b.key));
-    final pubkeysConcat = keys.map((entry) => entry.value).join('');
-
-    var bytes = utf8.encode(pubkeysConcat);
-    var hash = sha256.convert(bytes);
-
-    return base64.encode(hash.bytes).substring(0, 12);
-  }
-}

@@ -7,10 +7,10 @@ import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/nut_03.dart';
-import '../../core/nuts/nut_04.dart';
-import '../../core/nuts/nut_05.dart';
-import '../../core/nuts/nut_08.dart';
+import '../../core/nuts/v1/nut_03.dart';
+import '../../core/nuts/v1/nut_04.dart';
+import '../../core/nuts/v1/nut_05.dart';
+import '../../core/nuts/v1/nut_08.dart';
 import '../../model/invoice.dart';
 import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
@@ -47,18 +47,22 @@ class TransactionHelper {
     return keysetInfo;
   }
 
-  static Future<IInvoice?> requestCreateInvoice({
+  static Future<Receipt?> requestCreateInvoice({
     required IMint mint,
     required int amount,
-    Function()? onSuccess,
+    Future<Receipt?> Function({
+      required String mintURL,
+      required int amount,
+    })? createQuoteAction,
   }) async {
-    final invoice = await Nut4.requestMintQuote(
+    createQuoteAction ??= Nut4.requestMintQuote;
+    final invoice = await createQuoteAction(
       mintURL: mint.mintURL,
       amount: amount,
     );
     if (invoice == null) return null;
     await InvoiceStore.addInvoice(invoice);
-    CashuManager.shared.invoiceHandler.addInvoice(invoice, onSuccess);
+    CashuManager.shared.invoiceHandler.addInvoice(invoice);
     return invoice;
   }
 
@@ -66,9 +70,15 @@ class TransactionHelper {
     required IMint mint,
     required String quoteID,
     required int amount,
-    String unit = 'sat'
+    String unit = 'sat',
+    Future<List<BlindedSignature>?> Function({
+      required String mintURL,
+      required String quote,
+      required List<BlindedMessage> blindedMessages,
+    })? requestTokensAction,
   }) async {
 
+    requestTokensAction ??= Nut4.requestTokensFromMint;
     // // check quote state
     // final quoteInfo = await Nut4.checkMintQuoteState(
     //   mintURL: mint.mintURL,
@@ -92,7 +102,7 @@ class TransactionHelper {
     );
 
     // request token
-    final promises = await Nut4.requestTokensFromMint(
+    final promises = await requestTokensAction(
       mintURL: mint.mintURL,
       quote: quoteID,
       blindedMessages: blindedMessages,

@@ -4,7 +4,7 @@ import 'package:cashu_dart/core/keyset_store.dart';
 import 'package:cashu_dart/utils/tools.dart';
 
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/nut_07.dart';
+import '../../core/nuts/v1/nut_07.dart';
 
 class ProofHelper {
 

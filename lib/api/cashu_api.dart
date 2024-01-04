@@ -1,6 +1,8 @@
 
 import 'dart:async';
 
+import 'package:cashu_dart/model/invoice_listener.dart';
+
 import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
@@ -77,9 +79,12 @@ abstract class CashuAPIClient {
   /// [mint]: The mint to issue the invoice.
   /// [amount]: The amount for the invoice.
   /// Returns the created invoice object if successful, otherwise null.
-  Future<IInvoice?> createLightningInvoice({
+  Future<Receipt?> createLightningInvoice({
     required IMint mint,
     required int amount,
-    Function()? onSuccess,
   });
+
+  void addInvoiceListener(InvoiceListener listener);
+
+  void removeInvoiceListener(InvoiceListener listener);
 }

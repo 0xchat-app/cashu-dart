@@ -7,7 +7,7 @@ import 'package:pointycastle/export.dart';
 
 import 'define.dart';
 import 'nut_00.dart';
-import 'nut_01.dart';
+import 'v1/nut_01.dart';
 
 /*
 Bob (mint)

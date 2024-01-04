@@ -1,10 +1,10 @@
 
 import 'package:cashu_dart/business/mint/mint_store.dart';
 import 'package:cashu_dart/core/keyset_store.dart';
-import 'package:cashu_dart/core/nuts/nut_01.dart';
+import 'package:cashu_dart/core/nuts/v1/nut_01.dart';
 import 'package:cashu_dart/model/mint_model.dart';
 
-import '../../core/nuts/nut_06.dart';
+import '../../core/nuts/v1/nut_06.dart';
 import '../../model/keyset_info.dart';
 import 'mint_info_store.dart';
 

@@ -1,18 +1,25 @@
 
 import 'dart:async';
 
-import '../../core/nuts/nut_05.dart';
+import '../../api/cashu_api.dart';
+import '../../api/v1/client.dart';
+import '../../core/nuts/v0/nut_04.dart';
+import '../../core/nuts/v1/nut_05.dart';
 import '../../model/invoice.dart';
+import '../../model/invoice_listener.dart';
 import '../../model/mint_model.dart';
 import '../transaction/invoice_store.dart';
 import '../transaction/transaction_helper.dart';
 
 class InvoiceHandler {
 
-  List<IInvoice> _invoices = [];
-  final _pendingInvoices = <IInvoice>{};
-  final _onSuccessCallbacks = <String, Function()>{};
+  List<Receipt> _invoices = [];
+  final _pendingInvoices = <Receipt>{};
+  final List<InvoiceListener> _listeners = [];
+
   Timer? _checkTimer;
+
+  bool get isV1 => Cashu is CashuAPIV1Client;
 
   Future<void> initialize() async {
     _invoices = await InvoiceStore.getAllInvoice();
@@ -20,17 +27,13 @@ class InvoiceHandler {
   }
 
   void dispose() {
-    _onSuccessCallbacks.clear();
+    _listeners.clear();
     _invoices.clear();
     _checkTimer?.cancel();
   }
 
-  void addInvoice(IInvoice invoice, [Function()? onSuccess]) {
-    if (onSuccess != null) {
-      _onSuccessCallbacks[invoice.quote] = onSuccess;
-    }
+  void addInvoice(Receipt invoice) {
     if (_invoiceExists(invoice)) return ;
-
     _invoices.add(invoice);
     _checkInvoice(invoice);
   }
@@ -42,23 +45,26 @@ class InvoiceHandler {
     }
   }
 
-  Future<void> _checkInvoice(IInvoice invoice) async {
+  Future<void> _checkInvoice(Receipt invoice) async {
     if (_pendingInvoices.contains(invoice)) return;
     _pendingInvoices.add(invoice);
 
     try {
-      final quoteInfo = await Nut5.requestMeltQuote(
-        mintURL: invoice.mintURL,
-        request: invoice.request,
-      );
+      bool paid = true;
+      if (isV1) {
+        final quoteInfo = await Nut5.requestMeltQuote(
+          mintURL: invoice.mintURL,
+          request: invoice.request,
+        );
+        paid = true; //quoteInfo?.paid ?? false;
+      }
 
-      // if (quoteInfo?.paid ?? false) {
-      if (true) {
+      if (paid) {
         if (await _exchangeCash(invoice)) {
           _deleteInvoice(invoice);
-          _onSuccessCallbacks.remove(invoice.quote)?.call();
+          notifyListenerForPaidSuccess(invoice);
         }
-      } else if (_isExpired(invoice)) {
+      } else if (invoice.isExpired) {
         _deleteInvoice(invoice);
       }
     } catch (e) {
@@ -68,28 +74,40 @@ class InvoiceHandler {
     }
   }
 
-  bool _isExpired(IInvoice invoice) {
-    return invoice.expiry != 0 &&
-        invoice.expiry < DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  }
-
-  Future<bool> _exchangeCash(IInvoice invoice) async {
+  Future<bool> _exchangeCash(Receipt invoice) async {
     final amount = int.tryParse(invoice.amount);
     if (amount == null) return false;
     final proofs = await TransactionHelper.requestTokensFromMint(
       mint: IMint(mintURL: invoice.mintURL),
-      quoteID: invoice.quote,
+      quoteID: invoice.redemptionKey,
       amount: amount,
+      requestTokensAction: isV1 ? null : Nut4.requestTokensFromMint
     );
     return proofs != null;
   }
 
-  void _deleteInvoice(IInvoice invoice) {
+  void _deleteInvoice(Receipt invoice) {
     _invoices.remove(invoice);
-    InvoiceStore.deleteInvoice([invoice]);
+    if (invoice is IInvoice) {
+      InvoiceStore.deleteInvoice([invoice]);
+    }
   }
 
-  bool _invoiceExists(IInvoice invoice) {
-    return _invoices.any((element) => element.quote == invoice.quote);
+  bool _invoiceExists(Receipt invoice) {
+    return _invoices.any((element) => element.redemptionKey == invoice.redemptionKey);
+  }
+
+  void addListener(InvoiceListener listener) {
+    _listeners.add(listener);
+  }
+
+  void removeListener(InvoiceListener listener) {
+    _listeners.remove(listener);
+  }
+
+  void notifyListenerForPaidSuccess(Receipt receipt) {
+    _listeners.forEach((e) {
+      e.onInvoicePaid(receipt);
+    });
   }
 }

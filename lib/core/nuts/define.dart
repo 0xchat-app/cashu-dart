@@ -7,7 +7,7 @@ import 'nut_00.dart';
 
 const nutProtocolVersion = 'v1';
 
-String nutURLJoin(String mint, String path) => '$mint/$nutProtocolVersion/$path';
+String nutURLJoin(String mint, String path, {String version = '$nutProtocolVersion/'}) => '$mint/$nutProtocolVersion$path';
 
 typedef NutsResponse<T> = (
   T data,
