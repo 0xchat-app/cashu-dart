@@ -1,12 +1,24 @@
 
-import 'package:cashu_dart/business/proof/proof_store.dart';
-import 'package:cashu_dart/core/keyset_store.dart';
 import 'package:cashu_dart/utils/tools.dart';
 
+import '../../api/cashu_api.dart';
+import '../../core/keyset_store.dart';
+import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/v1/nut_07.dart';
+import '../../core/nuts/v0/nut.dart' as v0;
+import '../../core/nuts/v1/nut.dart' as v1;
+import 'proof_store.dart';
+
+typedef TokenCheckAction = Future<List<TokenState>?> Function({
+  required String mintURL,
+  required List<Proof> proofs,
+});
 
 class ProofHelper {
+
+  static TokenCheckAction get checkAction => Cashu.isV1
+      ? v1.Nut7.requestTokenState
+      : v0.Nut7.requestTokenState;
 
   static Future<List<Proof>> getProofs(
     String mintURL,
@@ -33,7 +45,7 @@ class ProofHelper {
 
     // check state
     if (checkState) {
-      final states = await Nut7.requestTokenState(mintURL: mintURL, proofs: proofs);
+      final states = await checkAction(mintURL: mintURL, proofs: proofs);
       if (states == null) return null;
       if (states.length != proofs.length) {
         throw Exception('[E][Cashu - checkProofsAvailable] '
@@ -71,7 +83,7 @@ class ProofHelper {
   }) async {
     final burnedProofs = <Proof>[];
     if (mintURL != null && mintURL.isNotEmpty) {
-      final states = await Nut7.requestTokenState(mintURL: mintURL, proofs: proofs);
+      final states = await checkAction(mintURL: mintURL, proofs: proofs);
       if (states == null) return null;
       if (states.length != proofs.length) {
         throw Exception('[E][Cashu - checkProofsAvailable] '

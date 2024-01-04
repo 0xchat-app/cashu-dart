@@ -1,9 +1,8 @@
 
-
-import 'package:cashu_dart/model/invoice.dart';
-import 'package:cashu_dart/model/lightning_invoice.dart';
 import 'package:cashu_dart/utils/list_extension.dart';
 
+import '../../model/invoice.dart';
+import '../../model/lightning_invoice.dart';
 import '../../utils/database/db.dart';
 
 class InvoiceStore {

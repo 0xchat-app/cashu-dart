@@ -1,14 +1,34 @@
 
-import 'package:cashu_dart/business/mint/mint_store.dart';
-import 'package:cashu_dart/core/keyset_store.dart';
-import 'package:cashu_dart/core/nuts/v1/nut_01.dart';
-import 'package:cashu_dart/model/mint_model.dart';
 
-import '../../core/nuts/v1/nut_06.dart';
+import '../../api/cashu_api.dart';
+import '../../core/keyset_store.dart';
+import '../../core/nuts/define.dart';
+import '../../core/nuts/v0/nut.dart' as v0;
+import '../../core/nuts/v1/nut.dart' as v1;
 import '../../model/keyset_info.dart';
+import '../../model/mint_info.dart';
+import '../../model/mint_model.dart';
 import 'mint_info_store.dart';
+import 'mint_store.dart';
+
+typedef RequestKeysAction = Future<List<MintKeysPayload>?> Function({
+  required String mintURL,
+  String? keysetId,
+});
+
+typedef RequestMintInfoAction = Future<MintInfo?> Function({
+  required String mintURL,
+});
 
 class MintHelper {
+
+  static RequestKeysAction get requestKeys => Cashu.isV1
+      ? v1.Nut1.requestKeys
+      : v0.Nut1.requestKeys;
+
+  static RequestMintInfoAction get requestMintInfo => Cashu.isV1
+      ? v1.Nut6.requestMintInfo
+      : v0.Nut9.requestMintInfo;
 
   static String getMintURL(String url) {
     url = url.trim();
@@ -20,18 +40,18 @@ class MintHelper {
     if (url.endsWith('/')) {
       url = url.substring(0, url.length - 1);
     }
-    return url.toLowerCase();
+    return url;
   }
 
   static Future<List<KeysetInfo>> fetchKeysetFromRemote(String mintURL) async {
-    final keys = await Nut1.requestKeys(mintURL: mintURL) ?? [];
+    final keys = await requestKeys(mintURL: mintURL) ?? [];
     final keysets = keys.map((e) => e.asKeysetInfo(mintURL)).toList();
     KeysetStore.addOrReplaceKeysets(keysets);
     return keysets;
   }
 
   static Future<bool> updateMintInfoFromRemote(IMint mint) async {
-    final info = await Nut6.requestMintInfo(mintURL: mint.mintURL);
+    final info = await requestMintInfo(mintURL: mint.mintURL);
     if (info == null) return false;
 
     mint.info = info;

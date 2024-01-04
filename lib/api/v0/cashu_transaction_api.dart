@@ -7,6 +7,7 @@ import '../../business/transaction/hitstory_store.dart';
 import '../../business/transaction/transaction_helper.dart';
 import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/nut_00.dart';
+import '../../core/nuts/v0/nut.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/mint_model.dart';
@@ -42,6 +43,7 @@ class CashuTransactionAPI {
         mint: mint,
         proofs: proofs,
         supportAmount: amount,
+        swapAction: Nut6.split,
       );
 
       final payload = await ProofHelper.getProofsToUse(
@@ -103,6 +105,7 @@ class CashuTransactionAPI {
       final newProofs = await TransactionHelper.swapProofs(
         mint: mint,
         proofs: entry.proofs,
+        swapAction: Nut6.split,
       );
       final receiveSuccess = newProofs != entry.proofs;
       if (receiveSuccess) {
@@ -145,10 +148,17 @@ class CashuTransactionAPI {
     );
     if (payload == null) return false;
     final (proofs, _) = payload;
+
+    // get fee
+    final fee = await Nut5.checkingLightningFees(mintURL: mint.mintURL, pr: pr);
+    if (fee == null) return false;
+
     final (paid, preimage) = await TransactionHelper.payingTheQuote(
       mint: mint,
       request: pr,
       proofs: proofs,
+      fee: fee,
+      meltAction: Nut8.payingTheInvoice,
     );
     return paid;
   }
@@ -157,15 +167,14 @@ class CashuTransactionAPI {
   /// [mint]: The mint to issue the invoice.
   /// [amount]: The amount for the invoice.
   /// Returns the created invoice object if successful, otherwise null.
-  static Future<IInvoice?> createLightningInvoice({
+  static Future<Receipt?> createLightningInvoice({
     required IMint mint,
     required int amount,
-    Function()? onSuccess,
   }) async {
     return TransactionHelper.requestCreateInvoice(
       mint: mint,
       amount: amount,
-      onSuccess: onSuccess,
+      createQuoteAction: Nut3.requestMintInvoice,
     );
   }
 }

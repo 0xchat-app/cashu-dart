@@ -1,6 +1,5 @@
 
-import 'package:cashu_dart/model/mint_info.dart';
-
+import '../../model/mint_info.dart';
 import '../../utils/database/db.dart';
 
 class MintInfoStore {

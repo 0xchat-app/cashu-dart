@@ -4,12 +4,6 @@ import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
 
-typedef MeltResponse = (
-  bool paid,
-  String preimage,
-  List<BlindedSignature> change,
-);
-
 class Nut8 {
   static Future<MeltResponse?> payingTheQuote({
     required String mintURL,

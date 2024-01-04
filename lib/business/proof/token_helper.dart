@@ -6,7 +6,6 @@ import 'dart:math';
 import '../../core/nuts/nut_00.dart';
 import '../../model/define.dart';
 import '../../utils/tools.dart';
-import '../mint/mint_store.dart';
 import '../wallet/cashu_manager.dart';
 
 class TokenHelper {

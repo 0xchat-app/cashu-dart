@@ -1,4 +1,7 @@
 
+import 'package:cashu_dart/model/invoice_listener.dart';
+
+import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
@@ -8,13 +11,7 @@ import 'cashu_financial_api.dart';
 import 'cashu_mint_api.dart';
 import 'cashu_transaction_api.dart';
 
-class CashuAPIV0Client implements CashuAPIClient {
-
-  static test() async {
-    // const mint = 'https://legend.lnbits.com/cashu/api/v1/AptDNABNBXv8gpuywhx6NV';
-    // const mint = 'https://testnut.cashu.space';
-    // const mint = 'https://mint.tangjinxing.com';
-  }
+class CashuAPIV0Client extends CashuAPIClient {
 
   // Financial
   @override
@@ -79,15 +76,23 @@ class CashuAPIV0Client implements CashuAPIClient {
   }
 
   @override
-  Future<IInvoice?> createLightningInvoice({
+  Future<Receipt?> createLightningInvoice({
     required IMint mint,
     required int amount,
-    Function()? onSuccess,
   }) {
     return CashuTransactionAPI.createLightningInvoice(
       mint: mint,
       amount: amount,
-      onSuccess: onSuccess,
     );
+  }
+
+  @override
+  void addInvoiceListener(InvoiceListener listener) {
+    CashuManager.shared.invoiceHandler.addListener(listener);
+  }
+
+  @override
+  void removeInvoiceListener(InvoiceListener listener) {
+    CashuManager.shared.invoiceHandler.removeListener(listener);
   }
 }

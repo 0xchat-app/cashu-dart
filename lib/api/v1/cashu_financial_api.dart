@@ -4,8 +4,8 @@ import 'dart:math';
 import '../../business/proof/proof_helper.dart';
 import '../../business/transaction/hitstory_store.dart';
 import '../../business/wallet/cashu_manager.dart';
+import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/v1/nut_07.dart';
 import '../../model/history_entry.dart';
 import '../../model/mint_model.dart';
 
@@ -43,7 +43,7 @@ class CashuFinancialAPI {
   static Future<int?> checkProofsAvailable(IMint mint) async {
     await CashuManager.shared.setupFinish.future;
     final proofs = await ProofHelper.getProofs(mint.mintURL);
-    final states = await Nut7.requestTokenState(mintURL: mint.mintURL, proofs: proofs);
+    final states = await ProofHelper.checkAction(mintURL: mint.mintURL, proofs: proofs);
     if (states == null) return null;
     if (states.length != proofs.length) {
       throw Exception('[E][Cashu - checkProofsAvailable] '

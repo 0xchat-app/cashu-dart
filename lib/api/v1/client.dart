@@ -11,7 +11,7 @@ import 'cashu_financial_api.dart';
 import 'cashu_mint_api.dart';
 import 'cashu_transaction_api.dart';
 
-class CashuAPIV1Client implements CashuAPIClient {
+class CashuAPIV1Client extends CashuAPIClient {
 
   static test() async {
     // const mint = 'https://legend.lnbits.com/cashu/api/v1/AptDNABNBXv8gpuywhx6NV';

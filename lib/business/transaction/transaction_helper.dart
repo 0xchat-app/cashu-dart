@@ -1,21 +1,17 @@
 
-import 'package:cashu_dart/business/proof/proof_helper.dart';
-import 'package:cashu_dart/business/transaction/invoice_store.dart';
-import 'package:cashu_dart/business/wallet/cashu_manager.dart';
-
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
 import '../../core/nuts/DHKE.dart';
+import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/v1/nut_03.dart';
-import '../../core/nuts/v1/nut_04.dart';
-import '../../core/nuts/v1/nut_05.dart';
-import '../../core/nuts/v1/nut_08.dart';
 import '../../model/invoice.dart';
 import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
 import '../mint/mint_helper.dart';
+import '../proof/proof_helper.dart';
 import '../proof/proof_store.dart';
+import '../wallet/cashu_manager.dart';
+import 'invoice_store.dart';
 
 typedef PayingTheInvoiceResponse = (
   bool paid,
@@ -50,12 +46,11 @@ class TransactionHelper {
   static Future<Receipt?> requestCreateInvoice({
     required IMint mint,
     required int amount,
-    Future<Receipt?> Function({
+    required Future<Receipt?> Function({
       required String mintURL,
       required int amount,
-    })? createQuoteAction,
+    }) createQuoteAction,
   }) async {
-    createQuoteAction ??= Nut4.requestMintQuote;
     final invoice = await createQuoteAction(
       mintURL: mint.mintURL,
       amount: amount,
@@ -71,14 +66,12 @@ class TransactionHelper {
     required String quoteID,
     required int amount,
     String unit = 'sat',
-    Future<List<BlindedSignature>?> Function({
+    required Future<List<BlindedSignature>?> Function({
       required String mintURL,
       required String quote,
       required List<BlindedMessage> blindedMessages,
-    })? requestTokensAction,
+    }) requestTokensAction,
   }) async {
-
-    requestTokensAction ??= Nut4.requestTokensFromMint;
     // // check quote state
     // final quoteInfo = await Nut4.checkMintQuoteState(
     //   mintURL: mint.mintURL,
@@ -131,30 +124,16 @@ class TransactionHelper {
     String quoteID = '',
     required List<Proof> proofs,
     String unit = 'sat',
-    int? fee,
+    required int fee,
+    required Future<MeltResponse?> Function({
+      required String mintURL,
+      required String quote,
+      required List<Proof> inputs,
+      required List<BlindedMessage> outputs,
+    }) meltAction,
   }) async {
 
     const failResult = (false, '');
-
-    if (quoteID.isEmpty) {
-      if (request.isEmpty) return failResult;
-      final payload = await Nut5.requestMeltQuote(
-        mintURL: mint.mintURL,
-        request: request,
-      );
-      if (payload == null || payload.quote.isEmpty) return failResult;
-      quoteID = payload.quote;
-    }
-
-    // update fee if null
-    if (fee == null) {
-      final quoteInfo = await Nut5.checkMintQuoteState(
-        mintURL: mint.mintURL,
-        quoteID: quoteID,
-      );
-      if (quoteInfo == null) return failResult;
-      fee = int.parse(quoteInfo.fee);
-    }
 
     // get keyset
     final keysetInfo = await tryGetMintKeysetInfo(mint, unit);
@@ -169,7 +148,7 @@ class TransactionHelper {
     );
 
     // melt token
-    final response = await Nut8.payingTheQuote(
+    final response = await meltAction(
       mintURL: mint.mintURL,
       quote: quoteID,
       inputs: proofs,
@@ -200,6 +179,11 @@ class TransactionHelper {
     required List<Proof> proofs,
     int? supportAmount,
     String unit = 'sat',
+    required Future<List<BlindedSignature>?> Function({
+      required String mintURL,
+      required List<Proof> proofs,
+      required List<BlindedMessage> outputs,
+    }) swapAction,
   }) async {
 
     // get keyset
@@ -235,7 +219,7 @@ class TransactionHelper {
       rs.addAll($3);
     }
 
-    final promises = await Nut3.swap(
+    final promises = await swapAction(
       mintURL: mint.mintURL,
       proofs: proofs,
       outputs: blindedMessages,

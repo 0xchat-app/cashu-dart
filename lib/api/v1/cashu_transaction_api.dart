@@ -7,6 +7,7 @@ import '../../business/transaction/hitstory_store.dart';
 import '../../business/transaction/transaction_helper.dart';
 import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/nut_00.dart';
+import '../../core/nuts/v1/nut.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/mint_model.dart';
@@ -42,6 +43,7 @@ class CashuTransactionAPI {
         mint: mint,
         proofs: proofs,
         supportAmount: amount,
+        swapAction: Nut3.swap,
       );
 
       final payload = await ProofHelper.getProofsToUse(
@@ -103,6 +105,7 @@ class CashuTransactionAPI {
       final newProofs = await TransactionHelper.swapProofs(
         mint: mint,
         proofs: entry.proofs,
+        swapAction: Nut3.swap,
       );
       final receiveSuccess = newProofs != entry.proofs;
       if (receiveSuccess) {
@@ -136,19 +139,40 @@ class CashuTransactionAPI {
   }) async {
     await CashuManager.shared.setupFinish.future;
 
+    if (pr.isEmpty) return false;
+
+    // Get quote ID.
+    final meltQuotePayload = await Nut5.requestMeltQuote(
+      mintURL: mint.mintURL,
+      request: pr,
+    );
+    if (meltQuotePayload == null || meltQuotePayload.quote.isEmpty) return false;
+    final quoteID = meltQuotePayload.quote;
+
+    // Get fee.
+    final quoteInfo = await Nut5.checkMintQuoteState(
+      mintURL: mint.mintURL,
+      quoteID: quoteID,
+    );
+    if (quoteInfo == null) return false;
+    final fee = int.parse(quoteInfo.fee);
+
+    // Get proofs for pay.
     final req = Bolt11PaymentRequest(pr);
     final amount = req.amount.toBigInt().toInt();
-
     final payload = await ProofHelper.getProofsToUse(
       mintURL: mint.mintURL,
       amount: BigInt.from(amount),
     );
     if (payload == null) return false;
     final (proofs, _) = payload;
+
     final (paid, preimage) = await TransactionHelper.payingTheQuote(
       mint: mint,
       request: pr,
       proofs: proofs,
+      fee: fee,
+      meltAction: Nut8.payingTheQuote,
     );
     return paid;
   }
@@ -164,6 +188,7 @@ class CashuTransactionAPI {
     return TransactionHelper.requestCreateInvoice(
       mint: mint,
       amount: amount,
+      createQuoteAction: Nut4.requestMintQuote,
     );
   }
 }

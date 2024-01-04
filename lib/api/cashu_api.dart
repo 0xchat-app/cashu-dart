@@ -1,17 +1,19 @@
 
 import 'dart:async';
 
-import 'package:cashu_dart/model/invoice_listener.dart';
-
 import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
+import '../model/invoice_listener.dart';
 import '../model/mint_model.dart';
+import 'v0/client.dart';
 import 'v1/client.dart';
 
-final CashuAPIClient Cashu = CashuAPIV1Client();
+final CashuAPIClient Cashu = CashuAPIV0Client();
 
 abstract class CashuAPIClient {
+
+  bool get isV1 => this is CashuAPIV1Client;
 
   /**************************** Financial ****************************/
   /// Calculate the total balance across all mints.

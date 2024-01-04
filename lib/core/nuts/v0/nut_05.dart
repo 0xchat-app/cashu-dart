@@ -2,7 +2,6 @@
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
-import '../nut_00.dart';
 
 class MeltQuotePayload {
   MeltQuotePayload(this.quote, this.amount, this.fee, this.paid, this.expiry);
@@ -24,5 +23,20 @@ class MeltQuotePayload {
 }
 
 class Nut5 {
-
+  /// Estimate fees for a given LN invoice
+  /// Returns estimated Fee
+  static Future<int?> checkingLightningFees({
+    required String mintURL,
+    required String pr,
+  }) async {
+    return HTTPClient.post(
+      nutURLJoin(mintURL, 'checkfees', version: ''),
+      params: {'pr': pr},
+      modelBuilder: (json) {
+        if (json is! Map) return null;
+        final fee = Tools.getValueAs<int?>(json, 'fee', null);
+        return fee;
+      },
+    );
+  }
 }

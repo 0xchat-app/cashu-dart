@@ -1,5 +1,4 @@
 
-import '../../../model/invoice.dart';
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
@@ -16,7 +15,7 @@ class Nut4 {
     required String quote,
   }) async {
     return HTTPClient.post(
-      '$mintURL/mint',
+      nutURLJoin(mintURL, 'mint', version: ''),
       query: {'hash': quote},
       params: {
         'outputs': blindedMessages.map((e) {

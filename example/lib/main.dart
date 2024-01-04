@@ -1,10 +1,11 @@
 
-import 'package:cashu_dart/business/mint/mint_helper.dart';
-import 'package:cashu_dart/cashu_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:cashu_dart/business/mint/mint_helper.dart';
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
+import 'package:cashu_dart/cashu_dart.dart';
+
 
 import 'history_page.dart';
 import 'main.reflectable.dart';
@@ -62,7 +63,7 @@ class ExamplePage extends StatefulWidget {
   State<StatefulWidget> createState() => ExamplePageState();
 }
 
-class ExamplePageState extends State<ExamplePage> {
+class ExamplePageState extends State<ExamplePage> with InvoiceListener {
 
   IMint? selectedMint;
 
@@ -70,6 +71,7 @@ class ExamplePageState extends State<ExamplePage> {
   void initState() {
     super.initState();
     selectedMint = Cashu.mintList().firstOrNull;
+    Cashu.addInvoiceListener(this);
   }
 
   @override
@@ -107,36 +109,39 @@ class ExamplePageState extends State<ExamplePage> {
           const Text('Mint list(click for selected)', style: TextStyle(fontWeight: FontWeight.bold),),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
               scrollDirection: Axis.horizontal,
               itemCount: mints.length,
               itemBuilder: (BuildContext context, int index) {
-                final mint = mints.first;
-                return ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      if (selectedMint == mint) {
-                        selectedMint = null;
-                      } else {
-                        selectedMint = mint;
-                        MintHelper.updateMintInfoFromRemote(mint);
-                      }
-                    });
-                  },
-                  child: Row(
-                    children: [
-                      Radio(value: mint, groupValue: selectedMint, onChanged: null),
-                      const SizedBox(width: 20),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Text(mint.mintURL),
-                          Text('local name: ${mint.name}'),
-                          Text('balance: ${mint.balance} sat'),
-                        ],
-                      ),
-                    ],
+                final mint = mints[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        if (selectedMint == mint) {
+                          selectedMint = null;
+                        } else {
+                          selectedMint = mint;
+                          MintHelper.updateMintInfoFromRemote(mint);
+                        }
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        Radio(value: mint, groupValue: selectedMint, onChanged: null),
+                        const SizedBox(width: 20),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Text(mint.mintURL),
+                            Text('local name: ${mint.name}'),
+                            Text('balance: ${mint.balance} sat'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -347,6 +352,11 @@ class ExamplePageState extends State<ExamplePage> {
   updateUI() {
     setState(() { });
   }
+
+  @override
+  void onInvoicePaid(Receipt receipt) {
+    updateUI();
+  }
 }
 
 extension ExamplePageStateActionEx on ExamplePageState {
@@ -443,14 +453,11 @@ extension ExamplePageStateActionEx on ExamplePageState {
     final invoice = await Cashu.createLightningInvoice(
       mint: mint,
       amount: amount,
-      onSuccess: () {
-        updateUI();
-      },
     );
     if (invoice == null) {
       showMessage('Create failed', true);
     } else {
-      showMessage('quote: ${invoice.quote}\nrequest: ${invoice.request}', false);
+      showMessage('quote: $invoice\nrequest: ${invoice.request}', false);
     }
   }
 }

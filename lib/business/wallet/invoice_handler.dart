@@ -2,7 +2,6 @@
 import 'dart:async';
 
 import '../../api/cashu_api.dart';
-import '../../api/v1/client.dart';
 import '../../core/nuts/v0/nut_04.dart';
 import '../../core/nuts/v1/nut_05.dart';
 import '../../model/invoice.dart';
@@ -18,8 +17,6 @@ class InvoiceHandler {
   final List<InvoiceListener> _listeners = [];
 
   Timer? _checkTimer;
-
-  bool get isV1 => Cashu is CashuAPIV1Client;
 
   Future<void> initialize() async {
     _invoices = await InvoiceStore.getAllInvoice();
@@ -51,7 +48,7 @@ class InvoiceHandler {
 
     try {
       bool paid = true;
-      if (isV1) {
+      if (Cashu.isV1) {
         final quoteInfo = await Nut5.requestMeltQuote(
           mintURL: invoice.mintURL,
           request: invoice.request,
@@ -81,7 +78,9 @@ class InvoiceHandler {
       mint: IMint(mintURL: invoice.mintURL),
       quoteID: invoice.redemptionKey,
       amount: amount,
-      requestTokensAction: isV1 ? null : Nut4.requestTokensFromMint
+      requestTokensAction: Cashu.isV1
+          ? Nut4.requestTokensFromMint
+          : Nut4.requestTokensFromMint
     );
     return proofs != null;
   }

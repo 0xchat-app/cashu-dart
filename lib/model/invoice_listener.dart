@@ -1,6 +1,6 @@
 
 import 'invoice.dart';
 
-abstract class InvoiceListener {
+abstract mixin class InvoiceListener {
   void onInvoicePaid(Receipt receipt);
 }

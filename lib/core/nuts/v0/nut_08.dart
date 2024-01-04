@@ -3,30 +3,20 @@ import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
-import '../../../utils/network/http_client.dart';
-import '../../../utils/tools.dart';
-import '../define.dart';
-import '../nut_00.dart';
-
-typedef MeltResponse = (
-  bool paid,
-  String preimage,
-  List<BlindedSignature> change,
-);
 
 class Nut8 {
   /// Ask mint to perform a melt operation.
   /// This pays a lightning invoice and destroys tokens matching its amount + fees
   static Future<MeltResponse?> payingTheInvoice({
     required String mintURL,
-    required String pr,
-    required List<Proof> proofs,
+    required String quote,
+    required List<Proof> inputs,
     required List<BlindedMessage> outputs,
   }) async {
     return HTTPClient.post(
-      '$mintURL/melt',
+      nutURLJoin(mintURL, 'melt', version: ''),
       params: {
-        'proofs': proofs.map((e) {
+        'proofs': inputs.map((e) {
           return {
             'id': e.id,
             'amount': num.tryParse(e.amount) ?? 0,
@@ -41,7 +31,7 @@ class Nut8 {
             'B_': e.B_,
           };
         }).toList(),
-        'pr': pr,
+        'pr': quote,
       },
       modelBuilder: (json) {
         if (json is! Map) return null;
@@ -55,5 +45,4 @@ class Nut8 {
       },
     );
   }
-
 }
