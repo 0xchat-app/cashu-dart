@@ -107,10 +107,13 @@ class CashuTransactionAPI {
         proofs: entry.proofs,
         swapAction: Nut3.swap,
       );
+      if (newProofs == null) return null;
+
       final receiveSuccess = newProofs != entry.proofs;
       if (receiveSuccess) {
         receiveAmount += newProofs.fold(0, (pre, proof) => pre + proof.amountNum);
         mints.add(mint.mintURL);
+        await CashuManager.shared.updateMintBalance(mint);
       }
     }
 

@@ -12,7 +12,7 @@ import '../transaction/transaction_helper.dart';
 
 class InvoiceHandler {
 
-  List<Receipt> _invoices = [];
+  List<Receipt> _invoices = <Receipt>[];
   final _pendingInvoices = <Receipt>{};
   final List<InvoiceListener> _listeners = [];
 

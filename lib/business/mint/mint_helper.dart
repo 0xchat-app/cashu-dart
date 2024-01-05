@@ -43,8 +43,8 @@ class MintHelper {
     return url;
   }
 
-  static Future<List<KeysetInfo>> fetchKeysetFromRemote(String mintURL) async {
-    final keys = await requestKeys(mintURL: mintURL) ?? [];
+  static Future<List<KeysetInfo>> fetchKeysetFromRemote(String mintURL, [String? keysetId]) async {
+    final keys = await requestKeys(mintURL: mintURL, keysetId: keysetId) ?? [];
     final keysets = keys.map((e) => e.asKeysetInfo(mintURL)).toList();
     KeysetStore.addOrReplaceKeysets(keysets);
     return keysets;
@@ -73,6 +73,20 @@ class MintHelper {
       mint.updateKeysetId(keyset.id, keyset.unit);
     });
     KeysetStore.addOrReplaceKeysets(keysets);
+  }
+
+  static Future<KeysetInfo?> tryGetMintKeyset(IMint mint, String keysetId, [String unit = 'sat']) async {
+    // Local
+    final result = await KeysetStore.getKeyset(
+      mintURL: mint.mintURL,
+      id: keysetId,
+      unit: unit,
+    );
+    final keysetInfo = result.firstOrNull;
+    if (keysetInfo != null && keysetInfo.keyset.isNotEmpty) return keysetInfo;
+
+    // Remote
+    mint.keysetId(unit);
   }
 }
 

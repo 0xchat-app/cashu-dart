@@ -68,7 +68,10 @@ extension StringHexEx on String {
   }
 
   T encodeBase64ToJson<T>() {
-    final normalizedBase64 = replaceAll('-', '+').replaceAll('_', '/');
+    String normalizedBase64 = replaceAll('-', '+').replaceAll('_', '/');
+    while (normalizedBase64.length % 4 != 0) {
+      normalizedBase64 += '=';
+    }
     final decoded = base64.decode(normalizedBase64);
     final jsonString = utf8.decode(decoded);
     return json.decode(jsonString) as T;

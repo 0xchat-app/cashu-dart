@@ -22,15 +22,15 @@ class TransactionHelper {
 
   /// Obtain the keyset of mint corresponding to the unit.
   /// If the local data is not available, obtain it from the remote endpoint
-  static Future<KeysetInfo?> tryGetMintKeysetInfo(IMint mint, String unit) async {
-    final keysetId = mint.keysetId(unit);
+  static Future<KeysetInfo?> tryGetMintKeysetInfo(IMint mint, String unit, [String? keysetId]) async {
+    keysetId ??= mint.keysetId(unit);
     // from local
-    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, id: keysetId);
-    var keysetInfo = keysets.where((element) => element.active && element.unit == unit).firstOrNull;
+    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, id: keysetId, unit: unit);
+    var keysetInfo = keysets.firstOrNull;
 
-    if (keysetInfo == null) {
+    if (keysetInfo == null || keysetInfo.keyset.isEmpty) {
       // from remote
-      final newKeysets = await MintHelper.fetchKeysetFromRemote(mint.mintURL);
+      final newKeysets = await MintHelper.fetchKeysetFromRemote(mint.mintURL, keysetId);
       keysetInfo = newKeysets.where((element) => element.unit == unit).firstOrNull;
     }
     if (keysetInfo == null) return null;
@@ -41,6 +41,12 @@ class TransactionHelper {
     }
 
     return keysetInfo;
+  }
+
+  static Future<MintKeys?> keysetFetcher(IMint mint, String unit, String keysetId) async {
+    final info = await tryGetMintKeysetInfo(mint, unit, keysetId);
+    if (info?.keyset.isEmpty ?? true) return null;
+    return info?.keyset;
   }
 
   static Future<Receipt?> requestCreateInvoice({
@@ -103,11 +109,11 @@ class TransactionHelper {
     if (promises == null) return null;
 
     // unblinding
-    final proofs = DHKE.constructProofs(
+    final proofs = await DHKE.constructProofs(
       promises: promises,
       rs: rs,
       secrets: secrets,
-      keys: keyset,
+      keysFetcher: (keysetId) => keysetFetcher(mint, unit, keysetId),
     );
 
     if (proofs != null) {
@@ -158,12 +164,13 @@ class TransactionHelper {
 
     // unbinding
     final ( paid, preimage, change ) = response;
-    final newProofs = DHKE.constructProofs(
+    final newProofs = await DHKE.constructProofs(
       promises: change,
       rs: rs,
       secrets: secrets,
-      keys: keyset,
-    ) ?? [];
+      keysFetcher: (keysetId) => keysetFetcher(mint, unit, keysetId),
+    );
+    if (newProofs == null) return failResult;
 
     await ProofStore.addProofs(newProofs);
     ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);
@@ -174,7 +181,7 @@ class TransactionHelper {
     );
   }
 
-  static Future<List<Proof>> swapProofs({
+  static Future<List<Proof>?> swapProofs({
     required IMint mint,
     required List<Proof> proofs,
     int? supportAmount,
@@ -189,7 +196,7 @@ class TransactionHelper {
     // get keyset
     final keysetInfo = await tryGetMintKeysetInfo(mint, unit);
     final keyset = keysetInfo?.keyset ?? {};
-    if (keysetInfo == null || keyset.isEmpty) return proofs;
+    if (keysetInfo == null || keyset.isEmpty) return null;
 
     final proofsTotalAmount = proofs.fold<BigInt>(BigInt.zero, (pre, proof) {
       final amount = BigInt.tryParse(proof.amount) ?? BigInt.zero;
@@ -225,12 +232,13 @@ class TransactionHelper {
       outputs: blindedMessages,
     ) ?? [];
 
-    final newProofs = DHKE.constructProofs(
+    final newProofs = await DHKE.constructProofs(
       promises: promises,
       rs: rs,
       secrets: secrets,
-      keys: keyset,
-    ) ?? [];
+      keysFetcher: (keysetId) => keysetFetcher(mint, unit, keysetId),
+    );
+    if (newProofs == null) return null;
 
     await ProofStore.addProofs(newProofs);
     ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);

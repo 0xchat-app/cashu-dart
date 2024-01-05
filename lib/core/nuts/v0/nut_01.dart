@@ -21,8 +21,7 @@ class Nut1 {
       endpoint,
       modelBuilder: (json) {
         if (json is! Map) return null;
-        final keys = Tools.getValueAs<Map>(json, 'keys', {})
-            .map((key, value) => MapEntry(key.toString(), value.toString()));
+        final keys = json.map((key, value) => MapEntry(key.toString(), value.toString()));
         return [MintKeysPayload(keysetId ?? keys.deriveKeysetId(), 'sat', keys)];
       },
     );

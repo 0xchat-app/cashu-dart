@@ -107,10 +107,13 @@ class CashuTransactionAPI {
         proofs: entry.proofs,
         swapAction: Nut6.split,
       );
+      if (newProofs == null) return null;
+
       final receiveSuccess = newProofs != entry.proofs;
       if (receiveSuccess) {
         receiveAmount += newProofs.fold(0, (pre, proof) => pre + proof.amountNum);
         mints.add(mint.mintURL);
+        await CashuManager.shared.updateMintBalance(mint);
       }
     }
 
@@ -139,19 +142,21 @@ class CashuTransactionAPI {
   }) async {
     await CashuManager.shared.setupFinish.future;
 
+    // Get fee
+    final fee = await Nut5.checkingLightningFees(mintURL: mint.mintURL, pr: pr);
+    if (fee == null) return false;
+
+    // Get amount
     final req = Bolt11PaymentRequest(pr);
     final amount = req.amount.toBigInt().toInt();
 
     final payload = await ProofHelper.getProofsToUse(
       mintURL: mint.mintURL,
-      amount: BigInt.from(amount),
+      amount: BigInt.from(amount + fee),
     );
     if (payload == null) return false;
     final (proofs, _) = payload;
 
-    // get fee
-    final fee = await Nut5.checkingLightningFees(mintURL: mint.mintURL, pr: pr);
-    if (fee == null) return false;
 
     final (paid, preimage) = await TransactionHelper.payingTheQuote(
       mint: mint,

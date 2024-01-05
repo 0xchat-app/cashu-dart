@@ -145,13 +145,21 @@ class Proof extends DBObject {
     'C': C,
   };
 
-  static Proof fromMap(Map<String, Object?> map) =>
-      Proof(
-        id: Tools.getValueAs<String>(map, 'id', ''),
-        amount: Tools.getValueAs<String>(map, 'amount', '0'),
-        secret: Tools.getValueAs<String>(map, 'secret', ''),
-        C: Tools.getValueAs<String>(map, 'C', ''),
-      );
+  static Proof fromMap(Map<String, Object?> map) {
+    var amount = '0';
+    final amountRaw = map['amount'];
+    if (amountRaw is int) {
+      amount = amountRaw.toString();
+    } else if (amountRaw is String) {
+      amount = amountRaw;
+    }
+    return Proof(
+      id: Tools.getValueAs<String>(map, 'id', ''),
+      amount: amount,
+      secret: Tools.getValueAs<String>(map, 'secret', ''),
+      C: Tools.getValueAs<String>(map, 'C', ''),
+    );
+  }
 
   static String? tableName() {
     return "Proof";
@@ -199,7 +207,7 @@ class Token {
     return Token(
       token: token,
       memo: json['memo']?.toString() ?? '',
-      unit: json['unit']?.toString() ?? '',
+      unit: json['unit']?.toString() ?? 'sat',
     );
   }
 
@@ -211,7 +219,7 @@ class Token {
 
   @override
   String toString() {
-    return '${super.toString()}, memo: $memo, token: $token';
+    return '${super.toString()}, memo: $memo, unit: $unit, token: $token';
   }
 }
 
@@ -255,6 +263,6 @@ class TokenEntry {
 
   @override
   String toString() {
-    return '${super.toString()}, proofs: $proofs, mint: $mint';
+    return '${super.toString()}, mint: $mint, proofs: $proofs';
   }
 }

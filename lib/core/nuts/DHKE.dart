@@ -92,16 +92,20 @@ class DHKE {
     return C_ - rK;
   }
 
-  static List<Proof>? constructProofs({
+  static Future<List<Proof>?> constructProofs({
     required List<BlindedSignature> promises,
     required List<BigInt> rs,
     required List<String> secrets,
-    required MintKeys keys,
-  }) {
+    required Future<MintKeys?> Function(String keysetId) keysFetcher,
+  }) async {
     final List<Proof> proofs = [];
     for (int i = 0; i < promises.length; i++) {
       final promise = promises[i];
       final secret = secrets[i];
+      final keysetId = promise.id;
+      final keys = await keysFetcher(keysetId);
+      if (keys == null) return null;
+
       final r = rs[i];
       final K = keys[promise.amount];
       if (K == null) {

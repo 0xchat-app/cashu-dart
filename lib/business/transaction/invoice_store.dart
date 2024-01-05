@@ -1,6 +1,7 @@
 
 import 'package:cashu_dart/utils/list_extension.dart';
 
+import '../../api/cashu_api.dart';
 import '../../model/invoice.dart';
 import '../../model/lightning_invoice.dart';
 import '../../utils/database/db.dart';
@@ -16,8 +17,8 @@ class InvoiceStore {
     return rowsAffected == 1;
   }
 
-  static Future<List<Receipt>> getAllInvoice([bool isV1 = true]) {
-    if (isV1) {
+  static Future<List<Receipt>> getAllInvoice() {
+    if (Cashu.isV1) {
       return CashuDB.sharedInstance.objects<IInvoice>();
     } else {
       return CashuDB.sharedInstance.objects<LightningInvoice>();

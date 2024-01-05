@@ -25,7 +25,6 @@ class Nut6 {
         }).toList(),
         'outputs': outputs.map((e) {
           return {
-            'id': e.id,
             'amount': e.amount,
             'B_': e.B_,
           };

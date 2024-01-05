@@ -112,7 +112,9 @@ class TokenHelper {
     dynamic obj;
     try {
       obj = token.encodeBase64ToJson<Map>();
-    } catch(e) { }
+    } catch(e) {
+      print('[Cashu - handleTokens] $e');
+    }
 
     if (obj == null) return null;
 
