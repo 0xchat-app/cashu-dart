@@ -34,7 +34,7 @@ class CashuTransactionAPI {
 
     final (proofs, _) = payload;
     final useProofs = <Proof>[];
-    final totalAmount = proofs.fold(0, (pre, proof) => pre + proof.amountNum);
+    final totalAmount = proofs.totalAmount;
 
     if (totalAmount == amount) {
       useProofs.addAll(proofs);
@@ -111,7 +111,7 @@ class CashuTransactionAPI {
 
       final receiveSuccess = newProofs != entry.proofs;
       if (receiveSuccess) {
-        receiveAmount += newProofs.fold(0, (pre, proof) => pre + proof.amountNum);
+        receiveAmount += newProofs.totalAmount;
         mints.add(mint.mintURL);
         await CashuManager.shared.updateMintBalance(mint);
       }

@@ -4,6 +4,7 @@ import '../../core/keyset_store.dart';
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
+import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
@@ -11,6 +12,7 @@ import '../mint/mint_helper.dart';
 import '../proof/proof_helper.dart';
 import '../proof/proof_store.dart';
 import '../wallet/cashu_manager.dart';
+import 'hitstory_store.dart';
 import 'invoice_store.dart';
 
 typedef PayingTheInvoiceResponse = (
@@ -157,7 +159,7 @@ class TransactionHelper {
     final response = await meltAction(
       mintURL: mint.mintURL,
       quote: quoteID,
-      inputs: proofs,
+      inputs: [...proofs],
       outputs: blindedMessages,
     );
     if (response == null) return failResult;
@@ -172,8 +174,16 @@ class TransactionHelper {
     );
     if (newProofs == null) return failResult;
 
-    await ProofStore.addProofs(newProofs);
-    ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);
+    await ProofStore.addProofs([...newProofs]);
+    ProofHelper.deleteProofs(proofs: [...proofs], mintURL: mint.mintURL);
+
+    final amount = newProofs.totalAmount - proofs.totalAmount;
+    await HistoryStore.addToHistory(
+      amount: amount,
+      type: IHistoryType.lnInvoice,
+      value: quoteID,
+      mints: [mint.mintURL],
+    );
 
     return (
       paid,

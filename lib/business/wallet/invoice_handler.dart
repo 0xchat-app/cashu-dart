@@ -1,9 +1,12 @@
 
 import 'dart:async';
 
+import 'package:cashu_dart/business/transaction/hitstory_store.dart';
+
 import '../../api/cashu_api.dart';
 import '../../core/nuts/v0/nut_04.dart';
 import '../../core/nuts/v1/nut_05.dart';
+import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/invoice_listener.dart';
 import '../../model/mint_model.dart';
@@ -53,12 +56,18 @@ class InvoiceHandler {
           mintURL: invoice.mintURL,
           request: invoice.request,
         );
-        paid = true; //quoteInfo?.paid ?? false;
+        paid = quoteInfo?.paid ?? false;
       }
 
       if (paid) {
         if (await _exchangeCash(invoice)) {
           _deleteInvoice(invoice);
+          await HistoryStore.addToHistory(
+            amount: int.tryParse(invoice.amount) ?? 0,
+            type: IHistoryType.lnInvoice,
+            value: invoice.paymentKey,
+            mints: [invoice.mintURL],
+          );
           notifyListenerForPaidSuccess(invoice);
         }
       } else if (invoice.isExpired) {
@@ -87,9 +96,7 @@ class InvoiceHandler {
 
   void _deleteInvoice(Receipt invoice) {
     _invoices.remove(invoice);
-    if (invoice is IInvoice) {
-      InvoiceStore.deleteInvoice([invoice]);
-    }
+    InvoiceStore.deleteInvoice([invoice]);
   }
 
   bool _invoiceExists(Receipt invoice) {

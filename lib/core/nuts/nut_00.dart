@@ -176,6 +176,10 @@ class Proof extends DBObject {
   }
 }
 
+extension ProofListEx on List<Proof> {
+  int get totalAmount => fold(0, (pre, proof) => pre + proof.amountNum);
+}
+
 class Token {
   Token({
     this.token = const [],
