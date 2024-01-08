@@ -19,7 +19,7 @@ class InvoiceHandler {
 
   final _invoices = <Receipt>[];
   final _pendingInvoices = <Receipt>{};
-  final List<InvoiceListener> _listeners = [];
+  Function(Receipt invoice)? invoiceOnPaidCallback;
 
   Timer? _checkTimer;
 
@@ -29,7 +29,6 @@ class InvoiceHandler {
   }
 
   void dispose() {
-    _listeners.clear();
     _invoices.clear();
     _checkTimer?.cancel();
   }
@@ -70,7 +69,7 @@ class InvoiceHandler {
             value: invoice.paymentKey,
             mints: [invoice.mintURL],
           );
-          notifyListenerForPaidSuccess(invoice);
+          invoiceOnPaidCallback?.call(invoice);
         }
       } else if (invoice.isExpired) {
         _deleteInvoice(invoice);
@@ -103,19 +102,5 @@ class InvoiceHandler {
 
   bool _invoiceExists(Receipt invoice) {
     return _invoices.any((element) => element.redemptionKey == invoice.redemptionKey);
-  }
-
-  void addListener(InvoiceListener listener) {
-    _listeners.add(listener);
-  }
-
-  void removeListener(InvoiceListener listener) {
-    _listeners.remove(listener);
-  }
-
-  void notifyListenerForPaidSuccess(Receipt receipt) {
-    _listeners.forEach((e) {
-      e.onInvoicePaid(receipt);
-    });
   }
 }

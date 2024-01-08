@@ -23,10 +23,12 @@ class CashuTransactionAPI {
     required IMint mint,
     required int amount,
     String memo = '',
+    List<Proof>? proofs,
   }) async {
     await CashuManager.shared.setupFinish.future;
+
     // get proofs
-    final proofs = await ProofHelper.getProofsToUse(
+    proofs ??= await ProofHelper.getProofsToUse(
       mintURL: mint.mintURL,
       amount: BigInt.from(amount),
     );
@@ -47,6 +49,7 @@ class CashuTransactionAPI {
     );
     
     ProofHelper.deleteProofs(proofs: proofs, mintURL: null);
+    await CashuManager.shared.updateMintBalance(mint);
 
     return encodedToken;
   }
@@ -145,11 +148,14 @@ class CashuTransactionAPI {
 
     final (paid, preimage) = await TransactionHelper.payingTheQuote(
       mint: mint,
-      request: pr,
+      paymentKey: quoteID,
       proofs: proofs,
       fee: fee,
       meltAction: Nut8.payingTheQuote,
     );
+    if (paid) {
+      await CashuManager.shared.updateMintBalance(mint);
+    }
     return paid;
   }
 

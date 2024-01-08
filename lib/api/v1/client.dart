@@ -64,8 +64,14 @@ class CashuAPIV1Client extends CashuAPIClient {
     required IMint mint,
     required int amount,
     String memo = '',
+    List<Proof>? proofs,
   }) {
-    return CashuTransactionAPI.sendEcash(mint: mint, amount: amount, memo: memo);
+    return CashuTransactionAPI.sendEcash(
+      mint: mint,
+      amount: amount,
+      memo: memo,
+      proofs: proofs,
+    );
   }
 
   @override
@@ -93,12 +99,12 @@ class CashuAPIV1Client extends CashuAPIClient {
   }
 
   @override
-  void addInvoiceListener(InvoiceListener listener) {
-    CashuManager.shared.invoiceHandler.addListener(listener);
+  void addInvoiceListener(CashuListener listener) {
+    CashuManager.shared.addListener(listener);
   }
 
   @override
-  void removeInvoiceListener(InvoiceListener listener) {
-    CashuManager.shared.invoiceHandler.removeListener(listener);
+  void removeInvoiceListener(CashuListener listener) {
+    CashuManager.shared.removeListener(listener);
   }
 }

@@ -18,10 +18,10 @@ class IMint extends DBObject {
 
   String name;
 
+  int balance;
+
   /// key: unit, value: keysetId
   final Map<String, String> _keysetIds = {};
-
-  int balance;
 
   MintInfo? info;
 

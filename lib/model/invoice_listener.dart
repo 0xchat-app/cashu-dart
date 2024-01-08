@@ -1,6 +1,8 @@
 
 import 'invoice.dart';
+import 'mint_model.dart';
 
-abstract mixin class InvoiceListener {
-  void onInvoicePaid(Receipt receipt);
+abstract mixin class CashuListener {
+  void onInvoicePaid(Receipt receipt) { }
+  void onBalanceChanged(IMint mint) { }
 }

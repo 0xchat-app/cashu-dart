@@ -14,7 +14,7 @@ class ExamplePage extends StatefulWidget {
   State<StatefulWidget> createState() => ExamplePageState();
 }
 
-class ExamplePageState extends State<ExamplePage> with InvoiceListener {
+class ExamplePageState extends State<ExamplePage> with CashuListener {
 
   IMint? selectedMint;
 
@@ -306,6 +306,11 @@ class ExamplePageState extends State<ExamplePage> with InvoiceListener {
 
   @override
   void onInvoicePaid(Receipt receipt) {
+    updateUI();
+  }
+
+  @override
+  void onBalanceChanged(IMint mint) {
     updateUI();
   }
 }

@@ -11,7 +11,6 @@ import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/v0/nut.dart' as v0;
 import '../../core/nuts/v1/nut.dart' as v1;
 import '../../utils/network/response.dart';
-import '../transaction/transaction_helper.dart';
 import '../wallet/cashu_manager.dart';
 import 'keyset_helper.dart';
 import 'proof_store.dart';
@@ -71,19 +70,17 @@ class ProofHelper {
     }
 
     final List<Proof> proofsToSend = [];
-    final List<Proof> proofsToKeep = [...proofs];
     BigInt amountAvailable = BigInt.zero;
 
     for (final proof in proofs) {
       if (amountAvailable >= amount) break;
       amountAvailable += proof.amount.asBigInt();
       proofsToSend.add(proof);
-      proofsToKeep.remove(proof);
     }
 
-    final totalAmount = proofs.totalAmount;
+    final totalAmount = proofsToSend.totalAmount;
     if (BigInt.from(totalAmount) == amount) {
-      return proofs;
+      return proofsToSend;
     }
 
     if (isFromSwap) return [];
@@ -92,12 +89,12 @@ class ProofHelper {
     if (mint == null) return [];
     final newProofs = await swapProofs(
       mint: mint,
-      proofs: proofs,
+      proofs: proofsToSend,
       supportAmount: amount.toInt(),
       swapAction: Cashu.isV1 ? v1.Nut3.swap : v0.Nut6.split,
     );
 
-    final finalProofs = await ProofHelper.getProofsToUse(
+    final finalProofs = await getProofsToUse(
       mintURL: mint.mintURL,
       amount: amount,
       proofs: newProofs,
@@ -107,7 +104,7 @@ class ProofHelper {
     return finalProofs;
   }
 
-  static deleteProofs({
+  static Future deleteProofs({
     required List<Proof> proofs,
     required String? mintURL,
   }) async {
@@ -192,7 +189,7 @@ class ProofHelper {
     if (newProofs == null) return null;
 
     await ProofStore.addProofs(newProofs);
-    ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);
+    await deleteProofs(proofs: proofs, mintURL: mint.mintURL);
     return newProofs;
   }
 }

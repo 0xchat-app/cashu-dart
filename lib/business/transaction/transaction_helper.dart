@@ -101,8 +101,7 @@ class TransactionHelper {
 
   static Future<PayingTheInvoiceResponse> payingTheQuote({
     required IMint mint,
-    String request = '',
-    String quoteID = '',
+    String paymentKey = '',
     required List<Proof> proofs,
     String unit = 'sat',
     required int fee,
@@ -131,7 +130,7 @@ class TransactionHelper {
     // melt token
     final response = await meltAction(
       mintURL: mint.mintURL,
-      quote: quoteID,
+      quote: paymentKey,
       inputs: [...proofs],
       outputs: blindedMessages,
     );
@@ -148,13 +147,13 @@ class TransactionHelper {
     if (newProofs == null) return failResult;
 
     await ProofStore.addProofs([...newProofs]);
-    ProofHelper.deleteProofs(proofs: [...proofs], mintURL: mint.mintURL);
+    await ProofHelper.deleteProofs(proofs: [...proofs], mintURL: mint.mintURL);
 
-    final amount = newProofs.totalAmount - proofs.totalAmount;
+    final amount = newProofs.totalAmount;
     await HistoryStore.addToHistory(
       amount: amount,
       type: IHistoryType.lnInvoice,
-      value: quoteID,
+      value: paymentKey,
       mints: [mint.mintURL],
     );
 

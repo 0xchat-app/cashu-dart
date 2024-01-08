@@ -33,8 +33,8 @@ abstract class CashuAPIClient {
   /// Returns the amount of invalid proof, or null if the request fails.
   Future<int?> checkProofsAvailable(IMint mint);
 
+  /// Retrieves all 'used' proofs for a given mint.
   Future<List<Proof>> getAllUseProofs(IMint mint);
-
 
   /**************************** Mint ****************************/
   /// Returns a list of all mints.
@@ -62,6 +62,7 @@ abstract class CashuAPIClient {
     required IMint mint,
     required int amount,
     String memo = '',
+    List<Proof>? proofs,
   });
 
   /// Redeems e-cash from the given string.
@@ -88,9 +89,9 @@ abstract class CashuAPIClient {
     required int amount,
   });
 
-  void addInvoiceListener(InvoiceListener listener);
+  void addInvoiceListener(CashuListener listener);
 
-  void removeInvoiceListener(InvoiceListener listener);
+  void removeInvoiceListener(CashuListener listener);
 
   /**************************** Tools ****************************/
   /// Converts the amount in a Lightning Network payment request to satoshis.

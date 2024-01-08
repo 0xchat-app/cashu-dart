@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import '../../core/keyset_store.dart';
+import '../../model/invoice.dart';
+import '../../model/invoice_listener.dart';
 import '../../model/mint_model.dart';
 import '../../utils/database/db.dart';
 import '../mint/mint_helper.dart';
@@ -16,6 +18,7 @@ class CashuManager {
   IMint? defaultMint;
   final List<IMint> mints = [];
   InvoiceHandler invoiceHandler = InvoiceHandler();
+  final List<CashuListener> _listeners = [];
 
   Completer setupFinish = Completer();
 
@@ -25,6 +28,7 @@ class CashuManager {
       await setupMint();
       await setupBalance();
       await invoiceHandler.initialize();
+      invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
       setupFinish.complete();
       print('[I][Cashu - setup] Finished');
     } catch (e) {
@@ -126,6 +130,7 @@ class CashuManager {
       total += proof.amountNum;
     }
     mints[index].balance = total;
+    notifyListenerForBalanceChanged(mint);
   }
 
   Future<bool> deleteMint(IMint mint) async {
@@ -136,5 +141,25 @@ class CashuManager {
     } catch (_) {
       return false;
     }
+  }
+
+  void addListener(CashuListener listener) {
+    _listeners.add(listener);
+  }
+
+  void removeListener(CashuListener listener) {
+    _listeners.remove(listener);
+  }
+
+  void notifyListenerForPaidSuccess(Receipt receipt) {
+    _listeners.forEach((e) {
+      e.onInvoicePaid(receipt);
+    });
+  }
+
+  void notifyListenerForBalanceChanged(IMint mint) {
+    _listeners.forEach((e) {
+      e.onBalanceChanged(mint);
+    });
   }
 }
