@@ -6,7 +6,7 @@ import '../define.dart';
 import '../nut_00.dart';
 
 class Nut4 {
-  static Future<IInvoice?> requestMintQuote({
+  static Future<CashuResponse<IInvoice>> requestMintQuote({
     required String mintURL,
     required int amount,
     String method = 'bolt11',
@@ -25,7 +25,7 @@ class Nut4 {
     );
   }
 
-  static Future<QuoteState?> checkMintQuoteState({
+  static Future<CashuResponse<QuoteState>> checkMintQuoteState({
     required String mintURL,
     required String quoteID,
     String method = 'bolt11',
@@ -44,7 +44,7 @@ class Nut4 {
     );
   }
 
-  static Future<List<BlindedSignature>?> requestTokensFromMint({
+  static Future<CashuResponse<List<BlindedSignature>>> requestTokensFromMint({
     required String mintURL,
     required String quote,
     required List<BlindedMessage> blindedMessages,

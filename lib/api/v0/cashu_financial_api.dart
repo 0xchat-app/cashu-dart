@@ -43,20 +43,20 @@ class CashuFinancialAPI {
   static Future<int?> checkProofsAvailable(IMint mint) async {
     await CashuManager.shared.setupFinish.future;
     final proofs = await ProofHelper.getProofs(mint.mintURL);
-    final states = await ProofHelper.checkAction(mintURL: mint.mintURL, proofs: proofs);
-    if (states == null) return null;
-    if (states.length != proofs.length) {
+    final response = await ProofHelper.checkAction(mintURL: mint.mintURL, proofs: proofs);
+    if (!response.isSuccess) return null;
+    if (response.data.length != proofs.length) {
       throw Exception('[E][Cashu - checkProofsAvailable] '
-          'The length of states(${states.length}) and proofs(${proofs.length}) is not consistent');
+          'The length of states(${response.data.length}) and proofs(${proofs.length}) is not consistent');
     }
 
     var validAmount = 0;
     var burnedAmount = 0;
     final burnedProofs = <Proof>[];
 
-    for (int i = 0; i < states.length; i++) {
+    for (int i = 0; i < response.data.length; i++) {
       final proof = proofs[i];
-      switch (states[i]) {
+      switch (response.data[i]) {
         case TokenState.live:
           validAmount += proof.amountNum;
           break ;

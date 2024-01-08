@@ -8,10 +8,8 @@ import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 
-typedef MintKeys = Map<String, String>;
-
 class Nut1 {
-  static Future<List<MintKeysPayload>?> requestKeys({required String mintURL, String? keysetId}) async {
+  static Future<CashuResponse<List<MintKeysPayload>>> requestKeys({required String mintURL, String? keysetId}) async {
     var endpoint = nutURLJoin(mintURL, 'keys', version: '');
     if (keysetId != null) {
       keysetId = Uri.encodeComponent(keysetId);

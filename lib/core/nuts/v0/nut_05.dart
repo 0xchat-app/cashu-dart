@@ -25,7 +25,7 @@ class MeltQuotePayload {
 class Nut5 {
   /// Estimate fees for a given LN invoice
   /// Returns estimated Fee
-  static Future<int?> checkingLightningFees({
+  static Future<CashuResponse<int>> checkingLightningFees({
     required String mintURL,
     required String pr,
   }) async {

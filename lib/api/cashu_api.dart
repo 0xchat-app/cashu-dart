@@ -1,6 +1,8 @@
 
 import 'dart:async';
 
+import 'package:bolt11_decoder/bolt11_decoder.dart';
+
 import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
@@ -89,4 +91,13 @@ abstract class CashuAPIClient {
   void addInvoiceListener(InvoiceListener listener);
 
   void removeInvoiceListener(InvoiceListener listener);
+
+  /**************************** Tools ****************************/
+  /// Converts the amount in a Lightning Network payment request to satoshis.
+  /// [pr]: BOLT11 encoded payment request string.
+  /// Returns the amount from the payment request in satoshis as an integer.
+  int amountOfLightningInvoice(String pr) {
+    final req = Bolt11PaymentRequest(pr);
+    return (req.amount.toDouble() * 100000000).toInt();
+  }
 }

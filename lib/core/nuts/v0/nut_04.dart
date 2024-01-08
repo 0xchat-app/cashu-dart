@@ -1,4 +1,5 @@
 
+import '../../../utils/network/response.dart';
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
@@ -9,7 +10,7 @@ class Nut4 {
   /// [payloads] outputs (Blinded messages) that can be written
   /// [hash] hash (id) used for by the mint to keep track of wether the invoice has been paid yet
   /// Returns serialized blinded signatures
-  static Future<List<BlindedSignature>?> requestTokensFromMint({
+  static Future<CashuResponse<List<BlindedSignature>>> requestTokensFromMint({
     required String mintURL,
     required List<BlindedMessage> blindedMessages,
     required String quote,

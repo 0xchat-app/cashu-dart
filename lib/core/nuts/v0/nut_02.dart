@@ -5,7 +5,7 @@ import '../../../utils/tools.dart';
 import '../define.dart';
 
 class Nut2 {
-  static Future<List<KeysetInfo>?> requestKeysetsState({required String mintURL}) async {
+  static Future<CashuResponse<List<KeysetInfo>>> requestKeysetsState({required String mintURL}) async {
     return HTTPClient.get(
       nutURLJoin(mintURL, 'keysets', version: ''),
       modelBuilder: (json) {

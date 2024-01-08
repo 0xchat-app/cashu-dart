@@ -1,13 +1,14 @@
 
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
+import 'response.dart';
+export 'response.dart';
 
 class HTTPClient {
   static final HTTPClient shared = HTTPClient._internal();
   HTTPClient._internal();
 
-  static Future<T?> get<T>(
+  static Future<CashuResponse<T>> get<T>(
       String url, {
         Map<String, String>? query,
         T? Function(dynamic json)? modelBuilder,
@@ -21,7 +22,7 @@ class HTTPClient {
     );
   }
 
-  static Future<T?> post<T>(
+  static Future<CashuResponse<T>> post<T>(
       String url, {
         Map<String, String>? query,
         Map<String, dynamic>? params,
@@ -37,7 +38,7 @@ class HTTPClient {
     );
   }
 
-  Future<T?> _get<T>(
+  Future<CashuResponse<T>> _get<T>(
       String url, { 
         Map<String, String>? query, 
         T? Function(dynamic json)? modelBuilder,
@@ -54,17 +55,25 @@ class HTTPClient {
       if (response.statusCode == 200) {
           final body = response.body;
           final bodyJson = jsonDecode(body);
-          return modelBuilder?.call(bodyJson);
+          final data = modelBuilder?.call(bodyJson);
+          return CashuResponse(
+            code: data == null ? ResponseCode.failed : ResponseCode.success,
+            data: data,
+          );
       } else {
-        return null;
+        return CashuResponse(
+          code: ResponseCode.failed,
+        );
       }
     } catch(e, stackTrace) {
       print('[http - error] url: $url, e: $e, $stackTrace');
-      return null;
+      return CashuResponse(
+        code: ResponseCode.failed,
+      );
     }
   }
 
-  Future<T?> _post<T>(
+  Future<CashuResponse<T>> _post<T>(
       String url, {
         Map<String, String>? query,
         Map<String, dynamic>? params,
@@ -88,13 +97,21 @@ class HTTPClient {
       final response = await request;
       print('[http - post] url: $requestURL, params: $params, response: ${response.body}');
       if (response.statusCode == 200) {
-        return modelBuilder?.call(jsonDecode(response.body));
+        final data = modelBuilder?.call(jsonDecode(response.body));
+        return CashuResponse(
+          code: data == null ? ResponseCode.failed : ResponseCode.success,
+          data: data,
+        );
       } else {
-        throw Exception('status: ${response.statusCode}, body: ${response.body}');
+        return CashuResponse(
+          code: ResponseCode.failed,
+        );
       }
     } catch(e, stackTrace) {
       print('[http - error] url: $url, e: $e, $stackTrace');
-      return null;
+      return CashuResponse(
+        code: ResponseCode.failed,
+      );
     }
   }
 

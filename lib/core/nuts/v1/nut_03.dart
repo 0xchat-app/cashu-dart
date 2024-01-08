@@ -5,7 +5,7 @@ import '../define.dart';
 import '../nut_00.dart';
 
 class Nut3 {
-  static Future<List<BlindedSignature>?> swap({
+  static Future<CashuResponse<List<BlindedSignature>>> swap({
     required String mintURL,
     required List<Proof> proofs,
     required List<BlindedMessage> outputs,

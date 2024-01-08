@@ -26,7 +26,7 @@ class CashuManager {
       await setupBalance();
       await invoiceHandler.initialize();
       setupFinish.complete();
-      print('[I][Cashu - setup] finished');
+      print('[I][Cashu - setup] Finished');
     } catch (e) {
       print('[E][Cashu - setup] $e');
     }

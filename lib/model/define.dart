@@ -1,23 +1,21 @@
 
 import 'package:pointycastle/pointycastle.dart';
+import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
-
-typedef MintKeys = Map<String, String>;
 
 typedef MintResponse = ({String pr, String hashValue});
 
 typedef PaymentPayload = ({
-    /// Payment request/Lighting invoice that should get paid by the mint.
-    String pr,
+  /// Payment request/Lighting invoice that should get paid by the mint.
+  String pr,
 
-    /// Proofs, matching Lightning invoices amount + fees.
-    List<Proof> proofs,
+  /// Proofs, matching Lightning invoices amount + fees.
+  List<Proof> proofs,
 });
 
 typedef BlindMessageResult = ({ECPoint B_, BigInt r});
 
 typedef PayLnInvoiceResponse = ({bool isPaid, String? preimage, List<Proof> change, MintKeys? newKeys});
-
 
 typedef AmountPreference = ({num amount, num count,});
 

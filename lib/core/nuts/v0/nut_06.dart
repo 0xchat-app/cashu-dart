@@ -7,7 +7,7 @@ class Nut6 {
   /// Ask mint to perform a split operation
   /// [splitPayload] data needed for performing a token split
   /// Returns split tokens
-  static Future<List<BlindedSignature>?> split({
+  static Future<CashuResponse<List<BlindedSignature>>> split({
     required String mintURL,
     required List<Proof> proofs,
     required List<BlindedMessage> outputs,

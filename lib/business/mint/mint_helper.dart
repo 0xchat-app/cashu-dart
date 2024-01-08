@@ -8,15 +8,16 @@ import '../../core/nuts/v1/nut.dart' as v1;
 import '../../model/keyset_info.dart';
 import '../../model/mint_info.dart';
 import '../../model/mint_model.dart';
+import '../../utils/network/response.dart';
 import 'mint_info_store.dart';
 import 'mint_store.dart';
 
-typedef RequestKeysAction = Future<List<MintKeysPayload>?> Function({
+typedef RequestKeysAction = Future<CashuResponse<List<MintKeysPayload>>> Function({
   required String mintURL,
   String? keysetId,
 });
 
-typedef RequestMintInfoAction = Future<MintInfo?> Function({
+typedef RequestMintInfoAction = Future<CashuResponse<MintInfo>> Function({
   required String mintURL,
 });
 
@@ -44,21 +45,22 @@ class MintHelper {
   }
 
   static Future<List<KeysetInfo>> fetchKeysetFromRemote(String mintURL, [String? keysetId]) async {
-    final keys = await requestKeys(mintURL: mintURL, keysetId: keysetId) ?? [];
+    final response = await requestKeys(mintURL: mintURL, keysetId: keysetId);
+    final keys = response.isSuccess ? response.data : <MintKeysPayload>[];
     final keysets = keys.map((e) => e.asKeysetInfo(mintURL)).toList();
     KeysetStore.addOrReplaceKeysets(keysets);
     return keysets;
   }
 
   static Future<bool> updateMintInfoFromRemote(IMint mint) async {
-    final info = await requestMintInfo(mintURL: mint.mintURL);
-    if (info == null) return false;
-
+    final response = await requestMintInfo(mintURL: mint.mintURL);
+    if (!response.isSuccess) return false;
+    final info = response.data;
     mint.info = info;
     if (mint.name.isEmpty) {
       mint.name = info.name;
-      MintStore.updateMint(mint);
     }
+    MintStore.updateMint(mint);
     MintInfoStore.addMintInfo(info);
     return true;
   }

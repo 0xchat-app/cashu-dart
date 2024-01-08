@@ -7,7 +7,7 @@ import '../nut_00.dart';
 class Nut8 {
   /// Ask mint to perform a melt operation.
   /// This pays a lightning invoice and destroys tokens matching its amount + fees
-  static Future<MeltResponse?> payingTheInvoice({
+  static Future<CashuResponse<MeltResponse>> payingTheInvoice({
     required String mintURL,
     required String quote,
     required List<Proof> inputs,

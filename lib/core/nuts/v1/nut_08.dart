@@ -5,7 +5,7 @@ import '../define.dart';
 import '../nut_00.dart';
 
 class Nut8 {
-  static Future<MeltResponse?> payingTheQuote({
+  static Future<CashuResponse<MeltResponse>> payingTheQuote({
     required String mintURL,
     required String quote,
     required List<Proof> inputs,

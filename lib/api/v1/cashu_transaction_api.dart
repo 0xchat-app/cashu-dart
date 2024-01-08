@@ -26,41 +26,15 @@ class CashuTransactionAPI {
   }) async {
     await CashuManager.shared.setupFinish.future;
     // get proofs
-    final payload = await ProofHelper.getProofsToUse(
+    final proofs = await ProofHelper.getProofsToUse(
       mintURL: mint.mintURL,
       amount: BigInt.from(amount),
     );
-    if (payload == null) return null;
-
-    final (proofs, _) = payload;
-    final useProofs = <Proof>[];
-    final totalAmount = proofs.totalAmount;
-
-    if (totalAmount == amount) {
-      useProofs.addAll(proofs);
-    } else {
-      final newProofs = await TransactionHelper.swapProofs(
-        mint: mint,
-        proofs: proofs,
-        supportAmount: amount,
-        swapAction: Nut3.swap,
-      );
-
-      final payload = await ProofHelper.getProofsToUse(
-        mintURL: mint.mintURL,
-        amount: BigInt.from(amount),
-        proofs: newProofs,
-      );
-      if (payload == null) return null;
-      final (actProofs, _) = payload;
-      useProofs.addAll(actProofs);
-    }
-
-    if (useProofs.isEmpty) return null;
+    if (proofs.isEmpty) return null;
 
     final encodedToken =  TokenHelper.getEncodedToken(
       Token(
-        token: [TokenEntry(mint: mint.mintURL, proofs: useProofs)],
+        token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
         memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
       )
     );
@@ -102,7 +76,7 @@ class CashuTransactionAPI {
       }
       if (mint == null) continue ;
 
-      final newProofs = await TransactionHelper.swapProofs(
+      final newProofs = await ProofHelper.swapProofs(
         mint: mint,
         proofs: entry.proofs,
         swapAction: Nut3.swap,
@@ -145,30 +119,29 @@ class CashuTransactionAPI {
     if (pr.isEmpty) return false;
 
     // Get quote ID.
-    final meltQuotePayload = await Nut5.requestMeltQuote(
+    final quoteResponse = await Nut5.requestMeltQuote(
       mintURL: mint.mintURL,
       request: pr,
     );
-    if (meltQuotePayload == null || meltQuotePayload.quote.isEmpty) return false;
-    final quoteID = meltQuotePayload.quote;
+    if (!quoteResponse.isSuccess || quoteResponse.data.quote.isEmpty) return false;
+    final quoteID = quoteResponse.data.quote;
 
     // Get fee.
-    final quoteInfo = await Nut5.checkMintQuoteState(
+    final quoteInfoResponse = await Nut5.checkMintQuoteState(
       mintURL: mint.mintURL,
       quoteID: quoteID,
     );
-    if (quoteInfo == null) return false;
-    final fee = int.parse(quoteInfo.fee);
+    if (!quoteInfoResponse.isSuccess) return false;
+    final fee = int.parse(quoteInfoResponse.data.fee);
 
     // Get proofs for pay.
     final req = Bolt11PaymentRequest(pr);
     final amount = req.amount.toBigInt().toInt();
-    final payload = await ProofHelper.getProofsToUse(
+    final proofs = await ProofHelper.getProofsToUse(
       mintURL: mint.mintURL,
-      amount: BigInt.from(amount),
+      amount: BigInt.from(amount + fee),
     );
-    if (payload == null) return false;
-    final (proofs, _) = payload;
+    if (proofs.isEmpty) return false;
 
     final (paid, preimage) = await TransactionHelper.payingTheQuote(
       mint: mint,

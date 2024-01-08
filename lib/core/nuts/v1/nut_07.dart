@@ -16,7 +16,7 @@ extension TokenStateEx on TokenState {
 }
 
 class Nut7 {
-  static Future<List<TokenState>?> requestTokenState({
+  static Future<CashuResponse<List<TokenState>>> requestTokenState({
     required String mintURL,
     required List<Proof> proofs,
   }) async {

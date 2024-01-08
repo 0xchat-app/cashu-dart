@@ -24,7 +24,7 @@ class MeltQuotePayload {
 }
 
 class Nut5 {
-  static Future<MeltQuotePayload?> requestMeltQuote({
+  static Future<CashuResponse<MeltQuotePayload>> requestMeltQuote({
     required String mintURL,
     required String request,
     String method = 'bolt11',
@@ -43,7 +43,7 @@ class Nut5 {
     );
   }
 
-  static Future<MeltQuotePayload?> checkMintQuoteState({
+  static Future<CashuResponse<MeltQuotePayload>> checkMintQuoteState({
     required String mintURL,
     required String quoteID,
     String method = 'bolt11',
@@ -58,7 +58,7 @@ class Nut5 {
   }
 
   @Deprecated('Use Nut8.payingTheQuote instead.')
-  static Future<(bool paid, String paymentPreimage)?> meltToken({
+  static Future<CashuResponse<(bool paid, String paymentPreimage)>> meltToken({
     required String mintURL,
     required String quote,
     required List<Proof> inputs,

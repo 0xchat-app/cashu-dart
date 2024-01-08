@@ -1,7 +1,9 @@
 
 import 'dart:async';
 
+import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:cashu_dart/business/transaction/hitstory_store.dart';
+import 'package:cashu_dart/model/lightning_invoice.dart';
 
 import '../../api/cashu_api.dart';
 import '../../core/nuts/v0/nut_04.dart';
@@ -15,14 +17,14 @@ import '../transaction/transaction_helper.dart';
 
 class InvoiceHandler {
 
-  List<Receipt> _invoices = <Receipt>[];
+  final _invoices = <Receipt>[];
   final _pendingInvoices = <Receipt>{};
   final List<InvoiceListener> _listeners = [];
 
   Timer? _checkTimer;
 
   Future<void> initialize() async {
-    _invoices = await InvoiceStore.getAllInvoice();
+    _invoices.addAll(await InvoiceStore.getAllInvoice());
     _checkTimer = Timer.periodic(const Duration(seconds: 5), _periodicCheck);
   }
 
@@ -56,7 +58,7 @@ class InvoiceHandler {
           mintURL: invoice.mintURL,
           request: invoice.request,
         );
-        paid = quoteInfo?.paid ?? false;
+        paid = quoteInfo.data?.paid ?? false;
       }
 
       if (paid) {

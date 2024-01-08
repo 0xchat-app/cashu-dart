@@ -4,7 +4,7 @@ import '../../../utils/network/http_client.dart';
 import '../define.dart';
 
 class Nut6 {
-  static Future<MintInfo?> requestMintInfo({
+  static Future<CashuResponse<MintInfo>> requestMintInfo({
     required String mintURL,
   }) async {
     return HTTPClient.get(
