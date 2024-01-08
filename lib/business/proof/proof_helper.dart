@@ -43,8 +43,8 @@ class ProofHelper {
   static Future<List<Proof>> getProofsToUse({
     required String mintURL,
     required BigInt amount,
-    bool orderAsc = false,
     List<Proof>? proofs,
+    bool orderAsc = false,
     bool checkState = true,
     bool isFromSwap = false,
   }) async {
@@ -83,6 +83,7 @@ class ProofHelper {
       return proofsToSend;
     }
 
+    // Prevent infinite recursion
     if (isFromSwap) return [];
 
     final mint = await CashuManager.shared.getMint(mintURL);
@@ -145,12 +146,9 @@ class ProofHelper {
     final keyset = keysetInfo?.keyset ?? {};
     if (keysetInfo == null || keyset.isEmpty) return null;
 
-    final proofsTotalAmount = proofs.fold<BigInt>(BigInt.zero, (pre, proof) {
-      final amount = BigInt.tryParse(proof.amount) ?? BigInt.zero;
-      return pre + amount;
-    });
+    final proofsTotalAmount = proofs.totalAmount;
 
-    final amount = supportAmount ?? proofsTotalAmount.toInt();
+    final amount = supportAmount ?? proofsTotalAmount;
     List<BlindedMessage> blindedMessages = [];
     List<String> secrets = [];
     List<BigInt> rs = [];
@@ -166,7 +164,7 @@ class ProofHelper {
     {
       final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
         keysetId: keysetInfo.id,
-        amount: proofsTotalAmount.toInt() - amount,
+        amount: proofsTotalAmount - amount,
       );
       blindedMessages.addAll($1);
       secrets.addAll($2);

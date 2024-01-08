@@ -34,7 +34,16 @@ class CashuTransactionAPI {
     );
     if (proofs.isEmpty) return null;
 
-    final encodedToken =  TokenHelper.getEncodedToken(
+    if (proofs.totalAmount != amount) {
+      proofs = await ProofHelper.getProofsToUse(
+        mintURL: mint.mintURL,
+        amount: BigInt.from(amount),
+        proofs: proofs,
+      );
+      if (proofs.isEmpty) return null;
+    }
+
+    final encodedToken = TokenHelper.getEncodedToken(
       Token(
         token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
         memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
