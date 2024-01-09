@@ -22,6 +22,7 @@ abstract class CashuAPIClient {
   int totalBalance();
 
   /// Get a list of history entries with pagination support.
+  ///
   /// [size]: Number of entries to return.
   /// [lastHistoryId]: The ID of the last history entry from the previous fetch.
   Future<List<IHistoryEntry>> getHistoryList({
@@ -54,9 +55,11 @@ abstract class CashuAPIClient {
 
   /**************************** Transaction ****************************/
   /// Sends e-cash using the provided mint and amount.
+  ///
   /// [mint]: The mint object to use for sending e-cash.
   /// [amount]: The amount of e-cash to send.
   /// [memo]: An optional memo for the transaction.
+  ///
   /// Returns the encoded token if successful, otherwise null.
   Future<String?> sendEcash({
     required IMint mint,
@@ -71,9 +74,11 @@ abstract class CashuAPIClient {
   Future<(String memo, int amount)?> redeemEcash(String ecashString);
 
   /// Processes payment of a Lightning invoice.
+  ///
   /// [mint]: The mint to use for payment.
   /// [pr]: The payment request string of the Lightning invoice.
   /// [amount]: The amount to pay.
+  ///
   /// Returns true if payment is successful.
   Future<bool> payingLightningInvoice({
     required IMint mint,
@@ -81,8 +86,10 @@ abstract class CashuAPIClient {
   });
 
   /// Creates a Lightning invoice with the given amount.
+  ///
   /// [mint]: The mint to issue the invoice.
   /// [amount]: The amount for the invoice.
+  ///
   /// Returns the created invoice object if successful, otherwise null.
   Future<Receipt?> createLightningInvoice({
     required IMint mint,
@@ -95,10 +102,52 @@ abstract class CashuAPIClient {
 
   /**************************** Tools ****************************/
   /// Converts the amount in a Lightning Network payment request to satoshis.
+  ///
   /// [pr]: BOLT11 encoded payment request string.
-  /// Returns the amount from the payment request in satoshis as an integer.
-  int amountOfLightningInvoice(String pr) {
-    final req = Bolt11PaymentRequest(pr);
-    return (req.amount.toDouble() * 100000000).toInt();
+  ///
+  /// Returns the amount from the payment request in satoshis as an integer, or null if the
+  /// payment request is invalid or processing fails.
+  int? amountOfLightningInvoice(String pr) {
+    try {
+      final req = Bolt11PaymentRequest(pr);
+      return (req.amount.toDouble() * 100000000).toInt();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool isCashuToken(String str) {
+    return Nut0.decodedToken(str) != null;
+  }
+
+  bool isLnInvoice(String str) {
+    if (str.isEmpty) return false;
+
+    str = str.trim();
+    final uriPrefixes = [
+      'lightning:',
+      'lightning=',
+      'lightning://',
+      'lnurlp://',
+      'lnurlp=',
+      'lnurlp:',
+      'lnurl:',
+      'lnurl=',
+      'lnurl://',
+    ];
+    for (var prefix in uriPrefixes) {
+      if (str.startsWith(prefix)) {
+        str = str.substring(prefix.length).trim();
+        break; // Important to exit the loop once a match is found
+      }
+    }
+    if (str.isEmpty) return false;
+
+    try {
+      Bolt11PaymentRequest(str);
+    } catch (_) {
+      return false;
+    }
+    return true;
   }
 }

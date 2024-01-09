@@ -9,6 +9,9 @@ class Nut0 {
   static const tokenPrefix = 'cashu';
   static const tokenVersion = 'A';
 
+  // Support version prefixes
+  static const List<String> uriPrefixes = ['web+cashu://', 'cashu://', 'cashu:', 'cashuA'];
+
   static String encodedToken(Token token) {
     String json = jsonEncode(token.toJson());
     String base64Encoded = base64.encode(utf8.encode(json));
@@ -16,10 +19,6 @@ class Nut0 {
   }
 
   static Token? decodedToken(String token) {
-
-    // Support version prefixes
-    List<String> uriPrefixes = ['web+cashu://', 'cashu://', 'cashu:', 'cashuA'];
-
     for (var prefix in uriPrefixes) {
       if (token.startsWith(prefix)) {
         token = token.substring(prefix.length);
