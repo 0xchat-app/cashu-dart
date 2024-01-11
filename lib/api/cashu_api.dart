@@ -3,11 +3,14 @@ import 'dart:async';
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 
+import '../business/mint/mint_helper.dart';
 import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
 import '../model/invoice_listener.dart';
+import '../model/mint_info.dart';
 import '../model/mint_model.dart';
+import '../utils/network/response.dart';
 import 'v0/client.dart';
 import 'v1/client.dart';
 
@@ -52,6 +55,10 @@ abstract class CashuAPIClient {
 
   /// Edits the name of the specified mint.
   Future editMintName(IMint mint, String name);
+
+  Future<CashuResponse<MintInfo>> fetchMintInfo(IMint mint) {
+    return MintHelper.requestMintInfo(mintURL: mint.mintURL);
+  }
 
   /**************************** Transaction ****************************/
   /// Sends e-cash using the provided mint and amount.

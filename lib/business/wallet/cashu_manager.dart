@@ -15,7 +15,6 @@ class CashuManager {
   static final CashuManager shared = CashuManager._internal();
   CashuManager._internal();
 
-  IMint? defaultMint;
   final List<IMint> mints = [];
   InvoiceHandler invoiceHandler = InvoiceHandler();
   final List<CashuListener> _listeners = [];
@@ -67,7 +66,6 @@ class CashuManager {
       await _setupMintKeyset(mint);
       mints.add(mint);
     }
-    defaultMint = mints.first;
   }
 
   Future<void> _setupMintInfo(IMint mint) async {
