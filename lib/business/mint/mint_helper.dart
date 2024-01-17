@@ -84,7 +84,7 @@ class MintHelper {
       id: keysetId,
       unit: unit,
     );
-    final keysetInfo = result.firstOrNull;
+    final keysetInfo = result.lastOrNull;
     if (keysetInfo != null && keysetInfo.keyset.isNotEmpty) return keysetInfo;
 
     // Remote

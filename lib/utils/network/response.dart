@@ -1,9 +1,26 @@
 
 enum ResponseCode {
-  success,
-  failed,
-  quoteIssued,
+  success(0),
+  failed(1),
+  notAllowedError(10000),
+  transactionError(11000),
+  tokenAlreadySpentError(11001),
+  secretTooLongError(11003),
+  noSecretInProofsError(11004),
+  keysetError(12000),
+  keysetNotFoundError(12001),
+  lightningError(20000),
+  invoiceNotPaidError(20001);
+
+  final int value;
+
+  const ResponseCode(this.value);
+
+  static ResponseCode fromValue(int value) {
+    return ResponseCode.values.where((e) => e.value == value).firstOrNull ?? ResponseCode.failed;
+  }
 }
+
 
 class CashuResponse<T> {
   CashuResponse({
@@ -30,5 +47,12 @@ class CashuResponse<T> {
   /// Attempting to access `data` when `isSuccess` is false may cause a runtime error
   /// due to null data.
   T get data => _data!;
+
+  factory CashuResponse.fromErrorMap(Map map) {
+    return CashuResponse(
+      code: ResponseCode.fromValue(map['code']),
+      errorMsg: map['detail'] ?? ''
+    );
+  }
 }
 

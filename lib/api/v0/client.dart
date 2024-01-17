@@ -38,7 +38,6 @@ class CashuAPIV0Client extends CashuAPIClient {
     return CashuFinancialAPI.getAllUseProofs(mint);
   }
 
-
   // Mint
   @override
   List<IMint> mintList() => CashuMintAPI.mintList();

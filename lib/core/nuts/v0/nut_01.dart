@@ -1,11 +1,9 @@
 
-
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
 import '../../../utils/network/http_client.dart';
-import '../../../utils/tools.dart';
 import '../define.dart';
 
 class Nut1 {
@@ -28,7 +26,11 @@ class Nut1 {
 
 extension _MintKeysEx on MintKeys {
   String deriveKeysetId() {
-    final keys = entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    final keys = entries.toList()..sort((a, b) {
+      final aNum = BigInt.tryParse(a.key) ?? BigInt.zero;
+      final bNum = BigInt.tryParse(b.key) ?? BigInt.zero;
+      return aNum.compareTo(bNum);
+    });
     final pubkeysConcat = keys.map((entry) => entry.value).join('');
 
     var bytes = utf8.encode(pubkeysConcat);

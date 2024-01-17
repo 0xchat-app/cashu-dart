@@ -55,6 +55,11 @@ class HTTPClient {
       if (response.statusCode == 200) {
           final body = response.body;
           final bodyJson = jsonDecode(body);
+
+          if (bodyJson is Map && bodyJson['code'] is int) {
+            return CashuResponse.fromErrorMap(bodyJson);
+          }
+
           final data = modelBuilder?.call(bodyJson);
           return CashuResponse(
             code: data == null ? ResponseCode.failed : ResponseCode.success,
@@ -97,7 +102,14 @@ class HTTPClient {
       final response = await request;
       print('[http - post] url: $requestURL, params: $params, response: ${response.body}');
       if (response.statusCode == 200) {
-        final data = modelBuilder?.call(jsonDecode(response.body));
+        final body = response.body;
+        final bodyJson = jsonDecode(body);
+
+        if (bodyJson is Map && bodyJson['code'] is int) {
+          return CashuResponse.fromErrorMap(bodyJson);
+        }
+
+        final data = modelBuilder?.call(bodyJson);
         return CashuResponse(
           code: data == null ? ResponseCode.failed : ResponseCode.success,
           data: data,

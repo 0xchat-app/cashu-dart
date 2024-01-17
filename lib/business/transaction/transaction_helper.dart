@@ -81,7 +81,12 @@ class TransactionHelper {
       quote: quoteID,
       blindedMessages: blindedMessages,
     );
-    if (!response.isSuccess) return null;
+    if (!response.isSuccess) {
+      if (response.errorMsg.contains('keyset id unknown')) {
+        MintHelper.updateMintKeysetFromRemote(mint);
+      }
+      return null;
+    }
 
     // unblinding
     final proofs = await DHKE.constructProofs(

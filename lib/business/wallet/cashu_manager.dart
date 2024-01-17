@@ -15,14 +15,21 @@ class CashuManager {
   static final CashuManager shared = CashuManager._internal();
   CashuManager._internal();
 
+  List<String>? defaultMint;
+
   final List<IMint> mints = [];
   InvoiceHandler invoiceHandler = InvoiceHandler();
   final List<CashuListener> _listeners = [];
 
   Completer setupFinish = Completer();
 
-  Future<void> setup(String identify, {int dbVersion = 1, String? dbPassword}) async {
+  Future<void> setup(String identify, {
+    int dbVersion = 1,
+    String? dbPassword,
+    List<String>? defaultMint,
+  }) async {
     try {
+      this.defaultMint = defaultMint;
       await CashuDB.sharedInstance.open('cashu-$identify.db', version: dbVersion, password: dbPassword);
       await setupMint();
       await setupBalance();
@@ -46,7 +53,7 @@ class CashuManager {
     try {
       List<IMint> dbMints = await MintStore.getMints();
       if (dbMints.isEmpty) {
-        dbMints = [await _addDefaultMint()];
+        dbMints = await _addDefaultMint();
       }
       await _initializeMints(dbMints);
     } catch (e) {
@@ -54,10 +61,15 @@ class CashuManager {
     }
   }
 
-  Future<IMint> _addDefaultMint() async {
-    final enutsMint = IMint(mintURL: 'https://testnut.cashu.space');
-    await MintStore.addMints([enutsMint]);
-    return enutsMint;
+  Future<List<IMint>> _addDefaultMint() async {
+    defaultMint ??= ['https://testnut.cashu.space'];
+    final result = <IMint>[];
+    for (final mintURL in defaultMint!) {
+      final mint = IMint(mintURL: mintURL);
+      await MintStore.addMints([mint]);
+      result.add(mint);
+    }
+    return result;
   }
 
   Future<void> _initializeMints(List<IMint> dbMints) async {

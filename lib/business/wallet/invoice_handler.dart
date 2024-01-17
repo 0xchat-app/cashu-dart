@@ -1,17 +1,13 @@
 
 import 'dart:async';
 
-import 'package:bolt11_decoder/bolt11_decoder.dart';
-import 'package:cashu_dart/business/transaction/hitstory_store.dart';
-import 'package:cashu_dart/model/lightning_invoice.dart';
-
 import '../../api/cashu_api.dart';
-import '../../core/nuts/v0/nut_04.dart';
-import '../../core/nuts/v1/nut_05.dart';
+import '../../core/nuts/v0/nut.dart' as v0;
+import '../../core/nuts/v1/nut.dart' as v1;
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
-import '../../model/invoice_listener.dart';
 import '../../model/mint_model.dart';
+import '../transaction/hitstory_store.dart';
 import '../transaction/invoice_store.dart';
 import '../transaction/transaction_helper.dart';
 
@@ -53,11 +49,11 @@ class InvoiceHandler {
     try {
       bool paid = true;
       if (Cashu.isV1) {
-        final quoteInfo = await Nut5.requestMeltQuote(
+        final quoteInfo = await v1.Nut5.requestMeltQuote(
           mintURL: invoice.mintURL,
           request: invoice.request,
         );
-        paid = quoteInfo.data?.paid ?? false;
+        paid = quoteInfo.data.paid;
       }
 
       if (paid) {
@@ -89,8 +85,8 @@ class InvoiceHandler {
       quoteID: invoice.redemptionKey,
       amount: amount,
       requestTokensAction: Cashu.isV1
-          ? Nut4.requestTokensFromMint
-          : Nut4.requestTokensFromMint
+          ? v1.Nut4.requestTokensFromMint
+          : v0.Nut4.requestTokensFromMint
     );
     return proofs != null;
   }
