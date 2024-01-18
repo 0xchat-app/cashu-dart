@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 
 import '../business/mint/mint_helper.dart';
+import '../business/proof/token_helper.dart';
+import '../business/transaction/hitstory_store.dart';
 import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
@@ -40,7 +42,18 @@ abstract class CashuAPIClient {
   /// Retrieves all 'used' proofs for a given mint.
   Future<List<Proof>> getAllUseProofs(IMint mint);
 
-  Future<bool?> checkEcashSpentState(String ecashToken);
+  /// Determines the spendability of an eCash token from a given history entry.
+  ///
+  /// Extracts the eCash token from [entry] and checks if it is spendable.
+  /// Returns `true` if the token is spendable, `false` if not, or `null` if the status is indeterminable.
+  Future<bool?> isEcashTokenSpendableFromHistory(IHistoryEntry entry) async {
+    if (entry.type != IHistoryType.eCash) return null;
+    final spendable = await TokenHelper.isTokenSpendable(entry.value);
+    if (spendable == null) return null;
+    entry.isSpent = spendable;
+    await HistoryStore.updateHistoryEntry(entry);
+    return spendable;
+  }
 
   /**************************** Mint ****************************/
   /// Returns a list of all mints.

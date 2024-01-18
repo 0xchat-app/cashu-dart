@@ -65,7 +65,7 @@ class IHistoryEntry extends DBObject {
   final num? fee;
 
   /// is token spendable
-  final bool? isSpent;
+  bool? isSpent;
 
   @override
   Map<String, Object?> toMap() => {

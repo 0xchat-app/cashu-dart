@@ -45,11 +45,6 @@ class CashuAPIV1Client extends CashuAPIClient {
     return CashuFinancialAPI.getAllUseProofs(mint);
   }
 
-  @override
-  Future<bool?> checkEcashSpentState(String ecashToken) {
-    return TokenHelper.isTokenSpendable(ecashToken);
-  }
-
   // Mint
   @override
   List<IMint> mintList() => CashuMintAPI.mintList();
