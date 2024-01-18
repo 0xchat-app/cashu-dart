@@ -180,8 +180,8 @@ class ExamplePageState extends State<ExamplePage> with CashuListener {
               children: [
                 buildOptionItem('Send Ecash', sendEcash),
                 buildOptionItem('Redeem Ecash', redeemEcash),
-                buildOptionItem('Pay Lightning invoice', payLightningInvoice),
-                buildOptionItem('Create Lightning invoice', createLightningInvoice),
+                buildOptionItem('Withdraw Ecash', payLightningInvoice),
+                buildOptionItem('Create Ecash', createLightningInvoice),
               ],
             ),
           ),
