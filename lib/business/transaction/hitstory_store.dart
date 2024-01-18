@@ -28,6 +28,7 @@ class HistoryStore {
     required IHistoryType type,
     required String value,
     required List<String> mints,
+    num? fee
   }) async {
     var item = IHistoryEntry(
       amount: amount,
@@ -35,6 +36,7 @@ class HistoryStore {
       value: value,
       mints: mints,
       timestamp: DateTime.now().millisecondsSinceEpoch.toDouble(),
+      fee: fee,
     );
     _add(item);
     return item;

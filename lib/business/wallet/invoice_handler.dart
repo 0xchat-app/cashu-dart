@@ -67,6 +67,7 @@ class InvoiceHandler {
               type: IHistoryType.lnInvoice,
               value: invoice.paymentKey,
               mints: [invoice.mintURL],
+              fee: 0,
             );
             invoiceOnPaidCallback?.call(invoice);
           }

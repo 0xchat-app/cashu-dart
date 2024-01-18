@@ -163,6 +163,7 @@ class TransactionHelper {
       type: IHistoryType.lnInvoice,
       value: paymentKey,
       mints: [mint.mintURL],
+      fee: fee,
     );
 
     return (

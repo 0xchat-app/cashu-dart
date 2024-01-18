@@ -1,6 +1,7 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:uuid/uuid.dart';
+import '../business/proof/token_helper.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
@@ -120,6 +121,26 @@ class IHistoryEntry extends DBObject {
 
   static List<String?> ignoreKey() {
     return ['mints', 'type'];
+  }
+
+  String? get memo {
+    switch (type) {
+      case IHistoryType.eCash:
+        return TokenHelper.getDecodedToken(value)?.memo;
+      case IHistoryType.lnInvoice:
+        try {
+          final req = Bolt11PaymentRequest(value);
+          for (final tag in req.tags) {
+            if (tag.type == 'description' && tag.data is String?) {
+              return tag.data == 'enuts' ? 'Cashu deposit' : tag.data;
+            }
+          }
+          return null;
+        } catch (_) {
+          return null;
+        }
+      default: return null;
+    }
   }
 }
 

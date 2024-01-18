@@ -72,6 +72,10 @@ class ProofHelper {
     final List<Proof> proofsToSend = [];
     BigInt amountAvailable = BigInt.zero;
 
+    if (BigInt.from(proofs.totalAmount) < amount) {
+      return [];
+    }
+
     for (final proof in proofs) {
       if (amountAvailable >= amount) break;
       amountAvailable += proof.amount.asBigInt();
