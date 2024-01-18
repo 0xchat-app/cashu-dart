@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'dart:math';
 
 
+import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../model/define.dart';
 import '../../utils/tools.dart';
 import '../wallet/cashu_manager.dart';
+import 'proof_helper.dart';
 
 class TokenHelper {
 
@@ -48,45 +50,23 @@ class TokenHelper {
     return t.trim();
   }
 
-  static Future<bool> isTokenSpendable(String token) async {
-    try {
-      final decoded = getDecodedToken(token);
-      if (decoded == null || decoded.token.isEmpty) return false;
+  static Future<bool?> isTokenSpendable(String ecashToken) async {
+    final token = TokenHelper.getDecodedToken(ecashToken);
+    if (token == null) return null;
 
-      List<Proof> usableTokenProofs = [];
-      for (final t in decoded.token) {
-        if (t.proofs.isEmpty) continue;
+    final tokenEntry = token.token;
+    for (final entry in tokenEntry) {
+      final mint = await CashuManager.shared.getMint(entry.mint);
+      if (mint == null) continue ;
 
-        var wallet = await CashuManager.shared.getMint(t.mint);
-        var usedSecrets = null;//await wallet.checkProofsSpent(t.proofs.map((p) => p.secret).toList());
-
-        if (usedSecrets.length == t.proofs.length) {
-          continue;
-        }
-
-        usableTokenProofs.addAll(t.proofs.where((x) => !usedSecrets.contains(x.secret)).toList());
+      final response = await ProofHelper.checkAction(mintURL: mint.mintURL, proofs: entry.proofs);
+      if (!response.isSuccess) return null;
+      if (response.data.any((state) => state == TokenState.live)) {
+        return false;
       }
-
-      return usableTokenProofs.isNotEmpty;
-    } catch (_) {
-      return false;
     }
-  }
 
-  static TokenInfo? getTokenInfo(String encodedToken) {
-    try {
-      final decoded = getDecodedToken(encodedToken);
-      if (decoded == null) return null;
-      final mints = decoded.token.map((x) => x.mint).toList();
-      return (
-        mints: mints,
-        value: decoded.sumProofsValue.toString(),
-        decoded: decoded
-      );
-    } catch (e) {
-      print(e);
-      return null;
-    }
+    return true;
   }
 
   static String getEncodedToken(Token token) {

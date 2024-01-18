@@ -49,10 +49,19 @@ class CashuResponse<T> {
   T get data => _data!;
 
   factory CashuResponse.fromErrorMap(Map map) {
+    ResponseCode code = ResponseCode.fromValue(map['code']);
+    if (code == ResponseCode.success) {
+      code = ResponseCode.failed;
+    }
     return CashuResponse(
-      code: ResponseCode.fromValue(map['code']),
+      code: code,
       errorMsg: map['detail'] ?? ''
     );
+  }
+
+  @override
+  String toString() {
+    return '${super.toString()}, code: $code, errorMsg: $errorMsg, data: $_data';
   }
 }
 

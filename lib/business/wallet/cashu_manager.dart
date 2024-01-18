@@ -109,15 +109,36 @@ class CashuManager {
         return mint;
       }
     }
-    return null;
+    try {
+      return addMint(mintURL);
+    } catch (_) {
+      return null;
+    }
   }
 
-  Future<bool> addMint(IMint mint) async {
-    if (mints.any((element) => element.mintURL == mint.mintURL)) {
-      return false;
+  Future<IMint?> addMint(String mintURL) async {
+
+    if (!mintURL.startsWith('https://')) throw Exception('mintURL must starts with \'https://\'');
+
+    if (mints.any((element) => element.mintURL == mintURL)) {
+      return null;
     }
+
+    final url = MintHelper.getMintURL(mintURL);
+
+    final mint = IMint(mintURL: url);
+
+    final fetchSuccess = await MintHelper.updateMintInfoFromRemote(mint);
+    if (!fetchSuccess) return null;
+    mint.name = mint.info?.name ?? '';
+
+    MintHelper.updateMintKeysetFromRemote(mint);
+
     mints.add(mint);
-    return await MintStore.addMints([mint]);
+    final saveSuccess = await MintStore.addMints([mint]);
+    if (!saveSuccess) return null;
+
+    return mint;
   }
 
   Future<bool> updateMintName(IMint mint) async {

@@ -33,15 +33,17 @@ class InvoiceStore {
     final map = delInvoices.groupBy((e) => e.mintURL);
     await Future.forEach(map.keys, (mintURL) async {
       final invoices = map[mintURL] ?? [];
-      if (invoices is List<IInvoice>) {
-        final quotes = invoices.map((e) => '"${e.quote}"').toList().join(',');
+      if (invoices.every((e) => e is IInvoice)) {
+        final list = invoices.cast<IInvoice>();
+        final quotes = list.map((e) => '"${e.quote}"').toList().join(',');
         rowsAffected += await CashuDB.sharedInstance.delete<IInvoice>(
           where: ' mintURL = ? and quote in ($quotes)',
           whereArgs: [mintURL],
         );
-      } else if (invoices is List<LightningInvoice>) {
-        final hash = invoices.map((e) => '"${e.hash}"').toList().join(',');
-        rowsAffected += await CashuDB.sharedInstance.delete<IInvoice>(
+      } else if (invoices.every((e) => e is LightningInvoice)) {
+        final list = invoices.cast<LightningInvoice>();
+        final hash = list.map((e) => '"${e.hash}"').toList().join(',');
+        rowsAffected += await CashuDB.sharedInstance.delete<LightningInvoice>(
           where: ' mintURL = ? and hash in ($hash)',
           whereArgs: [mintURL],
         );

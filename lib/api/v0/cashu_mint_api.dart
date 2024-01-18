@@ -15,22 +15,7 @@ class CashuMintAPI {
   /// Returns the newly added mint, or null if the operation fails.
   static Future<IMint?> addMint(String mintURL) async {
     await CashuManager.shared.setupFinish.future;
-    if (!mintURL.startsWith('https://')) throw Exception('mintURL must starts with \'https://\'');
-
-    final url = MintHelper.getMintURL(mintURL);
-
-    final mint = IMint(mintURL: url);
-
-    final fetchSuccess = await MintHelper.updateMintInfoFromRemote(mint);
-    if (!fetchSuccess) return null;
-    mint.name = mint.info?.name ?? '';
-
-    MintHelper.updateMintKeysetFromRemote(mint);
-
-    final addSuccess = await CashuManager.shared.addMint(mint);
-    if (!addSuccess) return null;
-
-    return mint;
+    return await CashuManager.shared.addMint(mintURL);
   }
 
   /// Deletes the specified mint.

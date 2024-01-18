@@ -9,7 +9,6 @@ import '../../core/nuts/nut_00.dart';
 import '../../model/history_entry.dart';
 import '../../model/mint_model.dart';
 
-
 class CashuFinancialAPI {
   /// Calculate the total balance across all mints.
   static int totalBalance() {

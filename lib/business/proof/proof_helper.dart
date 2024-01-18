@@ -41,17 +41,17 @@ class ProofHelper {
   }
 
   static Future<List<Proof>> getProofsToUse({
-    required String mintURL,
+    required IMint mint,
     required BigInt amount,
     List<Proof>? proofs,
     bool orderAsc = false,
     bool checkState = true,
     bool isFromSwap = false,
   }) async {
-    proofs ??= await getProofs(mintURL, orderAsc);
+    proofs ??= await getProofs(mint.mintURL, orderAsc);
     // check state
     if (checkState) {
-      final response = await checkAction(mintURL: mintURL, proofs: proofs);
+      final response = await checkAction(mintURL: mint.mintURL, proofs: proofs);
       if (!response.isSuccess) return [];
       if (response.data.length != proofs.length) {
         throw Exception('[E][Cashu - checkProofsAvailable] '
@@ -86,8 +86,6 @@ class ProofHelper {
     // Prevent infinite recursion
     if (isFromSwap) return [];
 
-    final mint = await CashuManager.shared.getMint(mintURL);
-    if (mint == null) return [];
     final newProofs = await swapProofs(
       mint: mint,
       proofs: proofsToSend,
@@ -96,7 +94,7 @@ class ProofHelper {
     );
 
     final finalProofs = await getProofsToUse(
-      mintURL: mint.mintURL,
+      mint: mint,
       amount: amount,
       proofs: newProofs,
       checkState: false,

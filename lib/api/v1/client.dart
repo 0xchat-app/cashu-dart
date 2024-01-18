@@ -2,6 +2,7 @@
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 import 'package:cashu_dart/model/invoice_listener.dart';
 
+import '../../business/proof/token_helper.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
@@ -44,6 +45,10 @@ class CashuAPIV1Client extends CashuAPIClient {
     return CashuFinancialAPI.getAllUseProofs(mint);
   }
 
+  @override
+  Future<bool?> checkEcashSpentState(String ecashToken) {
+    return TokenHelper.isTokenSpendable(ecashToken);
+  }
 
   // Mint
   @override

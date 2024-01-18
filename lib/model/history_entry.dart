@@ -1,4 +1,5 @@
 
+import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:uuid/uuid.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
@@ -119,5 +120,25 @@ class IHistoryEntry extends DBObject {
 
   static List<String?> ignoreKey() {
     return ['mints', 'type'];
+  }
+}
+
+/// Extension on [IHistoryEntry] to handle functionalities related to Lightning Network invoices.
+///
+/// This extension is particularly useful when the `type` of [IHistoryEntry] is [IHistoryType.lnInvoice].
+extension LnHistoryEntryEx on IHistoryEntry {
+  String? get paymentHash {
+    if (type != IHistoryType.lnInvoice) return null;
+    try {
+      final req = Bolt11PaymentRequest(value);
+      for (final tag in req.tags) {
+        if (tag.type == 'payment_hash' && tag.data is String?) {
+          return tag.data;
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

@@ -1,4 +1,6 @@
 
+import 'package:bolt11_decoder/bolt11_decoder.dart';
+
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
@@ -77,7 +79,18 @@ class LightningInvoice extends DBObject implements Receipt {
 
   @override
   bool get isExpired {
-    return false;
+    try {
+      final req = Bolt11PaymentRequest(pr);
+      for (final tag in req.tags) {
+        if (tag.type == 'expiry' && tag.data is int) {
+          final expiry = req.timestamp + tag.data;
+          return expiry < DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

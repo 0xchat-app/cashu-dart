@@ -53,23 +53,24 @@ class HTTPClient {
       final response = await request;
       print('[http - get] url: $requestURL, response: ${response.body}');
       if (response.statusCode == 200) {
-          final body = response.body;
-          final bodyJson = jsonDecode(body);
-
-          if (bodyJson is Map && bodyJson['code'] is int) {
-            return CashuResponse.fromErrorMap(bodyJson);
-          }
-
-          final data = modelBuilder?.call(bodyJson);
-          return CashuResponse(
-            code: data == null ? ResponseCode.failed : ResponseCode.success,
-            data: data,
-          );
-      } else {
+        final bodyJson = jsonDecode(response.body);
+        final data = modelBuilder?.call(bodyJson);
         return CashuResponse(
-          code: ResponseCode.failed,
+          code: data == null ? ResponseCode.failed : ResponseCode.success,
+          data: data,
         );
       }
+
+      if (response.statusCode == 400) {
+        final bodyJson = jsonDecode(response.body);
+        if (bodyJson is Map && bodyJson.containsKey('code')) {
+          return CashuResponse.fromErrorMap(bodyJson);
+        }
+      }
+
+      return CashuResponse(
+        code: ResponseCode.failed,
+      );
     } catch(e, stackTrace) {
       print('[http - error] url: $url, e: $e, $stackTrace');
       return CashuResponse(
@@ -102,23 +103,24 @@ class HTTPClient {
       final response = await request;
       print('[http - post] url: $requestURL, params: $params, response: ${response.body}');
       if (response.statusCode == 200) {
-        final body = response.body;
-        final bodyJson = jsonDecode(body);
-
-        if (bodyJson is Map && bodyJson['code'] is int) {
-          return CashuResponse.fromErrorMap(bodyJson);
-        }
-
+        final bodyJson = jsonDecode(response.body);
         final data = modelBuilder?.call(bodyJson);
         return CashuResponse(
           code: data == null ? ResponseCode.failed : ResponseCode.success,
           data: data,
         );
-      } else {
-        return CashuResponse(
-          code: ResponseCode.failed,
-        );
       }
+
+      if (response.statusCode == 400) {
+        final bodyJson = jsonDecode(response.body);
+        if (bodyJson is Map && bodyJson.containsKey('code')) {
+          return CashuResponse.fromErrorMap(bodyJson);
+        }
+      }
+
+      return CashuResponse(
+        code: ResponseCode.failed,
+      );
     } catch(e, stackTrace) {
       print('[http - error] url: $url, e: $e, $stackTrace');
       return CashuResponse(

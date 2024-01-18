@@ -84,6 +84,8 @@ class TransactionHelper {
     if (!response.isSuccess) {
       if (response.errorMsg.contains('keyset id unknown')) {
         MintHelper.updateMintKeysetFromRemote(mint);
+      } else if (response.errorMsg.contains('quote already issued')) {
+        return [];
       }
       return null;
     }
@@ -118,6 +120,7 @@ class TransactionHelper {
     }) meltAction,
   }) async {
 
+    proofs = [...proofs];
     const failResult = (false, '');
 
     // get keyset
@@ -136,7 +139,7 @@ class TransactionHelper {
     final response = await meltAction(
       mintURL: mint.mintURL,
       quote: paymentKey,
-      inputs: [...proofs],
+      inputs: proofs,
       outputs: blindedMessages,
     );
     if (!response.isSuccess) return failResult;
@@ -152,9 +155,9 @@ class TransactionHelper {
     if (newProofs == null) return failResult;
 
     await ProofStore.addProofs([...newProofs]);
-    await ProofHelper.deleteProofs(proofs: [...proofs], mintURL: mint.mintURL);
+    await ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);
 
-    final amount = newProofs.totalAmount;
+    final amount = newProofs.totalAmount - proofs.totalAmount;
     await HistoryStore.addToHistory(
       amount: amount,
       type: IHistoryType.lnInvoice,

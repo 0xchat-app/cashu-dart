@@ -40,6 +40,8 @@ abstract class CashuAPIClient {
   /// Retrieves all 'used' proofs for a given mint.
   Future<List<Proof>> getAllUseProofs(IMint mint);
 
+  Future<bool?> checkEcashSpentState(String ecashToken);
+
   /**************************** Mint ****************************/
   /// Returns a list of all mints.
   List<IMint> mintList();
@@ -117,6 +119,9 @@ abstract class CashuAPIClient {
   int? amountOfLightningInvoice(String pr) {
     try {
       final req = Bolt11PaymentRequest(pr);
+      // req.tags.forEach((tag) {
+      //   print('[Cashu - invoice decode]${tag.type}: ${tag.data}');
+      // });
       return (req.amount.toDouble() * 100000000).toInt();
     } catch (_) {
       return null;

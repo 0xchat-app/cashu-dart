@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import '../../api/cashu_api.dart';
+import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/v0/nut.dart' as v0;
 import '../../core/nuts/v1/nut.dart' as v1;
 import '../../model/history_entry.dart';
@@ -57,15 +58,18 @@ class InvoiceHandler {
       }
 
       if (paid) {
-        if (await _exchangeCash(invoice)) {
+        final newProof = await _exchangeCash(invoice);
+        if (newProof != null) {
           _deleteInvoice(invoice);
-          await HistoryStore.addToHistory(
-            amount: int.tryParse(invoice.amount) ?? 0,
-            type: IHistoryType.lnInvoice,
-            value: invoice.paymentKey,
-            mints: [invoice.mintURL],
-          );
-          invoiceOnPaidCallback?.call(invoice);
+          if (newProof.isNotEmpty) {
+            await HistoryStore.addToHistory(
+              amount: int.tryParse(invoice.amount) ?? 0,
+              type: IHistoryType.lnInvoice,
+              value: invoice.paymentKey,
+              mints: [invoice.mintURL],
+            );
+            invoiceOnPaidCallback?.call(invoice);
+          }
         }
       } else if (invoice.isExpired) {
         _deleteInvoice(invoice);
@@ -77,9 +81,9 @@ class InvoiceHandler {
     }
   }
 
-  Future<bool> _exchangeCash(Receipt invoice) async {
+  Future<List<Proof>?> _exchangeCash(Receipt invoice) async {
     final amount = int.tryParse(invoice.amount);
-    if (amount == null) return false;
+    if (amount == null) return null;
     final proofs = await TransactionHelper.requestTokensFromMint(
       mint: IMint(mintURL: invoice.mintURL),
       quoteID: invoice.redemptionKey,
@@ -88,7 +92,7 @@ class InvoiceHandler {
           ? v1.Nut4.requestTokensFromMint
           : v0.Nut4.requestTokensFromMint
     );
-    return proofs != null;
+    return proofs;
   }
 
   void _deleteInvoice(Receipt invoice) {

@@ -29,14 +29,14 @@ class CashuTransactionAPI {
 
     // get proofs
     proofs ??= await ProofHelper.getProofsToUse(
-      mintURL: mint.mintURL,
+      mint: mint,
       amount: BigInt.from(amount),
     );
     if (proofs.isEmpty) return null;
 
     if (proofs.totalAmount != amount) {
       proofs = await ProofHelper.getProofsToUse(
-        mintURL: mint.mintURL,
+        mint: mint,
         amount: BigInt.from(amount),
         proofs: proofs,
       );
@@ -79,14 +79,7 @@ class CashuTransactionAPI {
 
     final tokenEntry = token.token;
     for (var entry in tokenEntry) {
-      var mint = await CashuManager.shared.getMint(entry.mint);
-      if (mint == null) {
-        try {
-          mint = await CashuMintAPI.addMint(entry.mint);
-        } catch (_) {
-          continue ;
-        }
-      }
+      final mint = await CashuManager.shared.getMint(entry.mint);
       if (mint == null) continue ;
 
       final newProofs = await ProofHelper.swapProofs(
@@ -139,7 +132,7 @@ class CashuTransactionAPI {
     final amount = (req.amount.toDouble() * 100000000).toInt();
 
     final proofs = await ProofHelper.getProofsToUse(
-      mintURL: mint.mintURL,
+      mint: mint,
       amount: BigInt.from(amount + fee),
     );
     if (proofs.isEmpty) return false;
