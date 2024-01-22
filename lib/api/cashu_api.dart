@@ -132,13 +132,21 @@ abstract class CashuAPIClient {
   int? amountOfLightningInvoice(String pr) {
     try {
       final req = Bolt11PaymentRequest(pr);
-      // req.tags.forEach((tag) {
-      //   print('[Cashu - invoice decode]${tag.type}: ${tag.data}');
-      // });
+      req.tags.forEach((tag) {
+        print('[Cashu - invoice decode]${tag.type}: ${tag.data}');
+      });
       return (req.amount.toDouble() * 100000000).toInt();
     } catch (_) {
       return null;
     }
+  }
+
+  (String memo, int amount)? infoOfToken(String ecashToken) {
+    final token = TokenHelper.getDecodedToken(ecashToken);
+    if (token == null) return null;
+
+    final proofs = token.token.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
+    return (token.memo, proofs.totalAmount);
   }
 
   bool isCashuToken(String str) {

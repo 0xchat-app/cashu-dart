@@ -1,11 +1,8 @@
 
 import 'dart:convert';
-import 'dart:math';
-
 
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../model/define.dart';
 import '../../utils/tools.dart';
 import '../wallet/cashu_manager.dart';
 import 'proof_helper.dart';
@@ -61,12 +58,12 @@ class TokenHelper {
 
       final response = await ProofHelper.checkAction(mintURL: mint.mintURL, proofs: entry.proofs);
       if (!response.isSuccess) return null;
-      if (response.data.any((state) => state == TokenState.live)) {
-        return false;
+      if (response.data.every((state) => state != TokenState.live)) {
+        return true;
       }
     }
 
-    return true;
+    return false;
   }
 
   static String getEncodedToken(Token token) {
@@ -152,58 +149,5 @@ class TokenHelper {
     }).toList();
 
     return Token(memo: token.memo, token: cleanedTokenEntries);
-  }
-
-  static List<int> splitAmount(int value, [List<AmountPreference>? amountPreference]) {
-    List<int> chunks = [];
-
-    if (amountPreference != null) {
-      final preferenceChunks = getPreference(value, amountPreference);
-      if (preferenceChunks != null) {
-        chunks.addAll(preferenceChunks);
-        value -= preferenceChunks.fold(0, (curr, acc) => curr + acc);
-      }
-    }
-
-    for (int i = 0; i < 32; i++) {
-      int mask = 1 << i;
-      if ((value & mask) != 0) {
-        chunks.add(pow(2, i).toInt());
-      }
-    }
-
-    return chunks;
-  }
-
-  static List<int>? getPreference(int amount, List<AmountPreference> preferredAmounts) {
-    List<int> chunks = [];
-    int accumulator = 0;
-
-    for (final pa in preferredAmounts) {
-      final amount = pa.amount.toInt();
-      if (!_isPowerOfTwo(amount)) {
-        return null;
-      }
-
-      for (int i = 1; i <= pa.count; i++) {
-        accumulator += amount;
-        if (accumulator > amount) {
-          return chunks;
-        }
-        chunks.add(amount);
-      }
-    }
-
-    return chunks;
-  }
-
-  // Helper function to check if a number is a power of two
-  static bool _isPowerOfTwo(int number) {
-    return number != 0 && ((number & (number - 1)) == 0);
-  }
-
-  static List<AmountPreference> getDefaultAmountPreference(int amount) {
-    final amounts = splitAmount(amount);
-    return amounts.map((a) => (amount: a, count: 1)).toList();
   }
 }
