@@ -130,14 +130,9 @@ class CashuManager {
 
     final fetchSuccess = await MintHelper.updateMintInfoFromRemote(mint);
     if (!fetchSuccess) return null;
-    mint.name = mint.info?.name ?? '';
+    mint.name = mint.info?.name ?? mint.info?.mintURL ?? '';
 
     MintHelper.updateMintKeysetFromRemote(mint);
-
-    mints.add(mint);
-    final saveSuccess = await MintStore.addMints([mint]);
-    if (!saveSuccess) return null;
-
     return mint;
   }
 

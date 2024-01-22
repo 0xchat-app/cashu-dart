@@ -51,7 +51,7 @@ class HTTPClient {
     }
     try {
       final response = await request;
-      print('[http - get] url: $requestURL, response: ${response.body}');
+      print('[http - get] url: $requestURL, response: ${response.body}, status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final bodyJson = jsonDecode(response.body);
         final data = modelBuilder?.call(bodyJson);
@@ -101,7 +101,7 @@ class HTTPClient {
         request = request.timeout(Duration(seconds: timeOut));
       }
       final response = await request;
-      print('[http - post] url: $requestURL, params: $params, response: ${response.body}');
+      print('[http - post] url: $requestURL, params: $params, response: ${response.body}, status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final bodyJson = jsonDecode(response.body);
         final data = modelBuilder?.call(bodyJson);

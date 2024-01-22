@@ -75,6 +75,11 @@ class InvoiceHandler {
       } else if (invoice.isExpired) {
         _deleteInvoice(invoice);
       }
+
+      if (!Cashu.isV1 && invoice.isExpired) {
+        _deleteInvoice(invoice);
+      }
+
     } catch (e) {
       // Handle exceptions
     } finally {
