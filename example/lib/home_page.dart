@@ -376,12 +376,12 @@ extension ExamplePageStateActionEx on ExamplePageState {
     if (mint == null) return null;
     final input = await showInputDialog('token');
     if (input == null || input.isEmpty) return ;
-    final result = await Cashu.redeemEcash(input);
-    if (result == null) {
-      showMessage('Redeem failed', true);
+    final response = await Cashu.redeemEcash(input);
+    if (!response.isSuccess) {
+      showMessage(response.errorMsg, true);
     } else {
       updateUI();
-      showMessage('memo: ${result.$1}\namount: ${result.$2}', false);
+      showMessage('memo: ${response.data.$1}\namount: ${response.data.$2}', false);
     }
   }
 

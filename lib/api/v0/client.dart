@@ -41,7 +41,7 @@ class CashuAPIV0Client extends CashuAPIClient {
 
   // Mint
   @override
-  List<IMint> mintList() => CashuMintAPI.mintList();
+  Future<List<IMint>> mintList() => CashuMintAPI.mintList();
 
   @override
   Future<IMint?> addMint(String mintURL) => CashuMintAPI.addMint(mintURL);

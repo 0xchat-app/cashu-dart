@@ -6,7 +6,8 @@ import '../../model/mint_model.dart';
 class CashuMintAPI {
 
   /// Returns a list of all mints.
-  static List<IMint> mintList() {
+  static Future<List<IMint>> mintList() async {
+    await CashuManager.shared.setupFinish.future;
     return CashuManager.shared.mints;
   }
 

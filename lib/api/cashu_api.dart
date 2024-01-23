@@ -57,7 +57,7 @@ abstract class CashuAPIClient {
 
   /**************************** Mint ****************************/
   /// Returns a list of all mints.
-  List<IMint> mintList();
+  Future<List<IMint>> mintList();
 
   /// Adds a new mint with the given URL.
   /// Throws an exception if the URL does not start with 'https://'.
