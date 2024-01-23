@@ -11,7 +11,7 @@ import '../../core/nuts/v0/nut.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/mint_model.dart';
-import 'cashu_mint_api.dart';
+import '../../utils/network/response.dart';
 
 class CashuTransactionAPI {
   /// Sends e-cash using the provided mint and amount.
@@ -66,49 +66,52 @@ class CashuTransactionAPI {
 
   /// Redeems e-cash from the given string.
   /// [ecashString]: The string representing the e-cash.
-  /// Returns a tuple containing memo and amount if successful, otherwise null.
-  static Future<(String memo, int amount)?> redeemEcash(String ecashString) async {
+  /// Returns a tuple containing memo and amount if successful.
+  static Future<CashuResponse<(String memo, int amount)>> redeemEcash(String ecashString) async {
     await CashuManager.shared.setupFinish.future;
     final token = TokenHelper.getDecodedToken(ecashString);
-    if (token == null) return null;
-    if (token.unit.isNotEmpty && token.unit != 'sat') return null;
+    if (token == null) return CashuResponse.fromErrorMsg('Invalid token');
+    if (token.unit.isNotEmpty && token.unit != 'sat') return CashuResponse.fromErrorMsg('Unsupported unit');
 
     final memo = token.memo;
     var receiveAmount = 0;
     final mints = <String>{};
 
     final tokenEntry = token.token;
-    for (var entry in tokenEntry) {
-      final mint = await CashuManager.shared.getMint(entry.mint);
-      if (mint == null) continue ;
 
-      final newProofs = await ProofHelper.swapProofs(
-        mint: mint,
-        proofs: entry.proofs,
-        swapAction: Nut6.split,
-      );
-      if (newProofs == null) return null;
+    return Future<CashuResponse<(String memo, int amount)>>(() async {
+      for (var entry in tokenEntry) {
+        final mint = await CashuManager.shared.getMint(entry.mint);
+        if (mint == null) continue ;
 
-      final receiveSuccess = newProofs != entry.proofs;
-      if (receiveSuccess) {
+        final response = await ProofHelper.swapProofs(
+          mint: mint,
+          proofs: entry.proofs,
+          swapAction: Nut6.split,
+        );
+        if (!response.isSuccess) return response.cast();
+
+        final newProofs = response.data;
         receiveAmount += newProofs.totalAmount;
         mints.add(mint.mintURL);
         await CashuManager.shared.updateMintBalance(mint);
       }
-    }
 
-    await HistoryStore.addToHistory(
-      amount: receiveAmount,
-      type: IHistoryType.eCash,
-      value: ecashString,
-      mints: mints.toList(),
-    );
-
-    if (receiveAmount > 0) {
-      return (memo, receiveAmount);
-    } else {
-      return null;
-    }
+      if (receiveAmount > 0) {
+        return CashuResponse.fromSuccessData((memo, receiveAmount));
+      } else {
+        return CashuResponse.fromErrorMsg('No funds available proofs for redemption.');
+      }
+    }).whenComplete(() {
+      if (receiveAmount > 0) {
+        HistoryStore.addToHistory(
+          amount: receiveAmount,
+          type: IHistoryType.eCash,
+          value: ecashString,
+          mints: mints.toList(),
+        );
+      }
+    });
   }
 
   /// Processes payment of a Lightning invoice.

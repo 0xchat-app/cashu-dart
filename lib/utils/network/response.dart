@@ -48,6 +48,19 @@ class CashuResponse<T> {
   /// due to null data.
   T get data => _data!;
 
+  factory CashuResponse.fromSuccessData(T data) {
+    return CashuResponse(
+      data: data,
+    );
+  }
+
+  factory CashuResponse.fromErrorMsg(String message) {
+    return CashuResponse(
+      code: ResponseCode.failed,
+      errorMsg: message,
+    );
+  }
+
   factory CashuResponse.fromErrorMap(Map map) {
     ResponseCode code = ResponseCode.fromValue(map['code']);
     if (code == ResponseCode.success) {
@@ -62,6 +75,14 @@ class CashuResponse<T> {
   @override
   String toString() {
     return '${super.toString()}, code: $code, errorMsg: $errorMsg, data: $_data';
+  }
+
+  CashuResponse<R> cast<R>() {
+    return CashuResponse<R>(
+      code: code,
+      errorMsg: errorMsg,
+      data: _data as R?,
+    );
   }
 }
 

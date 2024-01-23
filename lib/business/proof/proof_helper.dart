@@ -90,13 +90,15 @@ class ProofHelper {
     // Prevent infinite recursion
     if (isFromSwap) return [];
 
-    final newProofs = await swapProofs(
+    final response = await swapProofs(
       mint: mint,
       proofs: proofsToSend,
       supportAmount: amount.toInt(),
       swapAction: Cashu.isV1 ? v1.Nut3.swap : v0.Nut6.split,
     );
+    if (!response.isSuccess) return [];
 
+    final newProofs = response.data;
     final finalProofs = await getProofsToUse(
       mint: mint,
       amount: amount,
@@ -131,7 +133,7 @@ class ProofHelper {
     await ProofStore.deleteProofs(burnedProofs);
   }
 
-  static Future<List<Proof>?> swapProofs({
+  static Future<CashuResponse<List<Proof>>> swapProofs({
     required IMint mint,
     required List<Proof> proofs,
     int? supportAmount,
@@ -146,7 +148,7 @@ class ProofHelper {
     // get keyset
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
     final keyset = keysetInfo?.keyset ?? {};
-    if (keysetInfo == null || keyset.isEmpty) return null;
+    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
 
     final proofsTotalAmount = proofs.totalAmount;
 
@@ -178,7 +180,9 @@ class ProofHelper {
       proofs: proofs,
       outputs: blindedMessages,
     );
-    if (!response.isSuccess) return null;
+    if (!response.isSuccess) {
+      return response.cast();
+    }
 
     final newProofs = await DHKE.constructProofs(
       promises: response.data,
@@ -186,11 +190,11 @@ class ProofHelper {
       secrets: secrets,
       keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
     );
-    if (newProofs == null) return null;
+    if (newProofs == null) return CashuResponse.fromErrorMsg('Construct proofs failed.');
 
     await ProofStore.addProofs(newProofs);
     await deleteProofs(proofs: proofs, mintURL: mint.mintURL);
-    return newProofs;
+    return CashuResponse.fromSuccessData(newProofs);
   }
 
   static int _hammingWeight(int n) {

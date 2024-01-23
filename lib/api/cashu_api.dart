@@ -92,8 +92,8 @@ abstract class CashuAPIClient {
 
   /// Redeems e-cash from the given string.
   /// [ecashString]: The string representing the e-cash.
-  /// Returns a tuple containing memo and amount if successful, otherwise null.
-  Future<(String memo, int amount)?> redeemEcash(String ecashString);
+  /// Returns a tuple containing memo and amount if successful.
+  Future<CashuResponse<(String memo, int amount)>> redeemEcash(String ecashString);
 
   /// Processes payment of a Lightning invoice.
   ///

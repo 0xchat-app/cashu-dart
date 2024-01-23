@@ -6,6 +6,7 @@ import '../../core/nuts/nut_00.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/mint_model.dart';
+import '../../utils/network/response.dart';
 import '../cashu_api.dart';
 import 'cashu_financial_api.dart';
 import 'cashu_mint_api.dart';
@@ -68,7 +69,7 @@ class CashuAPIV0Client extends CashuAPIClient {
   }
 
   @override
-  Future<(String memo, int amount)?> redeemEcash(String ecashString) {
+  Future<CashuResponse<(String memo, int amount)>> redeemEcash(String ecashString) {
     return CashuTransactionAPI.redeemEcash(ecashString);
   }
 
