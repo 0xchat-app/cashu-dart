@@ -1,7 +1,6 @@
 
 import 'package:cashu_dart/model/invoice_listener.dart';
 
-import '../../business/proof/token_helper.dart';
 import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../model/history_entry.dart';

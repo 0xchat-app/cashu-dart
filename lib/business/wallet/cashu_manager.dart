@@ -132,6 +132,7 @@ class CashuManager {
     if (!fetchSuccess) return null;
     mint.name = mint.info?.name ?? mint.info?.mintURL ?? '';
 
+    mints.add(mint);
     MintHelper.updateMintKeysetFromRemote(mint);
     return mint;
   }

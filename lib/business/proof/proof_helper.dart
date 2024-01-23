@@ -83,7 +83,7 @@ class ProofHelper {
     }
 
     final totalAmount = proofsToSend.totalAmount;
-    if (BigInt.from(totalAmount) == amount) {
+    if (BigInt.from(totalAmount) == amount && proofsToSend.length == _hammingWeight(totalAmount)) {
       return proofsToSend;
     }
 
@@ -191,5 +191,14 @@ class ProofHelper {
     await ProofStore.addProofs(newProofs);
     await deleteProofs(proofs: proofs, mintURL: mint.mintURL);
     return newProofs;
+  }
+
+  static int _hammingWeight(int n) {
+    int count = 0;
+    while (n != 0) {
+      count += n & 1;
+      n >>= 1;
+    }
+    return count;
   }
 }
