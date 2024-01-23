@@ -14,56 +14,6 @@ import '../../model/mint_model.dart';
 import '../../utils/network/response.dart';
 
 class CashuTransactionAPI {
-  /// Sends e-cash using the provided mint and amount.
-  /// [mint]: The mint object to use for sending e-cash.
-  /// [amount]: The amount of e-cash to send.
-  /// [memo]: An optional memo for the transaction.
-  /// Returns the encoded token if successful, otherwise null.
-  static Future<String?> sendEcash({
-    required IMint mint,
-    required int amount,
-    String memo = '',
-    List<Proof>? proofs,
-  }) async {
-    await CashuManager.shared.setupFinish.future;
-
-    // get proofs
-    proofs ??= await ProofHelper.getProofsToUse(
-      mint: mint,
-      amount: BigInt.from(amount),
-    );
-    if (proofs.isEmpty) return null;
-
-    if (proofs.totalAmount != amount) {
-      proofs = await ProofHelper.getProofsToUse(
-        mint: mint,
-        amount: BigInt.from(amount),
-        proofs: proofs,
-      );
-      if (proofs.isEmpty) return null;
-    }
-
-    final encodedToken = TokenHelper.getEncodedToken(
-      Token(
-        token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
-        memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
-      )
-    );
-
-    await HistoryStore.addToHistory(
-      amount: -amount,
-      type: IHistoryType.eCash,
-      value: encodedToken,
-      mints: [mint.mintURL],
-    );
-
-    await ProofHelper.deleteProofs(proofs: proofs, mintURL: null);
-    await CashuManager.shared.updateMintBalance(mint);
-
-    print('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
-    return encodedToken;
-  }
-
   /// Redeems e-cash from the given string.
   /// [ecashString]: The string representing the e-cash.
   /// Returns a tuple containing memo and amount if successful.
@@ -126,20 +76,21 @@ class CashuTransactionAPI {
     await CashuManager.shared.setupFinish.future;
 
     // Get fee
-    final response = await Nut5.checkingLightningFees(mintURL: mint.mintURL, pr: pr);
-    if (!response.isSuccess) return false;
-    final fee = response.data;
+    final checkResponse = await Nut5.checkingLightningFees(mintURL: mint.mintURL, pr: pr);
+    if (!checkResponse.isSuccess) return false;
+    final fee = checkResponse.data;
 
     // Get amount
     final req = Bolt11PaymentRequest(pr);
     final amount = (req.amount.toDouble() * 100000000).toInt();
 
-    final proofs = await ProofHelper.getProofsToUse(
+    final proofsResponse = await ProofHelper.getProofsToUse(
       mint: mint,
       amount: BigInt.from(amount + fee),
     );
-    if (proofs.isEmpty) return false;
+    if (!proofsResponse.isSuccess) return false;
 
+    final proofs = proofsResponse.data;
     final (paid, preimage) = await TransactionHelper.payingTheQuote(
       mint: mint,
       paymentKey: pr,

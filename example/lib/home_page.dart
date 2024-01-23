@@ -18,23 +18,39 @@ class ExamplePageState extends State<ExamplePage> with CashuListener {
 
   IMint? selectedMint;
 
+  List<IMint> mintList = [];
+
+  Future fetcher = Cashu.mintList();
+
   @override
   void initState() {
     super.initState();
-    selectedMint = Cashu.mintList().firstOrNull;
+    fetcher.then((value) {
+      mintList = value;
+      selectedMint = mintList.firstOrNull;
+      updateUI();
+    });
     Cashu.addInvoiceListener(this);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        buildTotalBalance(),
-        buildMintList(),
-        if (selectedMint != null)
-          buildMintInfo(),
-        buildOptionView(),
-      ],
+    return FutureBuilder(
+      future: fetcher,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return Column(
+            children: [
+              buildTotalBalance(),
+              buildMintList(),
+              if (selectedMint != null)
+                buildMintInfo(),
+              buildOptionView(),
+            ],
+          );
+        }
+        return Container();
+      }
     );
   }
 
@@ -50,7 +66,7 @@ class ExamplePageState extends State<ExamplePage> with CashuListener {
   }
 
   Widget buildMintList() {
-    final mints = [...Cashu.mintList()];
+    final mints = [...mintList];
     return Container(
       color: Colors.orange,
       height: 140,
@@ -182,6 +198,7 @@ class ExamplePageState extends State<ExamplePage> with CashuListener {
                 buildOptionItem('Redeem Ecash', redeemEcash),
                 buildOptionItem('Withdraw Ecash', payLightningInvoice),
                 buildOptionItem('Create Ecash', createLightningInvoice),
+                buildOptionItem('Get Backup Token', getBackupToken),
               ],
             ),
           ),
@@ -415,6 +432,15 @@ extension ExamplePageStateActionEx on ExamplePageState {
       showMessage('Create failed', true);
     } else {
       showMessage('quote: $invoice\nrequest: ${invoice.request}', false);
+    }
+  }
+
+  getBackupToken() async {
+    final response = await Cashu.getBackUpToken();
+    if (response.isSuccess) {
+      showMessage('backup token: ${response.data}', false);
+    } else {
+      showMessage(response.errorMsg, true);
     }
   }
 }

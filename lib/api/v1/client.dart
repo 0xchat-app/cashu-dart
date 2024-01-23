@@ -61,21 +61,6 @@ class CashuAPIV1Client extends CashuAPIClient {
 
   // Transaction
   @override
-  Future<String?> sendEcash({
-    required IMint mint,
-    required int amount,
-    String memo = '',
-    List<Proof>? proofs,
-  }) {
-    return CashuTransactionAPI.sendEcash(
-      mint: mint,
-      amount: amount,
-      memo: memo,
-      proofs: proofs,
-    );
-  }
-
-  @override
   Future<CashuResponse<(String memo, int amount)>> redeemEcash(String ecashString) {
     return CashuTransactionAPI.redeemEcash(ecashString);
   }

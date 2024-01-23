@@ -40,9 +40,9 @@ class ProofHelper {
     return usableProofs;
   }
 
-  static Future<List<Proof>> getProofsToUse({
+  static Future<CashuResponse<List<Proof>>> getProofsToUse({
     required IMint mint,
-    required BigInt amount,
+    BigInt? amount,
     List<Proof>? proofs,
     bool orderAsc = false,
     bool checkState = true,
@@ -52,7 +52,7 @@ class ProofHelper {
     // check state
     if (checkState) {
       final response = await checkAction(mintURL: mint.mintURL, proofs: proofs);
-      if (!response.isSuccess) return [];
+      if (!response.isSuccess) return response.cast();
       if (response.data.length != proofs.length) {
         throw Exception('[E][Cashu - checkProofsAvailable] '
             'The length of states(${response.data.length}) and proofs(${proofs.length}) is not consistent');
@@ -72,31 +72,33 @@ class ProofHelper {
     final List<Proof> proofsToSend = [];
     BigInt amountAvailable = BigInt.zero;
 
-    if (BigInt.from(proofs.totalAmount) < amount) {
-      return [];
+    if (amount != null && BigInt.from(proofs.totalAmount) < amount) {
+      return CashuResponse.fromErrorMsg('Insufficient proofs');
     }
 
     for (final proof in proofs) {
-      if (amountAvailable >= amount) break;
+      if (amount != null && amountAvailable >= amount) break;
       amountAvailable += proof.amount.asBigInt();
       proofsToSend.add(proof);
     }
 
     final totalAmount = proofsToSend.totalAmount;
-    if (BigInt.from(totalAmount) == amount && proofsToSend.length == _hammingWeight(totalAmount)) {
-      return proofsToSend;
+    if (proofsToSend.length <= _hammingWeight(totalAmount)) {
+      if (amount == null || BigInt.from(totalAmount) == amount) {
+        return CashuResponse.fromSuccessData(proofsToSend);
+      }
     }
 
     // Prevent infinite recursion
-    if (isFromSwap) return [];
+    if (isFromSwap) return CashuResponse.fromErrorMsg('Local error');
 
     final response = await swapProofs(
       mint: mint,
       proofs: proofsToSend,
-      supportAmount: amount.toInt(),
+      supportAmount: amount != null ? amount.toInt() : proofsToSend.totalAmount,
       swapAction: Cashu.isV1 ? v1.Nut3.swap : v0.Nut6.split,
     );
-    if (!response.isSuccess) return [];
+    if (!response.isSuccess) return response;
 
     final newProofs = response.data;
     final finalProofs = await getProofsToUse(

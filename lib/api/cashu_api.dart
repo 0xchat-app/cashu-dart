@@ -2,10 +2,12 @@
 import 'dart:async';
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
+import 'package:cashu_dart/business/proof/proof_helper.dart';
 
 import '../business/mint/mint_helper.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
+import '../business/wallet/cashu_manager.dart';
 import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
@@ -71,24 +73,68 @@ abstract class CashuAPIClient {
   /// Edits the name of the specified mint.
   Future editMintName(IMint mint, String name);
 
+  /// Retrieves mint information from the specified mint.
   Future<CashuResponse<MintInfo>> fetchMintInfo(IMint mint) {
     return MintHelper.requestMintInfo(mintURL: mint.mintURL);
   }
 
   /**************************** Transaction ****************************/
   /// Sends e-cash using the provided mint and amount.
-  ///
   /// [mint]: The mint object to use for sending e-cash.
   /// [amount]: The amount of e-cash to send.
   /// [memo]: An optional memo for the transaction.
-  ///
   /// Returns the encoded token if successful, otherwise null.
-  Future<String?> sendEcash({
+  Future<CashuResponse<String>> sendEcash({
     required IMint mint,
     required int amount,
     String memo = '',
     List<Proof>? proofs,
-  });
+  }) async {
+
+    await CashuManager.shared.setupFinish.future;
+
+    // get proofs
+    if (proofs == null) {
+      final response = await ProofHelper.getProofsToUse(
+        mint: mint,
+        amount: BigInt.from(amount),
+      );
+      if (!response.isSuccess) return response.cast();
+
+      proofs = response.data;
+    }
+
+    if (proofs.totalAmount != amount) {
+      final response = await ProofHelper.getProofsToUse(
+        mint: mint,
+        amount: BigInt.from(amount),
+        proofs: proofs,
+      );
+      if (!response.isSuccess) return response.cast();
+
+      proofs = response.data;
+    }
+
+    final encodedToken = TokenHelper.getEncodedToken(
+      Token(
+        token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
+        memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
+      ),
+    );
+
+    await HistoryStore.addToHistory(
+      amount: -amount,
+      type: IHistoryType.eCash,
+      value: encodedToken,
+      mints: [mint.mintURL],
+    );
+
+    await ProofHelper.deleteProofs(proofs: proofs, mintURL: null);
+    await CashuManager.shared.updateMintBalance(mint);
+
+    print('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
+    return CashuResponse.fromSuccessData(encodedToken);
+  }
 
   /// Redeems e-cash from the given string.
   /// [ecashString]: The string representing the e-cash.
@@ -118,15 +164,44 @@ abstract class CashuAPIClient {
     required int amount,
   });
 
+  /// Adds an invoice listener.
   void addInvoiceListener(CashuListener listener);
 
+  /// Removes an invoice listener.
   void removeInvoiceListener(CashuListener listener);
+
+  Future<CashuResponse<String>> getBackUpToken() async {
+    final mints = await mintList();
+    List<TokenEntry> entryList = [];
+    for (final mint in mints) {
+      final response = await ProofHelper.getProofsToUse(mint: mint);
+      if (!response.isSuccess) return response.cast();
+
+      final proofs = response.data;
+      if (proofs.isNotEmpty) {
+        entryList.add(
+          TokenEntry(
+            mint: mint.mintURL,
+            proofs: proofs,
+          ),
+        );
+      }
+    }
+    if (entryList.isEmpty) {
+      return CashuResponse.fromErrorMsg('There is no valid proof');
+    }
+    return CashuResponse.fromSuccessData(
+      TokenHelper.getEncodedToken(
+        Token(
+          token: entryList,
+        ),
+      ),
+    );
+  }
 
   /**************************** Tools ****************************/
   /// Converts the amount in a Lightning Network payment request to satoshis.
-  ///
   /// [pr]: BOLT11 encoded payment request string.
-  ///
   /// Returns the amount from the payment request in satoshis as an integer, or null if the
   /// payment request is invalid or processing fails.
   int? amountOfLightningInvoice(String pr) {
@@ -140,7 +215,9 @@ abstract class CashuAPIClient {
       return null;
     }
   }
-
+  /// Retrieves information of a token from its e-cash token string.
+  /// [ecashToken]: The e-cash token string.
+  /// Returns a tuple of memo and total amount if successful, otherwise null.
   (String memo, int amount)? infoOfToken(String ecashToken) {
     final token = TokenHelper.getDecodedToken(ecashToken);
     if (token == null) return null;
@@ -149,10 +226,13 @@ abstract class CashuAPIClient {
     return (token.memo, proofs.totalAmount);
   }
 
+  /// Checks if a given string is a valid Cashu token.
   bool isCashuToken(String str) {
     return Nut0.decodedToken(str) != null;
   }
 
+  /// Determines if a given string is a valid Lightning Network (LN) invoice.
+  /// Strips common URI prefixes before validation.
   bool isLnInvoice(String str) {
     if (str.isEmpty) return false;
 
