@@ -21,6 +21,37 @@ enum ResponseCode {
   }
 }
 
+extension ResponseCodeEx on ResponseCode {
+  Set<String> get subErrorText {
+    switch (this) {
+      case ResponseCode.success: return {};
+      case ResponseCode.failed: return {};
+      case ResponseCode.notAllowedError: return {};
+      case ResponseCode.transactionError: return {};
+      case ResponseCode.tokenAlreadySpentError:
+        return {
+          'Token already spent',
+        };
+      case ResponseCode.secretTooLongError: return {};
+      case ResponseCode.noSecretInProofsError: return {};
+      case ResponseCode.keysetError: return {};
+      case ResponseCode.keysetNotFoundError: return {};
+      case ResponseCode.lightningError: return {};
+      case ResponseCode.invoiceNotPaidError: return {};
+    }
+  }
+
+  static ResponseCode? tryGetCodeWithErrorMsg(String text) {
+    if (text.isEmpty) return null;
+    final allEnum = [...ResponseCode.values];
+    for (final e in allEnum) {
+      if (e.subErrorText.any((errorText) => text.contains(errorText))) {
+        return e;
+      }
+    }
+    return null;
+  }
+}
 
 class CashuResponse<T> {
   CashuResponse({
@@ -47,6 +78,12 @@ class CashuResponse<T> {
   /// Attempting to access `data` when `isSuccess` is false may cause a runtime error
   /// due to null data.
   T get data => _data!;
+
+  factory CashuResponse.generalError() {
+    return CashuResponse.fromErrorMsg(
+      'Network exception, please try again later',
+    );
+  }
 
   factory CashuResponse.fromSuccessData(T data) {
     return CashuResponse(

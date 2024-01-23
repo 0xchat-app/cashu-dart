@@ -55,27 +55,35 @@ class HTTPClient {
       if (response.statusCode == 200) {
         final bodyJson = jsonDecode(response.body);
         final data = modelBuilder?.call(bodyJson);
-        return CashuResponse(
-          code: data == null ? ResponseCode.failed : ResponseCode.success,
-          data: data,
-        );
-      }
-
-      if (response.statusCode == 400) {
+        if (data != null) {
+          return CashuResponse(
+            code: ResponseCode.success,
+            data: data,
+          );
+        }
+      } else if (response.statusCode == 400) {
         final bodyJson = jsonDecode(response.body);
-        if (bodyJson is Map && bodyJson.containsKey('code')) {
-          return CashuResponse.fromErrorMap(bodyJson);
+        if (bodyJson is Map) {
+          final code = bodyJson['code'];
+          final detail = bodyJson['detail'];
+          if (code != null) {
+            return CashuResponse.fromErrorMap(bodyJson);
+          } else if (detail != null) {
+            final code = ResponseCodeEx.tryGetCodeWithErrorMsg(detail);
+            if (code != null) {
+              return CashuResponse(
+                code: code,
+                errorMsg: detail,
+              );
+            }
+          }
         }
       }
 
-      return CashuResponse(
-        code: ResponseCode.failed,
-      );
+      return CashuResponse.generalError();
     } catch(e, stackTrace) {
       print('[http - error] url: $url, e: $e, $stackTrace');
-      return CashuResponse(
-        code: ResponseCode.failed,
-      );
+      return CashuResponse.generalError();
     }
   }
 
@@ -105,27 +113,35 @@ class HTTPClient {
       if (response.statusCode == 200) {
         final bodyJson = jsonDecode(response.body);
         final data = modelBuilder?.call(bodyJson);
-        return CashuResponse(
-          code: data == null ? ResponseCode.failed : ResponseCode.success,
-          data: data,
-        );
-      }
-
-      if (response.statusCode == 400) {
+        if (data != null) {
+          return CashuResponse(
+            code: ResponseCode.success,
+            data: data,
+          );
+        }
+      } else if (response.statusCode == 400) {
         final bodyJson = jsonDecode(response.body);
-        if (bodyJson is Map && bodyJson.containsKey('code')) {
-          return CashuResponse.fromErrorMap(bodyJson);
+        if (bodyJson is Map) {
+          final code = bodyJson['code'];
+          final detail = bodyJson['detail'];
+          if (code != null) {
+            return CashuResponse.fromErrorMap(bodyJson);
+          } else if (detail != null) {
+            final code = ResponseCodeEx.tryGetCodeWithErrorMsg(detail);
+            if (code != null) {
+              return CashuResponse(
+                code: code,
+                errorMsg: detail,
+              );
+            }
+          }
         }
       }
 
-      return CashuResponse(
-        code: ResponseCode.failed,
-      );
+      return CashuResponse.generalError();
     } catch(e, stackTrace) {
       print('[http - error] url: $url, e: $e, $stackTrace');
-      return CashuResponse(
-        code: ResponseCode.failed,
-      );
+      return CashuResponse.generalError();
     }
   }
 
