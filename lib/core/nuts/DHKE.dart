@@ -1,13 +1,10 @@
-import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:cashu_dart/utils/tools.dart';
-import 'package:crypto/crypto.dart';
 import 'package:pointycastle/export.dart';
 
 import 'define.dart';
 import 'nut_00.dart';
-import 'v1/nut_01.dart';
 
 /*
 Bob (mint)

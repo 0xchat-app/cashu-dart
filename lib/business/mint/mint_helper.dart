@@ -89,6 +89,7 @@ class MintHelper {
 
     // Remote
     mint.keysetId(unit);
+    return null;
   }
 }
 

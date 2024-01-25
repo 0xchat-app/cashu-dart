@@ -1,5 +1,4 @@
 
-import '../../business/mint/mint_helper.dart';
 import '../../business/wallet/cashu_manager.dart';
 import '../../model/mint_model.dart';
 

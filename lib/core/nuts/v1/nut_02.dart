@@ -7,7 +7,6 @@ import '../../../model/keyset_info.dart';
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
-import 'nut_01.dart';
 
 class Nut2 {
   static Future<CashuResponse<List<KeysetInfo>>> requestKeysetsState({required String mintURL}) async {

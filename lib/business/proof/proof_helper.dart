@@ -2,16 +2,12 @@
 import 'package:cashu_dart/cashu_dart.dart';
 import 'package:cashu_dart/utils/tools.dart';
 
-import '../../api/cashu_api.dart';
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
-import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/v0/nut.dart' as v0;
 import '../../core/nuts/v1/nut.dart' as v1;
-import '../../utils/network/response.dart';
-import '../wallet/cashu_manager.dart';
 import 'keyset_helper.dart';
 import 'proof_store.dart';
 
