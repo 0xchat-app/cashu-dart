@@ -68,7 +68,7 @@ class TokenHelper {
 
   static String getEncodedToken(Token token) {
     String json = jsonEncode(token.toJson());
-    String base64Encoded = base64.encode(utf8.encode(json));
+    String base64Encoded = base64.encode(utf8.encode(json)).base64urlFromBase64();
     return TOKEN_PREFIX + TOKEN_VERSION + base64Encoded;
   }
 

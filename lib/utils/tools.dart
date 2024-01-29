@@ -72,6 +72,11 @@ extension StringHexEx on String {
     final jsonString = utf8.decode(decoded);
     return json.decode(jsonString) as T;
   }
+
+  String base64urlFromBase64() {
+    String output = replaceAll('+', '-').replaceAll('/', '_');
+    return output.split('=')[0];
+  }
 }
 
 extension BigIntEx on BigInt {

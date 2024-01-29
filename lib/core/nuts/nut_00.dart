@@ -148,6 +148,13 @@ class Proof extends DBObject {
     'C': C,
   };
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'amount': int.tryParse(amount) ?? 0,
+    'secret': secret,
+    'C': C,
+  };
+
   static Proof fromMap(Map<String, Object?> map) {
     var amount = '0';
     final amountRaw = map['amount'];
@@ -264,7 +271,7 @@ class TokenEntry {
   }
 
   Map toJson() => {
-    'proofs': proofs.map((e) => e.toMap()).toList(),
+    'proofs': proofs.map((e) => e.toJson()).toList(),
     'mint': mint,
   };
 

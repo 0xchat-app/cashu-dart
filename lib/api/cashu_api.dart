@@ -122,6 +122,7 @@ abstract class CashuAPIClient {
     required IMint mint,
     required int amount,
     String memo = '',
+    String unit = 'sat',
     List<Proof>? proofs,
   }) async {
 
@@ -153,6 +154,7 @@ abstract class CashuAPIClient {
       Token(
         token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
         memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
+        unit: unit,
       ),
     );
 
