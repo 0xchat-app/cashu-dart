@@ -134,6 +134,7 @@ class CashuManager {
 
     mints.add(mint);
     MintHelper.updateMintKeysetFromRemote(mint);
+    notifyListenerForMintListChanged();
     return mint;
   }
 
@@ -187,6 +188,12 @@ class CashuManager {
   void notifyListenerForBalanceChanged(IMint mint) {
     _listeners.forEach((e) {
       e.onBalanceChanged(mint);
+    });
+  }
+
+  void notifyListenerForMintListChanged() {
+    _listeners.forEach((e) {
+      e.onMintListChanged(mints);
     });
   }
 }
