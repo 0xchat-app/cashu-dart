@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:cashu_dart/business/proof/proof_helper.dart';
@@ -35,7 +36,27 @@ abstract class CashuAPIClient {
   Future<List<IHistoryEntry>> getHistoryList({
     int size = 10,
     String lastHistoryId = '',
-  });
+  }) async {
+    await CashuManager.shared.setupFinish.future;
+    final allHistory = await HistoryStore.getHistory();
+
+    var startIndex = 0;
+    if (lastHistoryId.isNotEmpty) {
+      final index = allHistory.indexWhere((element) => element.id == lastHistoryId);
+      if (index >= 0) {
+        startIndex = index + 1;
+      }
+    }
+    final end = min(allHistory.length, startIndex + size);
+    return allHistory.sublist(startIndex, end);
+  }
+
+  Future<List<IHistoryEntry>> getHistory({
+    List<String> value = const [],
+  }) async {
+    await CashuManager.shared.setupFinish.future;
+    return await HistoryStore.getHistory(value: value);
+  }
 
   /// Check the availability of proofs for a given mint.
   /// Returns the amount of invalid proof, or null if the request fails.
@@ -50,10 +71,23 @@ abstract class CashuAPIClient {
   /// Returns `true` if the token is spendable, `false` if not, or `null` if the status is indeterminable.
   Future<bool?> isEcashTokenSpendableFromHistory(IHistoryEntry entry) async {
     if (entry.type != IHistoryType.eCash) return null;
-    final spendable = await TokenHelper.isTokenSpendable(entry.value);
+
+    final spendable = await isEcashTokenSpendableFromToken(entry.value);
     if (spendable == null) return null;
+
     entry.isSpent = spendable;
-    await HistoryStore.updateHistoryEntry(entry);
+    if (spendable) {
+      await HistoryStore.updateHistoryEntry(entry);
+    }
+    return spendable;
+  }
+
+  Future<bool?> isEcashTokenSpendableFromToken(String token) async {
+    if (!isCashuToken(token)) return null;
+
+    final spendable = await TokenHelper.isTokenSpendable(token);
+    if (spendable == null) return null;
+
     return spendable;
   }
 
@@ -221,7 +255,6 @@ abstract class CashuAPIClient {
   (String memo, int amount)? infoOfToken(String ecashToken) {
     final token = TokenHelper.getDecodedToken(ecashToken);
     if (token == null) return null;
-
     final proofs = token.token.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
     return (token.memo, proofs.totalAmount);
   }

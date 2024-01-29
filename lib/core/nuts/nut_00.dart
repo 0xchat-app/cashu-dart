@@ -19,12 +19,16 @@ class Nut0 {
   }
 
   static Token? decodedToken(String token) {
+    bool flag = false;
     for (var prefix in uriPrefixes) {
       if (token.startsWith(prefix)) {
         token = token.substring(prefix.length);
+        flag = true;
         break;
       }
     }
+
+    if (!flag) return null;
 
     dynamic obj;
     try {

@@ -19,17 +19,6 @@ class CashuAPIV0Client extends CashuAPIClient {
   int totalBalance() => CashuFinancialAPI.totalBalance();
 
   @override
-  Future<List<IHistoryEntry>> getHistoryList({
-    int size = 10,
-    String lastHistoryId = '',
-  }) {
-    return CashuFinancialAPI.getHistoryList(
-      size: size,
-      lastHistoryId: lastHistoryId,
-    );
-  }
-
-  @override
   Future<int?> checkProofsAvailable(IMint mint) {
     return CashuFinancialAPI.checkProofsAvailable(mint);
   }

@@ -17,27 +17,6 @@ class CashuFinancialAPI {
     return mints.fold(0, (pre, mint) => pre + mint.balance);
   }
 
-  /// Get a list of history entries with pagination support.
-  /// [size]: Number of entries to return.
-  /// [lastHistoryId]: The ID of the last history entry from the previous fetch.
-  static Future<List<IHistoryEntry>> getHistoryList({
-    int size = 10,
-    String lastHistoryId = '',
-  }) async {
-    await CashuManager.shared.setupFinish.future;
-    final allHistory = await HistoryStore.getHistory();
-
-    var startIndex = 0;
-    if (lastHistoryId.isNotEmpty) {
-      final index = allHistory.indexWhere((element) => element.id == lastHistoryId);
-      if (index >= 0) {
-        startIndex = index + 1;
-      }
-    }
-    final end = min(allHistory.length, startIndex + size);
-    return allHistory.sublist(startIndex, end);
-  }
-
   /// Check the availability of proofs for a given mint.
   /// Returns the amount of invalid proof, or null if the request fails.
   static Future<int?> checkProofsAvailable(IMint mint) async {

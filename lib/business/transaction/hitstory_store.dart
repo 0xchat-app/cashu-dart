@@ -11,8 +11,18 @@ class HistoryStore {
   }
 
   /// get history entries
-  static Future<List<IHistoryEntry>> getHistory() async {
+  static Future<List<IHistoryEntry>> getHistory({
+    List<String> value = const [],
+  }) async {
+    final where = [];
+
+    if (value.isNotEmpty) {
+      value = value.map((e) => '"$e"').toList();
+      where.add(' value in (${value.join(',')}) ');
+    }
+
     return await CashuDB.sharedInstance.objects<IHistoryEntry>(
+      where: where.isNotEmpty ? where.join(' and ') : null,
       orderBy: 'timestamp desc',
     );
   }
