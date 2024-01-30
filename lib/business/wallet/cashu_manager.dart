@@ -18,6 +18,7 @@ class CashuManager {
   List<String>? defaultMint;
 
   final List<IMint> mints = [];
+  final Set<String> mintURLQueue = {};
   InvoiceHandler invoiceHandler = InvoiceHandler();
   final List<CashuListener> _listeners = [];
 
@@ -120,19 +121,25 @@ class CashuManager {
 
     if (!mintURL.startsWith('https://')) throw Exception('mintURL must starts with \'https://\'');
 
-    if (mints.any((element) => element.mintURL == mintURL)) {
+    final url = MintHelper.getMintURL(mintURL);
+
+    if (mints.any((element) => element.mintURL == url)) {
       return null;
     }
 
-    final url = MintHelper.getMintURL(mintURL);
+    if (!mintURLQueue.add(url)) return null;
 
     final mint = IMint(mintURL: url);
 
     final fetchSuccess = await MintHelper.updateMintInfoFromRemote(mint);
-    if (!fetchSuccess) return null;
+    if (!fetchSuccess) {
+      mintURLQueue.remove(url);
+      return null;
+    }
     mint.name = mint.info?.name ?? mint.info?.mintURL ?? '';
 
     mints.add(mint);
+    mintURLQueue.remove(url);
     MintHelper.updateMintKeysetFromRemote(mint);
     notifyListenerForMintListChanged();
     return mint;

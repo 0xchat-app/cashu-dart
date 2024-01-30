@@ -14,12 +14,6 @@ import 'cashu_transaction_api.dart';
 
 class CashuAPIV1Client extends CashuAPIClient {
 
-  static test() async {
-    // const mint = 'https://legend.lnbits.com/cashu/api/v1/AptDNABNBXv8gpuywhx6NV';
-    // const mint = 'https://testnut.cashu.space';
-    // const mint = 'https://mint.tangjinxing.com';
-  }
-
   // Financial
   @override
   int totalBalance() => CashuFinancialAPI.totalBalance();
@@ -37,9 +31,6 @@ class CashuAPIV1Client extends CashuAPIClient {
   // Mint
   @override
   Future<List<IMint>> mintList() => CashuMintAPI.mintList();
-
-  @override
-  Future<IMint?> addMint(String mintURL) => CashuMintAPI.addMint(mintURL);
 
   @override
   Future<bool> deleteMint(IMint mint) => CashuMintAPI.deleteMint(mint);

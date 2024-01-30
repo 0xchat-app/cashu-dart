@@ -98,7 +98,10 @@ abstract class CashuAPIClient {
   /// Adds a new mint with the given URL.
   /// Throws an exception if the URL does not start with 'https://'.
   /// Returns the newly added mint, or null if the operation fails.
-  Future<IMint?> addMint(String mintURL);
+  Future<IMint?> addMint(String mintURL) async {
+    await CashuManager.shared.setupFinish.future;
+    return await CashuManager.shared.addMint(mintURL);
+  }
 
   /// Deletes the specified mint.
   /// Returns true if the deletion is successful.
