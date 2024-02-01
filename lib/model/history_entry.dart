@@ -93,7 +93,7 @@ class IHistoryEntry extends DBObject {
     final recipient = Tools.getValueAs<String?>(map, 'recipient', null);
     final preImage = Tools.getValueAs<String?>(map, 'preImage', null);
     final fee = Tools.getValueAs<num?>(map, 'fee', 0);
-    final isSpent = Tools.getValueAs<bool?>(map, 'isSpent', null);
+    final isSpent = Tools.getValueAs<int?>(map, 'isSpent', null);
 
     return IHistoryEntry(
       id: id,
@@ -106,7 +106,7 @@ class IHistoryEntry extends DBObject {
       recipient: recipient,
       preImage: preImage,
       fee: fee,
-      isSpent: isSpent,
+      isSpent: isSpent == null ? null : isSpent == 1,
     );
   }
 

@@ -52,14 +52,20 @@ class CashuTransactionAPI {
       } else {
         return CashuResponse.fromErrorMsg('No funds available proofs for redemption.');
       }
-    }).whenComplete(() {
+    }).whenComplete(() async {
       if (receiveAmount > 0) {
-        HistoryStore.addToHistory(
+        await HistoryStore.addToHistory(
           amount: receiveAmount,
           type: IHistoryType.eCash,
           value: ecashString,
           mints: mints.toList(),
         );
+        (await HistoryStore.getHistory(value: [ecashString]))
+            .where((history) => history.amount < 0)
+            .forEach((history) {
+              history.isSpent = true;
+              HistoryStore.updateHistoryEntry(history);
+            });
       }
     });
   }

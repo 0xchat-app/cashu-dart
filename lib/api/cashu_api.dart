@@ -1,9 +1,11 @@
 
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:cashu_dart/business/proof/proof_helper.dart';
+import 'package:cashu_dart/business/proof/proof_store.dart';
 
 import '../business/mint/mint_helper.dart';
 import '../business/proof/token_helper.dart';
@@ -75,8 +77,8 @@ abstract class CashuAPIClient {
     final spendable = await isEcashTokenSpendableFromToken(entry.value);
     if (spendable == null) return null;
 
-    entry.isSpent = spendable;
-    if (spendable) {
+    entry.isSpent = !spendable;
+    if (entry.isSpent == true) {
       await HistoryStore.updateHistoryEntry(entry);
     }
     return spendable;
@@ -173,6 +175,56 @@ abstract class CashuAPIClient {
 
     print('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
     return CashuResponse.fromSuccessData(encodedToken);
+  }
+
+  Future<CashuResponse<List<String>>> sendEcashList({
+    required IMint mint,
+    required List<int> amountList,
+    String memo = '',
+    String unit = 'sat',
+  }) async {
+
+    await CashuManager.shared.setupFinish.future;
+
+    final deletedProofs = <Proof>[];
+    final tokenList = <String>[];
+
+    for (var i = 0; i < amountList.length; i++) {
+      final amount = amountList[i];
+
+      // get proofs
+      final response = await ProofHelper.getProofsToUse(
+        mint: mint,
+        amount: BigInt.from(amount),
+        checkState: i == 0,
+      );
+      if (!response.isSuccess) {
+        // add the deleted proof
+        ProofStore.addProofs(deletedProofs);
+        return response.cast();
+      }
+
+      final proofs = response.data;
+      final encodedToken = TokenHelper.getEncodedToken(
+        Token(
+          token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
+          memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
+          unit: unit,
+        ),
+      );
+
+      tokenList.add(encodedToken);
+      deletedProofs.addAll(proofs);
+      await HistoryStore.addToHistory(
+        amount: -amount,
+        type: IHistoryType.eCash,
+        value: encodedToken,
+        mints: [mint.mintURL],
+      );
+      await ProofHelper.deleteProofs(proofs: proofs, mintURL: null);
+    }
+
+    return CashuResponse.fromSuccessData(tokenList);
   }
 
   /// Redeems e-cash from the given string.

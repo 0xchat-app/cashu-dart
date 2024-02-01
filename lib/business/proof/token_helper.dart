@@ -58,7 +58,7 @@ class TokenHelper {
 
       final response = await ProofHelper.checkAction(mintURL: mint.mintURL, proofs: entry.proofs);
       if (!response.isSuccess) return null;
-      if (response.data.every((state) => state != TokenState.live)) {
+      if (response.data.any((state) => state == TokenState.live)) {
         return true;
       }
     }
