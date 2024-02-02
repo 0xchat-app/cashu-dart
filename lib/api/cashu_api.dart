@@ -260,8 +260,7 @@ abstract class CashuAPIClient {
   /// Removes an invoice listener.
   void removeInvoiceListener(CashuListener listener);
 
-  Future<CashuResponse<String>> getBackUpToken() async {
-    final mints = await mintList();
+  Future<CashuResponse<String>> getBackUpToken(List<IMint> mints) async {
     List<TokenEntry> entryList = [];
     for (final mint in mints) {
       final response = await ProofHelper.getProofsToUse(mint: mint);
