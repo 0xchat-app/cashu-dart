@@ -81,8 +81,8 @@ class HistoryPageState extends State<HistoryPage> {
 extension IHistoryTypeUIEx on IHistoryType {
   String get text {
     switch(this) {
-      case IHistoryType.eCash: return 'Ecash Payment';
-      case IHistoryType.lnInvoice: return 'Lightning Payment';
+      case IHistoryType.eCash: return 'Ecash';
+      case IHistoryType.lnInvoice: return 'Lightning';
       case IHistoryType.multiMintSwap: return 'Swap';
       default: return 'Unknown';
     }
