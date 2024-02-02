@@ -71,8 +71,8 @@ class DHKE {
     final rG = G * r;
     final B_ = Y + rG;
 
-    final B_str = B_ != null ? DHKE.ecPointToHex(B_) : '';
-    return (B_str, r);
+    final bStr = B_ != null ? DHKE.ecPointToHex(B_) : '';
+    return (bStr, r);
   }
 
   static BigInt generateRandomBigInt() {
@@ -82,9 +82,9 @@ class DHKE {
   }
 
   // unblinding: C_ - rK = kY + krG - krG = kY = C
-  static ECPoint? unblindingSignature(String C_hex, BigInt r, String K_hex) {
-    final C_ = pointFromHex(C_hex);
-    final rK = pointFromHex(K_hex) * r;
+  static ECPoint? unblindingSignature(String cHex, BigInt r, String kHex) {
+    final C_ = pointFromHex(cHex);
+    final rK = pointFromHex(kHex) * r;
     if (rK == null) return null;
     return C_ - rK;
   }

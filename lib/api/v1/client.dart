@@ -3,7 +3,6 @@ import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 import 'package:cashu_dart/model/invoice_listener.dart';
 
 import '../../core/nuts/nut_00.dart';
-import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/mint_model.dart';
 import '../../utils/network/response.dart';

@@ -1,7 +1,6 @@
 
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:cashu_dart/business/proof/proof_helper.dart';
@@ -298,9 +297,9 @@ abstract class CashuAPIClient {
   int? amountOfLightningInvoice(String pr) {
     try {
       final req = Bolt11PaymentRequest(pr);
-      req.tags.forEach((tag) {
+      for (var tag in req.tags) {
         print('[Cashu - invoice decode]${tag.type}: ${tag.data}');
-      });
+      }
       return (req.amount.toDouble() * 100000000).toInt();
     } catch (_) {
       return null;

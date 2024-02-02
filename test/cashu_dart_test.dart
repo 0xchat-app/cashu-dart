@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cashu_dart/cashu_dart.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockCashuDartPlatform

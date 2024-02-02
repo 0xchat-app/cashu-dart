@@ -1,12 +1,9 @@
 
-import 'dart:math';
 
 import '../../business/proof/proof_helper.dart';
-import '../../business/transaction/hitstory_store.dart';
 import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../model/history_entry.dart';
 import '../../model/mint_model.dart';
 
 

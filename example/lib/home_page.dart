@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:cashu_dart/business/mint/mint_helper.dart';
 import 'package:cashu_dart/cashu_dart.dart';

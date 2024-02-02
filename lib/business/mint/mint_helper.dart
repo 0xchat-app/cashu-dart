@@ -71,9 +71,9 @@ class MintHelper {
     if (keysets.isEmpty) return ;
 
     mint.cleanKeysetId();
-    keysets.forEach((keyset) {
+    for (var keyset in keysets) {
       mint.updateKeysetId(keyset.id, keyset.unit);
-    });
+    }
     KeysetStore.addOrReplaceKeysets(keysets);
   }
 

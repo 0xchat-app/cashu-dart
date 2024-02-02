@@ -1,5 +1,5 @@
 
-import 'package:cashu_dart/api/v1/cashu_financial_api.dart';
+import 'package:cashu_dart/cashu_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:cashu_dart/model/history_entry.dart';
 
@@ -37,8 +37,8 @@ class HistoryPageState extends State<HistoryPage> {
       _isLoading = true;
     });
 
-    await Future.delayed(Duration(seconds: 2));
-    final newData = await CashuFinancialAPI.getHistoryList(lastHistoryId: lastDataId);
+    await Future.delayed(const Duration(seconds: 2));
+    final newData = await Cashu.getHistoryList(lastHistoryId: lastDataId);
 
     setState(() {
       _isLoading = false;
