@@ -24,14 +24,22 @@ class CashuManager {
 
   Completer setupFinish = Completer();
 
+  int dbVersion = 1;
+  String dbNameWithIdentify(String identify) => 'cashu-$identify.db';
+
   Future<void> setup(String identify, {
     int dbVersion = 1,
     String? dbPassword,
     List<String>? defaultMint,
   }) async {
     try {
+      this.dbVersion = dbVersion;
       this.defaultMint = defaultMint;
-      await CashuDB.sharedInstance.open('cashu-$identify.db', version: dbVersion, password: dbPassword);
+      await CashuDB.sharedInstance.open(
+        dbNameWithIdentify(identify),
+        version: dbVersion,
+        password: dbPassword,
+      );
       await setupMint();
       await setupBalance();
       await invoiceHandler.initialize();
@@ -41,6 +49,16 @@ class CashuManager {
     } catch (e) {
       print('[E][Cashu - setup] $e');
     }
+  }
+
+  Future changeDBPassword(String identify, String newPassword) async {
+    await CashuDB.sharedInstance.execute("PRAGMA rekey = '$newPassword'");
+    await CashuDB.sharedInstance.closeDatabase();
+    await CashuDB.sharedInstance.open(
+      dbNameWithIdentify(identify),
+      version: dbVersion,
+      password: newPassword,
+    );
   }
 
   void clean() {
