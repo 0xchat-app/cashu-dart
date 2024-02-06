@@ -1,5 +1,6 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
+import 'package:cashu_dart/cashu_dart.dart';
 import 'package:uuid/uuid.dart';
 import '../business/proof/token_helper.dart';
 import '../utils/database/db.dart';
@@ -47,7 +48,7 @@ class IHistoryEntry extends DBObject {
 
   final double timestamp;
 
-  /// Lightning invoice or encoded Cashu token
+  /// [Receipt.paymentKey] (Lightning invoice) or encoded Cashu token
   final String value;
 
   /// mints involved
