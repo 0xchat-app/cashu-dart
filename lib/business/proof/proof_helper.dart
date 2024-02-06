@@ -92,7 +92,6 @@ class ProofHelper {
       mint: mint,
       proofs: proofsToSend,
       supportAmount: amount != null ? amount.toInt() : proofsToSend.totalAmount,
-      swapAction: Cashu.isV1 ? v1.Nut3.swap : v0.Nut6.split,
     );
     if (!response.isSuccess) return response;
 
@@ -136,12 +135,9 @@ class ProofHelper {
     required List<Proof> proofs,
     int? supportAmount,
     String unit = 'sat',
-    required Future<CashuResponse<List<BlindedSignature>>> Function({
-    required String mintURL,
-    required List<Proof> proofs,
-    required List<BlindedMessage> outputs,
-    }) swapAction,
   }) async {
+
+    final swapAction = Cashu.isV1 ? v1.Nut3.swap : v0.Nut6.split;
 
     // get keyset
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);

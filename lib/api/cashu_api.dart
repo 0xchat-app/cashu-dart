@@ -10,6 +10,7 @@ import '../business/mint/mint_helper.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
+import '../business/wallet/invoice_handler.dart';
 import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
@@ -90,6 +91,21 @@ abstract class CashuAPIClient {
     if (spendable == null) return null;
 
     return spendable;
+  }
+
+  Future<CashuResponse<Receipt>> checkReceiptCompleted(Receipt receipt) async {
+
+    var isRedeemed = await HistoryStore.hasReceiptRedeemHistory(receipt);
+    if (isRedeemed) return CashuResponse.fromSuccessData(receipt);
+
+    final success = await InvoiceHandler().checkInvoice(receipt, true);
+    if (success) return CashuResponse.fromSuccessData(receipt);
+
+    // Fetch again
+    isRedeemed = await HistoryStore.hasReceiptRedeemHistory(receipt);
+    if (isRedeemed) return CashuResponse.fromSuccessData(receipt);
+
+    return CashuResponse.generalError();
   }
 
   /**************************** Mint ****************************/
@@ -187,6 +203,7 @@ abstract class CashuAPIClient {
 
     final deletedProofs = <Proof>[];
     final tokenList = <String>[];
+    final deletedHistoryIds = <String>[];
 
     for (var i = 0; i < amountList.length; i++) {
       final amount = amountList[i];
@@ -197,9 +214,11 @@ abstract class CashuAPIClient {
         amount: BigInt.from(amount),
         checkState: i == 0,
       );
-      if (!response.isSuccess) {
+      // if (!response.isSuccess) {
+      if (i == amountList.length - 1) {
         // add the deleted proof
-        ProofStore.addProofs(deletedProofs);
+        await ProofStore.addProofs(deletedProofs);
+        await HistoryStore.deleteHistory(deletedHistoryIds);
         return response.cast();
       }
 
@@ -214,12 +233,13 @@ abstract class CashuAPIClient {
 
       tokenList.add(encodedToken);
       deletedProofs.addAll(proofs);
-      await HistoryStore.addToHistory(
+      final history = await HistoryStore.addToHistory(
         amount: -amount,
         type: IHistoryType.eCash,
         value: encodedToken,
         mints: [mint.mintURL],
       );
+      deletedHistoryIds.add(history.id);
       await ProofHelper.deleteProofs(proofs: proofs, mintURL: null);
     }
 

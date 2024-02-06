@@ -1,5 +1,6 @@
 
 import '../../model/history_entry.dart';
+import '../../model/invoice.dart';
 import '../../utils/database/db.dart';
 
 class HistoryStore {
@@ -52,5 +53,16 @@ class HistoryStore {
     );
     _add(item);
     return item;
+  }
+
+  static deleteHistory(List<String> ids) async {
+    await CashuDB.sharedInstance.delete<IHistoryEntry>(
+      where: 'id in (${ids.map((e) => '"$e"').join(',')})',
+    );
+  }
+
+  static Future<bool> hasReceiptRedeemHistory(Receipt receipt) async {
+    final result = await HistoryStore.getHistory(value: [receipt.paymentKey]);
+    return result.any((history) => history.amount > 0);
   }
 }

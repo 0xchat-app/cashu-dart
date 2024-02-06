@@ -37,7 +37,6 @@ class CashuTransactionAPI {
         final response = await ProofHelper.swapProofs(
           mint: mint,
           proofs: entry.proofs,
-          swapAction: Nut6.split,
         );
         if (!response.isSuccess) return response.cast();
 

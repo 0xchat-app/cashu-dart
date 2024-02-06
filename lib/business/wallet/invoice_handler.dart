@@ -33,19 +33,22 @@ class InvoiceHandler {
   void addInvoice(Receipt invoice) {
     if (_invoiceExists(invoice)) return ;
     _invoices.add(invoice);
-    _checkInvoice(invoice);
+    checkInvoice(invoice);
   }
 
   void _periodicCheck(Timer timer) async {
     final invoices = [..._invoices].reversed;
     for (var invoice in invoices) {
-      _checkInvoice(invoice);
+      checkInvoice(invoice);
     }
   }
 
-  Future<void> _checkInvoice(Receipt invoice) async {
-    if (_pendingInvoices.contains(invoice)) return;
-    _pendingInvoices.add(invoice);
+  Future<bool> checkInvoice(Receipt invoice, [bool force = false]) async {
+
+    if (!force) {
+      if (_pendingInvoices.contains(invoice)) return false;
+      _pendingInvoices.add(invoice);
+    }
 
     try {
       bool paid = true;
@@ -54,7 +57,9 @@ class InvoiceHandler {
           mintURL: invoice.mintURL,
           request: invoice.request,
         );
-        paid = quoteInfo.data.paid;
+        if (quoteInfo.isSuccess) {
+          paid = quoteInfo.data.paid;
+        }
       }
 
       if (paid) {
@@ -71,6 +76,7 @@ class InvoiceHandler {
             );
             invoiceOnPaidCallback?.call(invoice);
           }
+          return true;
         }
       } else if (invoice.isExpired) {
         _deleteInvoice(invoice);
@@ -85,6 +91,8 @@ class InvoiceHandler {
     } finally {
       _pendingInvoices.remove(invoice);
     }
+
+    return false;
   }
 
   Future<List<Proof>?> _exchangeCash(Receipt invoice) async {
