@@ -214,8 +214,7 @@ abstract class CashuAPIClient {
         amount: BigInt.from(amount),
         checkState: i == 0,
       );
-      // if (!response.isSuccess) {
-      if (i == amountList.length - 1) {
+      if (!response.isSuccess) {
         // add the deleted proof
         await ProofStore.addProofs(deletedProofs);
         await HistoryStore.deleteHistory(deletedHistoryIds);

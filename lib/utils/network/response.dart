@@ -115,10 +115,14 @@ class CashuResponse<T> {
   }
 
   CashuResponse<R> cast<R>() {
+    R? newData;
+    if (_data is R?) {
+      newData = _data as R?;
+    }
     return CashuResponse<R>(
       code: code,
       errorMsg: errorMsg,
-      data: _data as R?,
+      data: newData,
     );
   }
 }
