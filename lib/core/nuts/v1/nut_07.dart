@@ -5,12 +5,12 @@ import '../define.dart';
 import '../nut_00.dart';
 
 extension TokenStateEx on TokenState {
-  static TokenState fromState(bool spendable, bool pending) {
-    if (!spendable) return TokenState.burned;
-    if (!pending) {
-      return TokenState.live;
-    } else {
-      return TokenState.inFlight;
+  static TokenState? fromState(String stateStr) {
+    switch (stateStr) {
+      case 'UNSPENT': return TokenState.live;
+      case 'PENDING': return TokenState.inFlight;
+      case 'SPENT': return TokenState.burned;
+      default: return null;
     }
   }
 }
@@ -20,29 +20,35 @@ class Nut7 {
     required String mintURL,
     required List<Proof> proofs,
   }) async {
+    final proofList = [...proofs];
     return HTTPClient.post(
-      nutURLJoin(mintURL, 'check'),
+      nutURLJoin(mintURL, 'checkstate'),
       params: {
-        'proofs': proofs.map((e) {
-          return {
-            'secret': e.secret,
-          };
+        'secrets': proofList.map((e) {
+          return e.secret;
         }).toList(),
       },
       modelBuilder: (json) {
         if (json is! Map) return null;
-        final spendableList = Tools.getValueAs<List>(json, 'spendable', []);
-        final pendingList = Tools.getValueAs<List>(json, 'pending', []);
-        if (spendableList.length != proofs.length ||
-            pendingList.length != proofs.length) return null;
+        final states = Tools.getValueAs<List>(json, 'states', []);
+        if (states.length != proofList.length) return null;
 
         final result = <TokenState>[];
-        for (var i = 0; i < proofs.length; ++i) {
-          final spendable = spendableList[i];
-          final pending = pendingList[i];
-          if (spendable is! bool || pending is! bool) return null;
-          result.add(TokenStateEx.fromState(spendable, pending));
+        for (var i = 0; i < proofList.length; ++i) {
+          final proof = proofList[i];
+          final stateEntry = states[i];
+          if (stateEntry is! Map) return null;
+
+          final secret = stateEntry['secret'];
+          final state = TokenStateEx.fromState(stateEntry['state']);
+
+          if (proof.secret == secret && state != null) {
+            result.add(state);
+          }
         }
+
+        if (result.length != proofList.length) return null;
+
         return result;
       },
     );

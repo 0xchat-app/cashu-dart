@@ -52,7 +52,8 @@ class IInvoice extends DBObject implements Receipt {
     final quote = Tools.getValueAs<String>(json, 'quote', '');
     final request = Tools.getValueAs<String>(json, 'request', '');
     final paid = Tools.getValueAs<bool>(json, 'paid', false);
-    final expiry = Tools.getValueAs<int>(json, 'expiry', 0);
+    final expiryInterval = Tools.getValueAs<int>(json, 'expiry', 0);
+    final expiry = expiryInterval == 0 ? 0 : DateTime.now().millisecondsSinceEpoch ~/ 1000 + expiryInterval;
     if (quote.isEmpty || request.isEmpty) return null;
     return IInvoice(
       quote: quote,

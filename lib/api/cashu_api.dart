@@ -15,6 +15,7 @@ import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
 import '../model/invoice_listener.dart';
+import '../model/lightning_invoice.dart';
 import '../model/mint_info.dart';
 import '../model/mint_model.dart';
 import '../utils/network/response.dart';
@@ -98,7 +99,7 @@ abstract class CashuAPIClient {
     var isRedeemed = await HistoryStore.hasReceiptRedeemHistory(receipt);
     if (isRedeemed) return CashuResponse.fromSuccessData(receipt);
 
-    final success = await InvoiceHandler().checkInvoice(receipt, true);
+    final success = await CashuManager.shared.invoiceHandler.checkInvoice(receipt, true);
     if (success) return CashuResponse.fromSuccessData(receipt);
 
     // Fetch again
@@ -272,6 +273,24 @@ abstract class CashuAPIClient {
     required IMint mint,
     required int amount,
   });
+
+  Future<bool> redeemEcashFromInvoice({
+    required IMint mint,
+    required String pr,
+  }) async {
+
+    final req = Bolt11PaymentRequest(pr);
+    final hash = req.tags.where((e) => e.type == 'payment_hash').firstOrNull?.data;
+    if (hash == null) return false;
+
+    final invoice = LightningInvoice(
+      pr: pr,
+      hash: hash,
+      amount: (req.amount.toDouble() * 100000000).toString(),
+      mintURL: mint.mintURL,
+    );
+    return CashuManager.shared.invoiceHandler.checkInvoice(invoice, true);
+  }
 
   /// Adds an invoice listener.
   void addInvoiceListener(CashuListener listener);
