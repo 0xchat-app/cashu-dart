@@ -1,7 +1,6 @@
 
 import 'package:cashu_dart/cashu_dart.dart';
 import 'package:flutter/material.dart';
-import 'package:cashu_dart/model/history_entry.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage(this.initialData, {super.key});

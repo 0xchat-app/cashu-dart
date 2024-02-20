@@ -4,13 +4,6 @@ import 'dart:async';
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 import 'package:cashu_dart/cashu_dart.dart';
 
-import '../../api/cashu_api.dart';
-import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/v0/nut.dart' as v0;
-import '../../core/nuts/v1/nut.dart' as v1;
-import '../../model/history_entry.dart';
-import '../../model/invoice.dart';
-import '../../model/mint_model.dart';
 import '../transaction/hitstory_store.dart';
 import '../transaction/invoice_store.dart';
 import '../transaction/transaction_helper.dart';
