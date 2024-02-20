@@ -10,6 +10,7 @@ class IMint extends DBObject {
 
   IMint({
     required String mintURL,
+    required this.maxNutsVersion,
     this.name = '',
     this.balance = 0,
   }) : mintURL = MintHelper.getMintURL(mintURL);
@@ -19,6 +20,8 @@ class IMint extends DBObject {
   String name;
 
   int balance;
+
+  int maxNutsVersion;
 
   /// key: unit, value: keysetId
   final Map<String, String> _keysetIds = {};
@@ -34,12 +37,13 @@ class IMint extends DBObject {
 
   @override
   String toString() {
-    return '${super.toString()}, url: $mintURL, balance: $balance, info: $info';
+    return '${super.toString()}, url: $mintURL, maxNutsVersion: $maxNutsVersion, balance: $balance, info: $info';
   }
 
   @override
   Map<String, Object?> toMap() => {
     'mintURL': mintURL,
+    'maxNutsVersion': maxNutsVersion,
     'name': name,
     'balance': balance,
   };
@@ -47,6 +51,7 @@ class IMint extends DBObject {
   static IMint fromMap(Map<String, Object?> map) =>
       IMint(
         mintURL: Tools.getValueAs(map, 'mintURL', ''),
+        maxNutsVersion: Tools.getValueAs(map, 'maxNutsVersion', 0),
         name: Tools.getValueAs(map, 'name', ''),
         balance: Tools.getValueAs(map, 'balance', 0)
       );
@@ -61,5 +66,11 @@ class IMint extends DBObject {
 
   static List<String?> ignoreKey() {
     return ['_keysetIds, info'];
+  }
+
+  static Map<String, String?> updateTable() {
+    return {
+      "2": '''alter table ${tableName()} add maxNutsVersion INT;'''
+    };
   }
 }

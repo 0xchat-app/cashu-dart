@@ -1,35 +1,16 @@
 
 
-import '../../api/cashu_api.dart';
 import '../../core/keyset_store.dart';
+import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/v0/nut.dart' as v0;
 import '../../core/nuts/v1/nut.dart' as v1;
 import '../../model/keyset_info.dart';
-import '../../model/mint_info.dart';
 import '../../model/mint_model.dart';
-import '../../utils/network/response.dart';
 import 'mint_info_store.dart';
 import 'mint_store.dart';
 
-typedef RequestKeysAction = Future<CashuResponse<List<MintKeysPayload>>> Function({
-  required String mintURL,
-  String? keysetId,
-});
-
-typedef RequestMintInfoAction = Future<CashuResponse<MintInfo>> Function({
-  required String mintURL,
-});
-
 class MintHelper {
-
-  static RequestKeysAction get requestKeys => Cashu.isV1
-      ? v1.Nut1.requestKeys
-      : v0.Nut1.requestKeys;
-
-  static RequestMintInfoAction get requestMintInfo => Cashu.isV1
-      ? v1.Nut6.requestMintInfo
-      : v0.Nut9.requestMintInfo;
 
   static String getMintURL(String url) {
     url = url.trim();
@@ -44,16 +25,16 @@ class MintHelper {
     return url;
   }
 
-  static Future<List<KeysetInfo>> fetchKeysetFromRemote(String mintURL, [String? keysetId]) async {
-    final response = await requestKeys(mintURL: mintURL, keysetId: keysetId);
+  static Future<List<KeysetInfo>> fetchKeysetFromRemote(IMint mint, [String? keysetId]) async {
+    final response = await mint.requestKeysAction(mintURL: mint.mintURL, keysetId: keysetId);
     final keys = response.isSuccess ? response.data : <MintKeysPayload>[];
-    final keysets = keys.map((e) => e.asKeysetInfo(mintURL)).toList();
+    final keysets = keys.map((e) => e.asKeysetInfo(mint.mintURL)).toList();
     KeysetStore.addOrReplaceKeysets(keysets);
     return keysets;
   }
 
   static Future<bool> updateMintInfoFromRemote(IMint mint) async {
-    final response = await requestMintInfo(mintURL: mint.mintURL);
+    final response = await mint.requestMintInfoAction(mintURL: mint.mintURL);
     if (!response.isSuccess) return false;
     final info = response.data;
     mint.info = info;
@@ -66,8 +47,7 @@ class MintHelper {
   }
 
   static updateMintKeysetFromRemote(IMint mint) async {
-    final url = mint.mintURL;
-    final keysets = await fetchKeysetFromRemote(url);
+    final keysets = await fetchKeysetFromRemote(mint);
     if (keysets.isEmpty) return ;
 
     mint.cleanKeysetId();
@@ -90,6 +70,12 @@ class MintHelper {
     // Remote
     mint.keysetId(unit);
     return null;
+  }
+
+  static Future<int> getMaxNutsVersion(String mintURL) async {
+    final response = await v1.Nut6.requestMintInfo(mintURL: mintURL);
+    if (response.isSuccess) return 1;
+    return 0;
   }
 }
 

@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import '../../core/keyset_store.dart';
+import '../../core/nuts/nut_00.dart';
+import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/invoice_listener.dart';
+import '../../model/keyset_info.dart';
+import '../../model/lightning_invoice.dart';
+import '../../model/mint_info.dart';
 import '../../model/mint_model.dart';
 import '../../utils/database/db.dart';
 import '../mint/mint_helper.dart';
@@ -24,22 +29,16 @@ class CashuManager {
 
   Completer setupFinish = Completer();
 
-  int dbVersion = 1;
+  static const int dbVersion = 2;
   String dbNameWithIdentify(String identify) => 'cashu-$identify.db';
 
   Future<void> setup(String identify, {
-    int dbVersion = 1,
     String? dbPassword,
     List<String>? defaultMint,
   }) async {
     try {
-      this.dbVersion = dbVersion;
       this.defaultMint = defaultMint;
-      await CashuDB.sharedInstance.open(
-        dbNameWithIdentify(identify),
-        version: dbVersion,
-        password: dbPassword,
-      );
+      await setupDB(dbName: identify, dbPassword: dbPassword);
       await setupMint();
       await setupBalance();
       await invoiceHandler.initialize();
@@ -68,6 +67,26 @@ class CashuManager {
     invoiceHandler.dispose();
   }
 
+  Future<void> setupDB({
+    String dbName = 'default',
+    String? dbPassword,
+  }) async {
+    CashuDB.sharedInstance.schemes = [
+      KeysetInfo,
+      Proof,
+      IHistoryEntry,
+      IInvoice,
+      LightningInvoice,
+      MintInfo,
+      IMint,
+    ];
+    await CashuDB.sharedInstance.open(
+      dbNameWithIdentify(dbName),
+      version: dbVersion,
+      password: dbPassword,
+    );
+  }
+
   Future<void> setupMint() async {
     try {
       List<IMint> dbMints = await MintStore.getMints();
@@ -84,7 +103,7 @@ class CashuManager {
     defaultMint ??= ['https://testnut.cashu.space'];
     final result = <IMint>[];
     for (final mintURL in defaultMint!) {
-      final mint = IMint(mintURL: mintURL);
+      final mint = IMint(mintURL: mintURL, maxNutsVersion: 1);
       await MintStore.addMints([mint]);
       result.add(mint);
     }
@@ -147,7 +166,9 @@ class CashuManager {
 
     if (!mintURLQueue.add(url)) return null;
 
-    final mint = IMint(mintURL: url);
+    final maxNutsVersion = await MintHelper.getMaxNutsVersion(url);
+
+    final mint = IMint(mintURL: url, maxNutsVersion: maxNutsVersion);
 
     final fetchSuccess = await MintHelper.updateMintInfoFromRemote(mint);
     if (!fetchSuccess) {

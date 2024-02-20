@@ -36,7 +36,7 @@ class IInvoice extends DBObject implements Receipt {
   @override
   final String request;
 
-  final bool paid;
+  bool paid;
 
   @override
   final String amount;

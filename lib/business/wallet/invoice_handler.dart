@@ -1,6 +1,9 @@
 
 import 'dart:async';
 
+import 'package:cashu_dart/business/wallet/cashu_manager.dart';
+import 'package:cashu_dart/cashu_dart.dart';
+
 import '../../api/cashu_api.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/v0/nut.dart' as v0;
@@ -52,21 +55,24 @@ class InvoiceHandler {
 
     try {
       bool paid = true;
-      if (Cashu.isV1) {
-        final quoteInfo = await v1.Nut5.requestMeltQuote(
-          mintURL: invoice.mintURL,
-          request: invoice.request,
-        );
-        if (quoteInfo.isSuccess) {
-          paid = quoteInfo.data.paid;
-        }
-      }
+      // if (invoice is IInvoice) {
+      //   final response = await v1.Nut5.requestMeltQuote(
+      //     mintURL: invoice.mintURL,
+      //     request: invoice.request,
+      //   );
+      //   if (response.isSuccess) {
+      //     final quoteInfo = response.data;
+      //     invoice.paid = quoteInfo.paid;
+      //     await InvoiceStore.addInvoice(invoice);
+      //     paid = quoteInfo.paid;
+      //   }
+      // }
 
       if (paid) {
-        final newProof = await _exchangeCash(invoice);
-        if (newProof != null) {
+        final response = await _exchangeCash(invoice);
+        if (response.isSuccess) {
           _deleteInvoice(invoice);
-          if (newProof.isNotEmpty) {
+          if (response.data.isNotEmpty) {
             await HistoryStore.addToHistory(
               amount: int.tryParse(invoice.amount) ?? 0,
               type: IHistoryType.lnInvoice,
@@ -77,13 +83,9 @@ class InvoiceHandler {
             invoiceOnPaidCallback?.call(invoice);
           }
           return true;
+        } else if (response.code == ResponseCode.invoiceNotPaidError && invoice.isExpired) {
+          _deleteInvoice(invoice);
         }
-      } else if (invoice.isExpired) {
-        _deleteInvoice(invoice);
-      }
-
-      if (!Cashu.isV1 && invoice.isExpired) {
-        _deleteInvoice(invoice);
       }
 
     } catch (e) {
@@ -95,18 +97,18 @@ class InvoiceHandler {
     return false;
   }
 
-  Future<List<Proof>?> _exchangeCash(Receipt invoice) async {
+  Future<CashuResponse<List<Proof>>> _exchangeCash(Receipt invoice) async {
     final amount = int.tryParse(invoice.amount);
-    if (amount == null) return null;
-    final proofs = await TransactionHelper.requestTokensFromMint(
-      mint: IMint(mintURL: invoice.mintURL),
+    if (amount == null) return CashuResponse.fromErrorMsg('Amount is null.');
+
+    final mint = await CashuManager.shared.getMint(invoice.mintURL);
+    if (mint == null) return CashuResponse.fromErrorMsg('Mint is null.');
+
+    return TransactionHelper.requestTokensFromMint(
+      mint: mint,
       quoteID: invoice.redemptionKey,
       amount: amount,
-      requestTokensAction: Cashu.isV1
-          ? v1.Nut4.requestTokensFromMint
-          : v0.Nut4.requestTokensFromMint
     );
-    return proofs;
   }
 
   void _deleteInvoice(Receipt invoice) {

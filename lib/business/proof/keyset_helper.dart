@@ -17,7 +17,7 @@ class KeysetHelper {
 
     if (keysetInfo == null || keysetInfo.keyset.isEmpty) {
       // from remote
-      final newKeysets = await MintHelper.fetchKeysetFromRemote(mint.mintURL, keysetId);
+      final newKeysets = await MintHelper.fetchKeysetFromRemote(mint, keysetId);
       keysetInfo = newKeysets.where((element) => element.unit == unit).firstOrNull;
     }
     if (keysetInfo == null) return null;
@@ -35,5 +35,4 @@ class KeysetHelper {
     if (info?.keyset.isEmpty ?? true) return null;
     return info?.keyset;
   }
-
 }

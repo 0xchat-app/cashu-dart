@@ -17,12 +17,11 @@ class InvoiceStore {
     return rowsAffected == 1;
   }
 
-  static Future<List<Receipt>> getAllInvoice() {
-    if (Cashu.isV1) {
-      return CashuDB.sharedInstance.objects<IInvoice>();
-    } else {
-      return CashuDB.sharedInstance.objects<LightningInvoice>();
-    }
+  static Future<List<Receipt>> getAllInvoice() async {
+    return [
+      ... await CashuDB.sharedInstance.objects<IInvoice>(),
+      ... await CashuDB.sharedInstance.objects<LightningInvoice>(),
+    ];
   }
 
   static Future<bool> deleteInvoice(List<Receipt> delInvoices) async {

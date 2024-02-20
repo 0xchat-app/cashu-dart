@@ -1,73 +1,55 @@
 
-import 'package:cashu_dart/model/invoice_listener.dart';
+import 'package:bolt11_decoder/bolt11_decoder.dart';
 
+import '../../business/proof/proof_helper.dart';
+import '../../business/transaction/transaction_helper.dart';
 import '../../business/wallet/cashu_manager.dart';
-import '../../core/nuts/nut_00.dart';
-import '../../model/invoice.dart';
+import '../../core/nuts/v0/nut_05.dart';
+import '../../core/nuts/v0/nut_08.dart';
 import '../../model/mint_model.dart';
-import '../../utils/network/response.dart';
-import '../cashu_api.dart';
-import 'cashu_financial_api.dart';
-import 'cashu_mint_api.dart';
-import 'cashu_transaction_api.dart';
 
-class CashuAPIV0Client extends CashuAPIClient {
+class CashuAPIV0Client {
 
-  // Financial
-  @override
-  int totalBalance() => CashuFinancialAPI.totalBalance();
-
-  @override
-  Future<int?> checkProofsAvailable(IMint mint) {
-    return CashuFinancialAPI.checkProofsAvailable(mint);
-  }
-
-  @override
-  Future<List<Proof>> getAllUseProofs(IMint mint) {
-    return CashuFinancialAPI.getAllUseProofs(mint);
-  }
-
-  // Mint
-  @override
-  Future<List<IMint>> mintList() => CashuMintAPI.mintList();
-
-  @override
-  Future<bool> deleteMint(IMint mint) => CashuMintAPI.deleteMint(mint);
-
-  @override
-  Future editMintName(IMint mint, String name) => CashuMintAPI.editMintName(mint, name);
-
-  @override
-  Future<CashuResponse<(String memo, int amount)>> redeemEcash(String ecashString) {
-    return CashuTransactionAPI.redeemEcash(ecashString);
-  }
-
-  @override
-  Future<bool> payingLightningInvoice({
+  /// Processes payment of a Lightning invoice.
+  /// [mint]: The mint to use for payment.
+  /// [pr]: The payment request string of the Lightning invoice.
+  /// [amount]: The amount to pay.
+  /// Returns true if payment is successful.
+  static Future<bool> payingLightningInvoice({
     required IMint mint,
     required String pr,
-  }) {
-    return CashuTransactionAPI.payingLightningInvoice(mint: mint, pr: pr);
-  }
+  }) async {
 
-  @override
-  Future<Receipt?> createLightningInvoice({
-    required IMint mint,
-    required int amount,
-  }) {
-    return CashuTransactionAPI.createLightningInvoice(
+    await CashuManager.shared.setupFinish.future;
+
+    // Get fee
+    final checkResponse = await Nut5.checkingLightningFees(mintURL: mint.mintURL, pr: pr);
+    if (!checkResponse.isSuccess) return false;
+    final fee = checkResponse.data;
+
+    // Get amount
+    final req = Bolt11PaymentRequest(pr);
+    final amount = (req.amount.toDouble() * 100000000).toInt();
+
+    final proofsResponse = await ProofHelper.getProofsToUse(
       mint: mint,
-      amount: amount,
+      amount: BigInt.from(amount + fee),
     );
-  }
+    if (!proofsResponse.isSuccess) return false;
 
-  @override
-  void addInvoiceListener(CashuListener listener) {
-    CashuManager.shared.addListener(listener);
-  }
+    final proofs = proofsResponse.data;
+    final (paid, preimage) = await TransactionHelper.payingTheQuote(
+      mint: mint,
+      paymentKey: pr,
+      proofs: proofs,
+      fee: fee,
+      meltAction: Nut8.payingTheInvoice,
+    );
 
-  @override
-  void removeInvoiceListener(CashuListener listener) {
-    CashuManager.shared.removeListener(listener);
+    if (paid) {
+      await CashuManager.shared.updateMintBalance(mint);
+    }
+
+    return paid;
   }
 }

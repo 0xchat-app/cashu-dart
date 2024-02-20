@@ -1,11 +1,11 @@
 
 import 'dart:convert';
 
+import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../utils/tools.dart';
 import '../wallet/cashu_manager.dart';
-import 'proof_helper.dart';
 
 class TokenHelper {
 
@@ -56,7 +56,7 @@ class TokenHelper {
       final mint = await CashuManager.shared.getMint(entry.mint);
       if (mint == null) continue ;
 
-      final response = await ProofHelper.checkAction(mintURL: mint.mintURL, proofs: entry.proofs);
+      final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: entry.proofs);
       if (!response.isSuccess) return null;
       if (response.data.any((state) => state == TokenState.live)) {
         return true;

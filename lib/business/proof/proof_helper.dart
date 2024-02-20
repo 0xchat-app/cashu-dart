@@ -1,26 +1,18 @@
 
-import 'package:cashu_dart/cashu_dart.dart';
 import 'package:cashu_dart/utils/tools.dart';
 
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
+import '../../core/mint_actions.dart';
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
-import '../../core/nuts/v0/nut.dart' as v0;
-import '../../core/nuts/v1/nut.dart' as v1;
+import '../../core/nuts/nut_00.dart';
+import '../../model/mint_model.dart';
+import '../../utils/network/response.dart';
 import 'keyset_helper.dart';
 import 'proof_store.dart';
 
-typedef TokenCheckAction = Future<CashuResponse<List<TokenState>>> Function({
-  required String mintURL,
-  required List<Proof> proofs,
-});
-
 class ProofHelper {
-
-  static TokenCheckAction get checkAction => Cashu.isV1
-      ? v1.Nut7.requestTokenState
-      : v0.Nut7.requestTokenState;
 
   static Future<List<Proof>> getProofs(
     String mintURL,
@@ -47,7 +39,7 @@ class ProofHelper {
     proofs ??= await getProofs(mint.mintURL, orderAsc);
     // check state
     if (checkState) {
-      final response = await checkAction(mintURL: mint.mintURL, proofs: proofs);
+      final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: proofs);
       if (!response.isSuccess) return response.cast();
       if (response.data.length != proofs.length) {
         throw Exception('[E][Cashu - checkProofsAvailable] '
@@ -107,12 +99,12 @@ class ProofHelper {
   }
 
   static Future deleteProofs({
+    IMint? mint,
     required List<Proof> proofs,
-    required String? mintURL,
   }) async {
     final burnedProofs = <Proof>[];
-    if (mintURL != null && mintURL.isNotEmpty) {
-      final response = await checkAction(mintURL: mintURL, proofs: proofs);
+    if (mint != null) {
+      final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: proofs);
       if (!response.isSuccess) return null;
       if (response.data.length != proofs.length) {
         throw Exception('[E][Cashu - checkProofsAvailable] '
@@ -136,9 +128,6 @@ class ProofHelper {
     int? supportAmount,
     String unit = 'sat',
   }) async {
-
-    final swapAction = Cashu.isV1 ? v1.Nut3.swap : v0.Nut6.split;
-
     // get keyset
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
     final keyset = keysetInfo?.keyset ?? {};
@@ -169,7 +158,7 @@ class ProofHelper {
       rs.addAll($3);
     }
 
-    final response = await swapAction(
+    final response = await mint.swapAction(
       mintURL: mint.mintURL,
       proofs: proofs,
       outputs: blindedMessages,
@@ -187,7 +176,7 @@ class ProofHelper {
     if (newProofs == null) return CashuResponse.fromErrorMsg('Construct proofs failed.');
 
     await ProofStore.addProofs(newProofs);
-    await deleteProofs(proofs: proofs, mintURL: mint.mintURL);
+    await deleteProofs(proofs: proofs, mint: mint);
     return CashuResponse.fromSuccessData(newProofs);
   }
 

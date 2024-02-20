@@ -1,5 +1,6 @@
 
 import '../../core/DHKE_helper.dart';
+import '../../core/mint_actions.dart';
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
@@ -25,12 +26,8 @@ class TransactionHelper {
   static Future<Receipt?> requestCreateInvoice({
     required IMint mint,
     required int amount,
-    required Future<CashuResponse<Receipt>> Function({
-      required String mintURL,
-      required int amount,
-    }) createQuoteAction,
   }) async {
-    final response = await createQuoteAction(
+    final response = await mint.createQuoteAction(
       mintURL: mint.mintURL,
       amount: amount,
     );
@@ -40,16 +37,11 @@ class TransactionHelper {
     return response.data;
   }
 
-  static Future<List<Proof>?> requestTokensFromMint({
+  static Future<CashuResponse<List<Proof>>> requestTokensFromMint({
     required IMint mint,
     required String quoteID,
     required int amount,
     String unit = 'sat',
-    required Future<CashuResponse<List<BlindedSignature>>> Function({
-      required String mintURL,
-      required String quote,
-      required List<BlindedMessage> blindedMessages,
-    }) requestTokensAction,
   }) async {
     // // check quote state
     // final quoteInfo = await Nut4.checkMintQuoteState(
@@ -64,7 +56,9 @@ class TransactionHelper {
     // get keyset
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
     final keyset = keysetInfo?.keyset ?? {};
-    if (keysetInfo == null || keyset.isEmpty) return null;
+    if (keysetInfo == null || keyset.isEmpty) {
+      return CashuResponse.fromErrorMsg('Keyset is empty.');
+    }
 
     // create blinded messages
     final ( blindedMessages, secrets, rs, _ ) =
@@ -74,7 +68,7 @@ class TransactionHelper {
     );
 
     // request token
-    final response = await requestTokensAction(
+    final response = await mint.requestTokensAction(
       mintURL: mint.mintURL,
       quote: quoteID,
       blindedMessages: blindedMessages,
@@ -83,9 +77,9 @@ class TransactionHelper {
       if (response.errorMsg.contains('keyset id unknown')) {
         MintHelper.updateMintKeysetFromRemote(mint);
       } else if (response.errorMsg.contains('quote already issued')) {
-        return [];
+        return CashuResponse.fromSuccessData([]);
       }
-      return null;
+      return response.cast();
     }
 
     // unblinding
@@ -96,12 +90,14 @@ class TransactionHelper {
       keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
     );
 
-    if (proofs != null) {
-      await ProofStore.addProofs(proofs);
-      await CashuManager.shared.updateMintBalance(mint);
+    if (proofs == null) {
+      return CashuResponse.fromErrorMsg('Unblinding error.');
     }
 
-    return proofs;
+    await ProofStore.addProofs(proofs);
+    await CashuManager.shared.updateMintBalance(mint);
+
+    return CashuResponse.fromSuccessData(proofs);
   }
 
   static Future<PayingTheInvoiceResponse> payingTheQuote({
@@ -153,7 +149,7 @@ class TransactionHelper {
     if (newProofs == null) return failResult;
 
     await ProofStore.addProofs([...newProofs]);
-    await ProofHelper.deleteProofs(proofs: proofs, mintURL: mint.mintURL);
+    await ProofHelper.deleteProofs(proofs: proofs, mint: mint);
 
     final amount = newProofs.totalAmount - proofs.totalAmount;
     await HistoryStore.addToHistory(

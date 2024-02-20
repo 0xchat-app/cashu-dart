@@ -37,7 +37,9 @@ extension ResponseCodeEx on ResponseCode {
       case ResponseCode.keysetError: return {};
       case ResponseCode.keysetNotFoundError: return {};
       case ResponseCode.lightningError: return {};
-      case ResponseCode.invoiceNotPaidError: return {};
+      case ResponseCode.invoiceNotPaidError: return {
+        'quote not paid',
+      };
     }
   }
 
