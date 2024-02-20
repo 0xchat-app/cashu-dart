@@ -24,7 +24,6 @@ class _MyAppState extends State<MyApp> {
 
   Future setupComplete = CashuManager.shared.setup(
     'test',
-    dbVersion: 1,
     defaultMint: ['https://legend.lnbits.com/cashu/api/v1/AptDNABNBXv8gpuywhx6NV'],
   );
 

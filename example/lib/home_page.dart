@@ -435,7 +435,9 @@ extension ExamplePageStateActionEx on ExamplePageState {
   }
 
   getBackupToken() async {
-    final response = await Cashu.getBackUpToken();
+    final mint = selectedMint;
+    if (mint == null) return ;
+    final response = await Cashu.getBackUpToken([mint]);
     if (response.isSuccess) {
       showMessage('backup token: ${response.data}', false);
     } else {
