@@ -9,16 +9,21 @@ import 'nuts/nut_00.dart';
 
 class DHKEHelper {
 
-  static BlindedMessageData _createRandomBlindedMessages({
+  static BlindedMessageData _createBlindedMessages({
     required String keysetId,
     required List<int> amounts,
+    List<String>? secrets,
   }) {
+
+    if (secrets != null && secrets.length != amounts.length) return ([],[],[],[]);
+
     List<BlindedMessage> blindedMessages = [];
-    List<String> secrets = [];
+    List<String> pSecrets = [];
     List<BigInt> rs = [];
 
-    for (final amount in amounts) {
-      final secret = DHKE.randomPrivateKey().asBase64String();
+    for (var i = 0; i < amounts.length; i++) {
+      final amount = amounts[i];
+      final secret = secrets != null ? secrets[i] : DHKE.randomPrivateKey().asBase64String();
       final (B_, r) = DHKE.blindMessage(secret.asBytes());
       if (B_.isEmpty) continue;
 
@@ -28,13 +33,13 @@ class DHKEHelper {
         B_: B_,
       );
       blindedMessages.add(blindedMessage);
-      secrets.add(secret);
+      pSecrets.add(secret);
       rs.add(r);
     }
 
     return (
       blindedMessages,
-      secrets,
+      pSecrets,
       rs,
       amounts,
     );
@@ -45,9 +50,21 @@ class DHKEHelper {
     required int amount,
   }) {
     List<int> amounts = splitAmount(amount);
-    return _createRandomBlindedMessages(
+    return _createBlindedMessages(
       keysetId: keysetId,
       amounts: amounts,
+    );
+  }
+
+  static BlindedMessageData createBlindedMessagesWithSecret({
+    required String keysetId,
+    required List<int> amounts,
+    required List<String> secrets,
+  }) {
+    return _createBlindedMessages(
+      keysetId: keysetId,
+      amounts: amounts,
+      secrets: secrets,
     );
   }
 
@@ -72,7 +89,7 @@ class DHKEHelper {
       count = max(1, (log(amount) / ln2).ceil());
     }
     final amounts = List.generate(count, (index) => 0);
-    return _createRandomBlindedMessages(
+    return _createBlindedMessages(
       keysetId: keysetId,
       amounts: amounts,
     );

@@ -13,14 +13,7 @@ class Nut3 {
     return HTTPClient.post(
       nutURLJoin(mintURL, 'swap'),
       params: {
-        'inputs': proofs.map((e) {
-          return {
-            'id': e.id,
-            'amount': num.tryParse(e.amount) ?? 0,
-            'secret': e.secret,
-            'C': e.C,
-          };
-        }).toList(),
+        'inputs': proofs.map((e) => e.toJson()).toList(),
         'outputs': outputs.map((e) {
           return {
             'id': e.id,

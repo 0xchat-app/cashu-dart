@@ -1,16 +1,23 @@
 
+import 'dart:convert';
+
 import 'package:bolt11_decoder/bolt11_decoder.dart';
+import 'package:cashu_dart/utils/tools.dart';
 
 import '../business/proof/proof_helper.dart';
 import '../business/proof/proof_store.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
+import '../core/nuts/DHKE.dart';
 import '../core/nuts/nut_00.dart';
+import '../core/nuts/v1/nut_11.dart';
 import '../model/history_entry.dart';
 import '../model/lightning_invoice.dart';
 import '../model/mint_model.dart';
 import '../utils/network/response.dart';
+
+typedef SignWithKeyFunction = Future<String> Function(String key, String message);
 
 class CashuAPIGeneralClient {
 
@@ -49,7 +56,7 @@ class CashuAPIGeneralClient {
     final encodedToken = TokenHelper.getEncodedToken(
       Token(
         token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
-        memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
+        memo: memo,
         unit: unit,
       ),
     );
@@ -101,7 +108,7 @@ class CashuAPIGeneralClient {
       final encodedToken = TokenHelper.getEncodedToken(
         Token(
           token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
-          memo: memo.isNotEmpty ? memo : 'Sent via 0xChat.',
+          memo: memo,
           unit: unit,
         ),
       );
@@ -121,7 +128,74 @@ class CashuAPIGeneralClient {
     return CashuResponse.fromSuccessData(tokenList);
   }
 
-  static Future<CashuResponse<(String memo, int amount)>> redeemEcash(String ecashString) async {
+  static Future<CashuResponse<String>> sendEcashToPublicKeys({
+    required IMint mint,
+    required int amount,
+    required List<String> publicKeys,
+    List<String>? refundPubKeys,
+    int? locktime,
+    String memo = '',
+    String unit = 'sat',
+  }) async {
+
+    await CashuManager.shared.setupFinish.future;
+
+    // get proofs
+    final response = await ProofHelper.getProofsToUse(
+      mint: mint,
+      amount: BigInt.from(amount),
+    );
+    if (!response.isSuccess) return response.cast();
+
+    final localProofs = response.data;
+    final p2pkSecretData = publicKeys.removeAt(0);
+    final p2pkSecretTags = [
+      if (publicKeys.isNotEmpty) P2PKSecretTagKey.pubkeys.appendValues(publicKeys),
+      if (refundPubKeys != null) P2PKSecretTagKey.refund.appendValues(refundPubKeys),
+      if (locktime != null) P2PKSecretTagKey.lockTime.appendValues([locktime.toString()]),
+    ];
+    final secrets = localProofs.map((_) => P2PKSecret(
+      nonce: DHKE.randomPrivateKey().asBase64String(),
+      data: p2pkSecretData,
+      tags: p2pkSecretTags,
+     ).toSecretString(),
+    ).toList();
+
+    final swapResponse = await ProofHelper.swapProofsWithSecrets(
+      mint: mint,
+      proofs: localProofs,
+      secrets: secrets,
+    );
+    if (!swapResponse.isSuccess) return swapResponse.cast();
+
+    final p2pkProofs = swapResponse.data;
+    final encodedToken = TokenHelper.getEncodedToken(
+      Token(
+        token: [TokenEntry(mint: mint.mintURL, proofs: p2pkProofs)],
+        memo: memo,
+        unit: unit,
+      ),
+    );
+
+    await HistoryStore.addToHistory(
+      amount: -amount,
+      type: IHistoryType.eCash,
+      value: encodedToken,
+      mints: [mint.mintURL],
+    );
+
+    await ProofHelper.deleteProofs(proofs: p2pkProofs, mint: null);
+    await CashuManager.shared.updateMintBalance(mint);
+
+    print('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
+    return CashuResponse.fromSuccessData(encodedToken);
+  }
+
+  static Future<CashuResponse<(String memo, int amount)>> redeemEcash({
+    required String ecashString,
+    List<String> redeemPrivateKey = const [],
+    SignWithKeyFunction? signFunction,
+  }) async {
 
     await CashuManager.shared.setupFinish.future;
 
@@ -140,9 +214,24 @@ class CashuAPIGeneralClient {
         final mint = await CashuManager.shared.getMint(entry.mint);
         if (mint == null) continue ;
 
+        final proofs = [...entry.proofs];
+
+        if (redeemPrivateKey.isNotEmpty && signFunction != null) {
+          for (var proof in proofs) {
+            final signatures = [];
+            for (var privkey in redeemPrivateKey) {
+              final sign = await signFunction(privkey, proof.secret);
+              signatures.add(sign);
+            }
+            proof.witness = jsonEncode({
+              'signatures': signatures
+            });
+          }
+        }
+
         final response = await ProofHelper.swapProofs(
           mint: mint,
-          proofs: entry.proofs,
+          proofs: proofs,
         );
         if (!response.isSuccess) return response.cast();
 

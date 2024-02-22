@@ -184,9 +184,11 @@ class CashuAPI {
 
   /**************************** Transaction ****************************/
   /// Sends e-cash using the provided mint and amount.
+  ///
   /// [mint]: The mint object to use for sending e-cash.
   /// [amount]: The amount of e-cash to send.
   /// [memo]: An optional memo for the transaction.
+  ///
   /// Returns the encoded token if successful, otherwise null.
   Future<CashuResponse<String>> sendEcash({
     required IMint mint,
@@ -194,20 +196,74 @@ class CashuAPI {
     String memo = '',
     String unit = 'sat',
     List<Proof>? proofs,
-  }) => CashuAPIGeneralClient.sendEcash(mint: mint, amount: amount);
+  }) => CashuAPIGeneralClient.sendEcash(
+    mint: mint,
+    amount: amount,
+    memo: memo,
+    unit: unit,
+    proofs: proofs,
+  );
 
+  /// Sends a list of e-cash amounts using the provided mint.
   Future<CashuResponse<List<String>>> sendEcashList({
     required IMint mint,
     required List<int> amountList,
     String memo = '',
     String unit = 'sat',
-  }) => CashuAPIGeneralClient.sendEcashList(mint: mint, amountList: amountList);
+  }) => CashuAPIGeneralClient.sendEcashList(
+    mint: mint,
+    amountList: amountList,
+    memo: memo,
+    unit: unit,
+  );
+
+  /// Sends e-cash to specified recipients identified by their public keys.
+  ///
+  /// [mint]: The mint object to use for sending e-cash.
+  /// [amount]: The amount of e-cash to send.
+  /// [publicKeys]: A list of public keys representing the recipients of the e-cash.
+  /// [refundPubKeys]: Optional public keys for refunds after [locktime].
+  /// [locktime]: Optional timestamp (seconds) for when the e-cash becomes refundable.
+  /// [memo]: An optional memo for the transaction.
+  /// [unit]: The unit of the e-cash to be sent. Default is 'sat'.
+  /// [proofs]: An optional list of proofs for transaction verification.
+  ///
+  /// Returns the encoded token if successful, otherwise null.
+  Future<CashuResponse<String>> sendEcashToPublicKeys({
+    required IMint mint,
+    required int amount,
+    required List<String> publicKeys,
+    List<String>? refundPubKeys,
+    int? locktime,
+    String memo = '',
+    String unit = 'sat',
+  }) => CashuAPIGeneralClient.sendEcashToPublicKeys(
+    mint: mint,
+    amount: amount,
+    publicKeys: publicKeys,
+    refundPubKeys: refundPubKeys,
+    locktime: locktime,
+    memo: memo,
+    unit: unit,
+  );
 
   /// Redeems e-cash from the given string.
   /// [ecashString]: The string representing the e-cash.
   /// Returns a tuple containing memo and amount if successful.
-  Future<CashuResponse<(String memo, int amount)>> redeemEcash(String ecashString) =>
-      CashuAPIGeneralClient.redeemEcash(ecashString);
+  Future<CashuResponse<(String memo, int amount)>> redeemEcash({
+    required String ecashString,
+    List<String> redeemPrivateKey = const [],
+    SignWithKeyFunction? signFunction,
+  }) => CashuAPIGeneralClient.redeemEcash(
+    ecashString: ecashString,
+    redeemPrivateKey: redeemPrivateKey,
+    signFunction: signFunction,
+  );
+
+  Future<bool> redeemEcashFromInvoice({
+    required IMint mint,
+    required String pr,
+  }) => CashuAPIGeneralClient.redeemEcashFromInvoice(mint: mint, pr: pr);
 
   /// Processes payment of a Lightning invoice.
   ///
@@ -242,11 +298,6 @@ class CashuAPI {
     );
   }
 
-  Future<bool> redeemEcashFromInvoice({
-    required IMint mint,
-    required String pr,
-  }) => CashuAPIGeneralClient.redeemEcashFromInvoice(mint: mint, pr: pr);
-
   /// Adds an invoice listener.
   void addInvoiceListener(CashuListener listener)  {
     CashuManager.shared.addListener(listener);
@@ -269,7 +320,9 @@ class CashuAPI {
       CashuAPIGeneralClient.amountOfLightningInvoice(pr);
 
   /// Retrieves information of a token from its e-cash token string.
+  ///
   /// [ecashToken]: The e-cash token string.
+  ///
   /// Returns a tuple of memo and total amount if successful, otherwise null.
   (String memo, int amount)? infoOfToken(String ecashToken) =>
       CashuAPIGeneralClient.infoOfToken(ecashToken);

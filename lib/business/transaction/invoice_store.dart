@@ -33,17 +33,19 @@ class InvoiceStore {
       final invoices = map[mintURL] ?? [];
       if (invoices.every((e) => e is IInvoice)) {
         final list = invoices.cast<IInvoice>();
-        final quotes = list.map((e) => '"${e.quote}"').toList().join(',');
+        final placeholders = list.map((_) => '?').toList().join(',');
+        final quotes = list.map((e) => e.quote).toList();
         rowsAffected += await CashuDB.sharedInstance.delete<IInvoice>(
-          where: ' mintURL = ? and quote in ($quotes)',
-          whereArgs: [mintURL],
+          where: ' mintURL = ? and quote in ($placeholders)',
+          whereArgs: [mintURL, ...quotes],
         );
       } else if (invoices.every((e) => e is LightningInvoice)) {
         final list = invoices.cast<LightningInvoice>();
-        final hash = list.map((e) => '"${e.hash}"').toList().join(',');
+        final placeholders = list.map((_) => '?').toList().join(',');
+        final hash = list.map((e) => e.hash).toList();
         rowsAffected += await CashuDB.sharedInstance.delete<LightningInvoice>(
-          where: ' mintURL = ? and hash in ($hash)',
-          whereArgs: [mintURL],
+          where: ' mintURL = ? and hash in ($placeholders)',
+          whereArgs: [mintURL, ...hash],
         );
       }
     });

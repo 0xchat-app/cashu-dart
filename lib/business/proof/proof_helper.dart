@@ -149,14 +149,18 @@ class ProofHelper {
       rs.addAll($3);
     }
     {
-      final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-        keysetId: keysetInfo.id,
-        amount: proofsTotalAmount - amount,
-      );
-      blindedMessages.addAll($1);
-      secrets.addAll($2);
-      rs.addAll($3);
+      if (proofsTotalAmount - amount > 0) {
+        final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
+          keysetId: keysetInfo.id,
+          amount: proofsTotalAmount - amount,
+        );
+        blindedMessages.addAll($1);
+        secrets.addAll($2);
+        rs.addAll($3);
+      }
     }
+
+    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
 
     final response = await mint.swapAction(
       mintURL: mint.mintURL,
@@ -171,6 +175,60 @@ class ProofHelper {
       promises: response.data,
       rs: rs,
       secrets: secrets,
+      keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
+    );
+    if (newProofs == null) return CashuResponse.fromErrorMsg('Construct proofs failed.');
+
+    await ProofStore.addProofs(newProofs);
+    await deleteProofs(proofs: proofs, mint: mint);
+    return CashuResponse.fromSuccessData(newProofs);
+  }
+
+  static Future<CashuResponse<List<Proof>>> swapProofsWithSecrets({
+    required IMint mint,
+    required List<Proof> proofs,
+    required List<String> secrets,
+    int? supportAmount,
+    String unit = 'sat',
+  }) async {
+
+    if (proofs.length != secrets.length) {
+      return CashuResponse.fromErrorMsg("Proofs and secrets length mismatch.");
+    }
+
+    // get keyset
+    final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
+    final keyset = keysetInfo?.keyset ?? {};
+    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
+
+    List<BlindedMessage> blindedMessages = [];
+    List<String> pSecrets = [];
+    List<BigInt> rs = [];
+
+    final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessagesWithSecret(
+      keysetId: keysetInfo.id,
+      amounts: proofs.map((p) => int.parse(p.amount)).toList(),
+      secrets: secrets,
+    );
+    blindedMessages.addAll($1);
+    pSecrets.addAll($2);
+    rs.addAll($3);
+
+    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
+
+    final response = await mint.swapAction(
+      mintURL: mint.mintURL,
+      proofs: proofs,
+      outputs: blindedMessages,
+    );
+    if (!response.isSuccess) {
+      return response.cast();
+    }
+
+    final newProofs = await DHKE.constructProofs(
+      promises: response.data,
+      rs: rs,
+      secrets: pSecrets,
       keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
     );
     if (newProofs == null) return CashuResponse.fromErrorMsg('Construct proofs failed.');

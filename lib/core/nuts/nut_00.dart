@@ -124,6 +124,7 @@ class Proof extends DBObject {
     required this.amount,
     required this.secret,
     required this.C,
+    this.witness = '',
   });
 
   /// Keyset id, used to link proofs to a mint an its MintKeys.
@@ -137,6 +138,8 @@ class Proof extends DBObject {
 
   /// The unblinded signature for this secret, signed by the mints private key.
   final String C;
+
+  String witness;
 
   int get amountNum => int.tryParse(amount) ?? 0;
 
@@ -153,6 +156,8 @@ class Proof extends DBObject {
     'amount': int.tryParse(amount) ?? 0,
     'secret': secret,
     'C': C,
+    if (witness.isNotEmpty)
+      'witness': witness
   };
 
   static Proof fromMap(Map<String, Object?> map) {
@@ -178,6 +183,11 @@ class Proof extends DBObject {
   //primaryKey
   static List<String?> primaryKey() {
     return ['id', 'secret'];
+  }
+
+  //ignoreKey
+  static List<String?> ignoreKey() {
+    return ['witness'];
   }
 
   @override

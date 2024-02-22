@@ -20,15 +20,19 @@ class ProofStore {
     return rowsAffected == proofs.length;
   }
 
-  static Future<List<Proof>> getProofs({List<String> ids = const []}) async {
-    if (ids.isNotEmpty) {
-      final quotedIds = ids.map((e) => '"$e"').toList().join(',');
-      return CashuDB.sharedInstance.objects<Proof>(
-        where: ' id in ($quotedIds) ',
-      );
-    } else {
-      return CashuDB.sharedInstance.objects<Proof>();
-    }
+  static Future<List<Proof>> getProofs({List<String> ids = const [], String c = ''}) async {
+    final quotedIds = ids.map((e) => '"$e"').toList().join(',');
+    final whereString = [
+      if (ids.isNotEmpty) ' id in ($quotedIds) ',
+      if (c.isNotEmpty) ' C = ? ',
+    ];
+    final whereArgs = [
+      if (c.isNotEmpty) c,
+    ];
+    return CashuDB.sharedInstance.objects<Proof>(
+      where: whereString.join('and'),
+      whereArgs: whereArgs,
+    );
   }
 
   static Future<bool> deleteProofs(List<Proof> delProofs) async {
@@ -39,10 +43,11 @@ class ProofStore {
     final map = delProofs.groupBy((e) => e.id);
     await Future.forEach(map.keys, (id) async {
       final proofs = map[id] ?? [];
-      final secrets = proofs.map((e) => '"${e.secret}"').toList().join(',');
+      final placeholders = proofs.map((_) => '?').toList().join(',');
+      final secrets = proofs.map((e) => e.secret).toList();
       rowsAffected += await CashuDB.sharedInstance.delete<Proof>(
-        where: ' id = ? and secret in ($secrets)',
-        whereArgs: [id],
+        where: ' id = ? and secret in ($placeholders)',
+        whereArgs: [id, ...secrets],
       );
     });
 
