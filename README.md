@@ -19,6 +19,7 @@ Cashu-dart supports the following Cashu protocols:
 - [NUTS 06](https://github.com/cashubtc/nuts/blob/main/06.md)
 - [NUTS 07](https://github.com/cashubtc/nuts/blob/main/07.md)
 - [NUTS 08](https://github.com/cashubtc/nuts/blob/main/08.md)
+- [NUTS 11](https://github.com/cashubtc/nuts/blob/main/11.md)
 
 ## Token Format Support
 
@@ -30,10 +31,37 @@ Cashu-dart provides support for the following token formats:
 
 ## Usage Example
 
-```
+```dart
 import 'package:cashu_dart/cashu_dart.dart';
 
-Cashu.redeemEcash(ecashToken);
+// Redeem
+Cashu.redeemEcash(ecashString: ecashToken);
+
+// Send
+Cashu.sendEcash(
+  mint: IMint(
+    mintURL: 'https://testnut.cashu.space',
+  ),
+  amount: 21,
+  memo: 'Sent via Cashu-dart.'
+);
+
+// Create invoice
+Cashu.createLightningInvoice(
+  mint: IMint(
+    mintURL: 'https://testnut.cashu.space',
+  ),
+  amount: 21,
+);
+
+// Pay invoice
+Cashu.payingLightningInvoice(
+  mint: IMint(
+    mintURL: 'https://testnut.cashu.space',
+  ),
+  pr: 'lnbc.....',
+);
+
 ```
 
 ## Contributing

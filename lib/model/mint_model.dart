@@ -10,7 +10,7 @@ class IMint extends DBObject {
 
   IMint({
     required String mintURL,
-    required this.maxNutsVersion,
+    this.maxNutsVersion = 0,
     this.name = '',
     this.balance = 0,
   }) : mintURL = MintHelper.getMintURL(mintURL);
