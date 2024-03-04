@@ -70,7 +70,7 @@ class IMint extends DBObject {
 
   static Map<String, String?> updateTable() {
     return {
-      "2": '''alter table ${tableName()} add maxNutsVersion INT;'''
+      "2": '''alter table ${tableName()} add maxNutsVersion INT;''',
     };
   }
 }

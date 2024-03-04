@@ -29,7 +29,7 @@ class CashuManager {
 
   Completer setupFinish = Completer();
 
-  static const int dbVersion = 2;
+  static const int dbVersion = 3;
   String dbNameWithIdentify(String identify) => 'cashu-$identify.db';
 
   Future<void> setup(String identify, {

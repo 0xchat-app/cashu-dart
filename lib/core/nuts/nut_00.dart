@@ -125,6 +125,7 @@ class Proof extends DBObject {
     required this.secret,
     required this.C,
     this.witness = '',
+    this.dleq,
   });
 
   /// Keyset id, used to link proofs to a mint an its MintKeys.
@@ -141,15 +142,11 @@ class Proof extends DBObject {
 
   String witness;
 
-  int get amountNum => int.tryParse(amount) ?? 0;
+  String dleqPlainText = '';
 
-  @override
-  Map<String, Object?> toMap() => {
-    'id': id,
-    'amount': amount,
-    'secret': secret,
-    'C': C,
-  };
+  Map<String, dynamic>? dleq;
+
+  int get amountNum => int.tryParse(amount) ?? 0;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -160,7 +157,7 @@ class Proof extends DBObject {
       'witness': witness
   };
 
-  static Proof fromMap(Map<String, Object?> map) {
+  static Proof fromServerJson(Map<String, Object?> map) {
     var amount = '0';
     final amountRaw = map['amount'];
     if (amountRaw is int) {
@@ -168,11 +165,47 @@ class Proof extends DBObject {
     } else if (amountRaw is String) {
       amount = amountRaw;
     }
+
+    final dleqRaw = map['dleq'];
+    Map<String, dynamic>? dleq;
+    if (dleqRaw is Map) {
+      dleq = dleqRaw.map((key, value) => MapEntry(key.toString(), value));
+    }
+
     return Proof(
       id: Tools.getValueAs<String>(map, 'id', ''),
       amount: amount,
       secret: Tools.getValueAs<String>(map, 'secret', ''),
       C: Tools.getValueAs<String>(map, 'C', ''),
+      dleq: dleq,
+    );
+  }
+
+  @override
+  Map<String, Object?> toMap() => {
+    'id': id,
+    'amount': amount,
+    'secret': secret,
+    'C': C,
+    'dleqPlainText': jsonEncode(dleq)
+  };
+
+  static Proof fromMap(Map<String, Object?> map) {
+
+    final dleqPlainText = map['dleqPlainText'];
+    Map<String, dynamic>? dleq;
+    if (dleqPlainText is String && dleqPlainText.isNotEmpty) {
+      try {
+        dleq = jsonDecode(dleqPlainText);
+      } catch(_) { }
+    }
+
+    return Proof(
+      id: Tools.getValueAs<String>(map, 'id', ''),
+      amount: Tools.getValueAs<String>(map, 'amount', '0'),
+      secret: Tools.getValueAs<String>(map, 'secret', ''),
+      C: Tools.getValueAs<String>(map, 'C', ''),
+      dleq: dleq,
     );
   }
 
@@ -187,7 +220,13 @@ class Proof extends DBObject {
 
   //ignoreKey
   static List<String?> ignoreKey() {
-    return ['witness'];
+    return ['witness', 'dleq'];
+  }
+
+  static Map<String, String?> updateTable() {
+    return {
+      "3": '''alter table ${tableName()} add dleqPlainText TEXT DEFAULT "";'''
+    };
   }
 
   @override
@@ -269,7 +308,7 @@ class TokenEntry {
     if (proofsJson is List) {
       proofs = proofsJson.map((e) {
         if (e is Map<String, Object?>) {
-          return Proof.fromMap(e);
+          return Proof.fromServerJson(e);
         }
         return null;
       }).where((element) => element != null).cast<Proof>().toList();

@@ -56,7 +56,8 @@ class CashuDB {
           .rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
       List<String> tableNames =
           tables.map((item) => item["name"].toString()).toList();
-      while (oldVersion <= newVersion) {
+      while (oldVersion < newVersion) {
+        oldVersion++;
         var batch = db.batch();
         for (int i = 0; i < schemes.length; i++) {
           Type type = schemes[i];
@@ -89,7 +90,6 @@ class CashuDB {
           }
         }
         await batch.commit();
-        oldVersion++;
       }
     });
     List<Map<String, dynamic>> tables =

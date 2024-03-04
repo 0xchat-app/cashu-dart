@@ -7,25 +7,25 @@ import 'define.dart';
 import 'nut_00.dart';
 
 /*
-Bob (mint)
-[k] private key of mint (one for each amount)
-[K] public key of mint
-[Q] promise (blinded signature)
+  Bob (mint)
+  [k] private key of mint (one for each amount)
+  [K] public key of mint
+  [Q] promise (blinded signature)
 
-Alice (user)
-[x] random string (secret message), corresponds to point Y on curve
-[r] private key (blinding factor)
-[T] blinded message
-[Z] proof (unblinded signature)
+  Alice (user)
+  [x] random string (secret message), corresponds to point Y on curve
+  [r] private key (blinding factor)
+  [T] blinded message
+  [Z] proof (unblinded signature)
 
-Blind Diffie-Hellmann key exchange (BDHKE)
-Mint Bob publishes public key K = kG
-Alice picks secret x and computes Y = hash_to_curve(x)
-Alice sends to Bob: B_ = Y + rG with r being a random blinding factor (blinding)
-Bob sends back to Alice blinded key: C_ = kB_ (these two steps are the DH key exchange) (signing)
-Alice can calculate the unblinded key as C_ - rK = kY + krG - krG = kY = C (unblinding)
-Alice can take the pair (x, C) as a token and can send it to Carol.
-Carol can send (x, C) to Bob who then checks that k*hash_to_curve(x) == C (verification), and if so treats it as a valid spend of a token, adding x to the list of spent secrets.
+  Blind Diffie-Hellmann key exchange (BDHKE)
+  Mint Bob publishes public key K = kG
+  Alice picks secret x and computes Y = hash_to_curve(x)
+  Alice sends to Bob: B_ = Y + rG with r being a random blinding factor (blinding)
+  Bob sends back to Alice blinded key: C_ = kB_ (these two steps are the DH key exchange) (signing)
+  Alice can calculate the unblinded key as C_ - rK = kY + krG - krG = kY = C (unblinding)
+  Alice can take the pair (x, C) as a token and can send it to Carol.
+  Carol can send (x, C) to Bob who then checks that k*hash_to_curve(x) == C (verification), and if so treats it as a valid spend of a token, adding x to the list of spent secrets.
 */
 
 class DHKE {
