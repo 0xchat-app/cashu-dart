@@ -90,11 +90,13 @@ class BlindedSignature {
     required this.id,
     required this.amount,
     required this.C_,
+    this.dleq,
   });
 
   final String id;
   final String amount;
   final String C_;
+  final Map? dleq;
 
   factory BlindedSignature.fromServerMap(Map json) {
     final amount = json['amount'] as num;
@@ -102,14 +104,9 @@ class BlindedSignature {
       id: Tools.getValueAs<String>(json, 'id', ''),
       amount: BigInt.from(amount).toString(),
       C_: Tools.getValueAs<String>(json, 'C_', ''),
+      dleq: Tools.getValueAs<Map?>(json, 'dleq', null),
     );
   }
-
-  Map<String, String> toJson() => {
-    'id': id,
-    'amount': amount,
-    'C_': C_,
-  };
 
   @override
   String toString() {

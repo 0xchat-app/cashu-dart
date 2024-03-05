@@ -108,6 +108,12 @@ class DHKE {
       if (K == null) {
         throw Exception('[E][Cashu - constructProofs] key not found.');
       }
+      
+      final dleq = promise.dleq?.map((key, value) => MapEntry(key.toString(), value));
+      if (dleq != null && dleq.isNotEmpty) {
+        dleq['r'] = r.toString();
+      }
+
       final C = unblindingSignature(promise.C_, r, K);
       if (C == null) return null;
       final unblindingProof = Proof(
@@ -115,6 +121,7 @@ class DHKE {
         amount: promise.amount,
         secret: secret,
         C: ecPointToHex(C),
+        dleq: dleq,
       );
       proofs.add(unblindingProof);
     }
