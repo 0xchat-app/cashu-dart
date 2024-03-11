@@ -7,6 +7,7 @@ import '../../core/mint_actions.dart';
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
+import '../../core/nuts/v1/nut_11.dart';
 import '../../model/mint_model.dart';
 import '../../utils/network/response.dart';
 import 'keyset_helper.dart';
@@ -184,17 +185,30 @@ class ProofHelper {
     return CashuResponse.fromSuccessData(newProofs);
   }
 
-  static Future<CashuResponse<List<Proof>>> swapProofsWithSecrets({
+  static Future<CashuResponse<List<Proof>>> swapProofsForP2PK({
     required IMint mint,
     required List<Proof> proofs,
-    required List<String> secrets,
-    int? supportAmount,
+    required List<String> publicKeys,
+    List<String>? refundPubKeys,
+    int? locktime,
+    int? signNumRequired,
     String unit = 'sat',
   }) async {
 
-    if (proofs.length != secrets.length) {
-      return CashuResponse.fromErrorMsg("Proofs and secrets length mismatch.");
-    }
+    final p2pkSecretData = publicKeys.removeAt(0);
+    final p2pkSecretTags = [
+      if (publicKeys.isNotEmpty) P2PKSecretTagKey.pubkeys.appendValues(publicKeys),
+      if (refundPubKeys != null && refundPubKeys.isNotEmpty) P2PKSecretTagKey.refund.appendValues(refundPubKeys),
+      if (signNumRequired != null && signNumRequired > 0) P2PKSecretTagKey.nSigs.appendValues(['$signNumRequired']),
+      if (locktime != null) P2PKSecretTagKey.lockTime.appendValues([locktime.toString()]),
+    ];
+    final secrets = proofs.map((_) =>
+        P2PKSecret(
+          nonce: DHKE.randomPrivateKey().asBase64String(),
+          data: p2pkSecretData,
+          tags: p2pkSecretTags,
+        ).toSecretString(),
+    ).toList();
 
     // get keyset
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);

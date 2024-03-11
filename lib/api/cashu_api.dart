@@ -208,11 +208,19 @@ class CashuAPI {
   Future<CashuResponse<List<String>>> sendEcashList({
     required IMint mint,
     required List<int> amountList,
+    List<String> publicKeys = const [],
+    List<String>? refundPubKeys,
+    int? locktime,
+    int? signNumRequired,
     String memo = '',
     String unit = 'sat',
   }) => CashuAPIGeneralClient.sendEcashList(
     mint: mint,
     amountList: amountList,
+    publicKeys: publicKeys,
+    refundPubKeys: refundPubKeys,
+    locktime: locktime,
+    signNumRequired: signNumRequired,
     memo: memo,
     unit: unit,
   );
@@ -235,6 +243,7 @@ class CashuAPI {
     required List<String> publicKeys,
     List<String>? refundPubKeys,
     int? locktime,
+    int? signNumRequired,
     String memo = '',
     String unit = 'sat',
   }) => CashuAPIGeneralClient.sendEcashToPublicKeys(
@@ -243,6 +252,7 @@ class CashuAPI {
     publicKeys: publicKeys,
     refundPubKeys: refundPubKeys,
     locktime: locktime,
+    signNumRequired: signNumRequired,
     memo: memo,
     unit: unit,
   );
@@ -324,7 +334,7 @@ class CashuAPI {
   /// [ecashToken]: The e-cash token string.
   ///
   /// Returns a tuple of memo and total amount if successful, otherwise null.
-  (String memo, int amount)? infoOfToken(String ecashToken) =>
+  (String memo, int amount, List secretData)? infoOfToken(String ecashToken) =>
       CashuAPIGeneralClient.infoOfToken(ecashToken);
 
   /// Checks if a given string is a valid Cashu token.
@@ -335,4 +345,15 @@ class CashuAPI {
   /// Determines if a given string is a valid Lightning Network (LN) invoice.
   /// Strips common URI prefixes before validation.
   bool isLnInvoice(String str) => CashuAPIGeneralClient.isLnInvoice(str);
+
+  Future<String?> addSignatureToToken({
+    required String ecashString,
+    required List<String> privateKeyList,
+    required SignWithKeyFunction signFunction,
+  }) =>
+      CashuAPIGeneralClient.addSignatureToToken(
+        ecashString: ecashString,
+        privateKeyList: privateKeyList,
+        signFunction: signFunction,
+      );
 }

@@ -78,6 +78,10 @@ class CashuAPIGeneralClient {
   static Future<CashuResponse<List<String>>> sendEcashList({
     required IMint mint,
     required List<int> amountList,
+    List<String> publicKeys = const [],
+    List<String>? refundPubKeys,
+    int? locktime,
+    int? signNumRequired,
     String memo = '',
     String unit = 'sat',
   }) async {
@@ -104,7 +108,25 @@ class CashuAPIGeneralClient {
         return response.cast();
       }
 
-      final proofs = response.data;
+      var proofs = response.data;
+      if (publicKeys.isNotEmpty) {
+        final swapResponse = await ProofHelper.swapProofsForP2PK(
+          mint: mint,
+          proofs: proofs,
+          publicKeys: [...publicKeys],
+          refundPubKeys: refundPubKeys,
+          locktime: locktime,
+          signNumRequired: signNumRequired,
+        );
+        if (!swapResponse.isSuccess) {
+          // add the deleted proof
+          await ProofStore.addProofs(deletedProofs);
+          await HistoryStore.deleteHistory(deletedHistoryIds);
+          return response.cast();
+        }
+        proofs = swapResponse.data;
+      }
+
       final encodedToken = TokenHelper.getEncodedToken(
         Token(
           token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
@@ -134,11 +156,16 @@ class CashuAPIGeneralClient {
     required List<String> publicKeys,
     List<String>? refundPubKeys,
     int? locktime,
+    int? signNumRequired,
     String memo = '',
     String unit = 'sat',
   }) async {
 
     await CashuManager.shared.setupFinish.future;
+
+    if (publicKeys.isEmpty) {
+      return CashuResponse.fromErrorMsg('PublicKeys is empty.');
+    }
 
     // get proofs
     final response = await ProofHelper.getProofsToUse(
@@ -148,23 +175,13 @@ class CashuAPIGeneralClient {
     if (!response.isSuccess) return response.cast();
 
     final localProofs = response.data;
-    final p2pkSecretData = publicKeys.removeAt(0);
-    final p2pkSecretTags = [
-      if (publicKeys.isNotEmpty) P2PKSecretTagKey.pubkeys.appendValues(publicKeys),
-      if (refundPubKeys != null) P2PKSecretTagKey.refund.appendValues(refundPubKeys),
-      if (locktime != null) P2PKSecretTagKey.lockTime.appendValues([locktime.toString()]),
-    ];
-    final secrets = localProofs.map((_) => P2PKSecret(
-      nonce: DHKE.randomPrivateKey().asBase64String(),
-      data: p2pkSecretData,
-      tags: p2pkSecretTags,
-     ).toSecretString(),
-    ).toList();
-
-    final swapResponse = await ProofHelper.swapProofsWithSecrets(
+    final swapResponse = await ProofHelper.swapProofsForP2PK(
       mint: mint,
       proofs: localProofs,
-      secrets: secrets,
+      publicKeys: publicKeys,
+      refundPubKeys: refundPubKeys,
+      locktime: locktime,
+      signNumRequired: signNumRequired,
     );
     if (!swapResponse.isSuccess) return swapResponse.cast();
 
@@ -218,14 +235,11 @@ class CashuAPIGeneralClient {
 
         if (redeemPrivateKey.isNotEmpty && signFunction != null) {
           for (var proof in proofs) {
-            final signatures = [];
-            for (var privkey in redeemPrivateKey) {
-              final sign = await signFunction(privkey, proof.secret);
-              signatures.add(sign);
-            }
-            proof.witness = jsonEncode({
-              'signatures': signatures
-            });
+            await addSignatureToProof(
+              proof: proof,
+              privateKeyList: redeemPrivateKey,
+              signFunction: signFunction,
+            );
           }
         }
 
@@ -271,7 +285,7 @@ class CashuAPIGeneralClient {
 
     final req = Bolt11PaymentRequest(pr);
     for (var tag in req.tags) {
-      print('[Cashu - invoice decode]${tag.type}: ${tag.data}');
+      print('[I][Cashu - invoice decode]${tag.type}: ${tag.data}');
     }
     final hash = req.tags.where((e) => e.type == 'payment_hash').firstOrNull?.data;
     if (hash == null) return false;
@@ -325,11 +339,17 @@ class CashuAPIGeneralClient {
     }
   }
 
-  static (String memo, int amount)? infoOfToken(String ecashToken) {
+  static (String memo, int amount, List secretData)? infoOfToken(String ecashToken) {
     final token = TokenHelper.getDecodedToken(ecashToken);
     if (token == null) return null;
     final proofs = token.token.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
-    return (token.memo, proofs.totalAmount);
+
+    List secretData = [];
+    try {
+      secretData = jsonDecode( proofs.firstOrNull?.secret ?? '');
+    } catch (_) { }
+
+    return (token.memo, proofs.totalAmount, secretData);
   }
 
 
@@ -362,5 +382,54 @@ class CashuAPIGeneralClient {
       return false;
     }
     return true;
+  }
+
+  static Future addSignatureToProof({
+    required Proof proof,
+    required List<String> privateKeyList,
+    required SignWithKeyFunction signFunction,
+  }) async {
+    try {
+      final witnessRaw = proof.witness;
+      Map witness = {};
+      if (witnessRaw.isNotEmpty) {
+        witness = jsonDecode(proof.witness) as Map;
+      }
+      var originSign = witness['signatures'];
+      if (originSign is! List) {
+        originSign = [];
+      }
+      final signatures = [...originSign.map((e) => e.toString()).toList().cast<String>()];
+      for (var privkey in privateKeyList) {
+        final sign = await signFunction(privkey, proof.secret);
+        signatures.add(sign);
+      }
+      witness['signatures'] = signatures;
+      proof.witness = jsonEncode(witness);
+    } catch (e, stack) {
+      print('[E][Cashu - redeemEcash] $e');
+      print('[E][Cashu - redeemEcash] $stack');
+    }
+  }
+
+  static Future<String?> addSignatureToToken({
+    required String ecashString,
+    required List<String> privateKeyList,
+    required SignWithKeyFunction signFunction,
+  }) async {
+    final tokenPackage = TokenHelper.getDecodedToken(ecashString);
+    if (tokenPackage == null) return null;
+
+    final tokenEntryList = tokenPackage.token;
+    for (var entry in tokenEntryList) {
+      for (var proof in entry.proofs) {
+        await addSignatureToProof(
+          proof: proof,
+          privateKeyList: privateKeyList,
+          signFunction: signFunction,
+        );
+      }
+    }
+    return TokenHelper.getEncodedToken(tokenPackage);
   }
 }

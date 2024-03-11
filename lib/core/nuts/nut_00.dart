@@ -163,6 +163,11 @@ class Proof extends DBObject {
       amount = amountRaw;
     }
 
+    var witness = map['witness'];
+    if (witness is! String) {
+      witness = '';
+    }
+
     final dleqRaw = map['dleq'];
     Map<String, dynamic>? dleq;
     if (dleqRaw is Map) {
@@ -174,6 +179,7 @@ class Proof extends DBObject {
       amount: amount,
       secret: Tools.getValueAs<String>(map, 'secret', ''),
       C: Tools.getValueAs<String>(map, 'C', ''),
+      witness: witness,
       dleq: dleq,
     );
   }

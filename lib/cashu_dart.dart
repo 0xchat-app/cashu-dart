@@ -1,5 +1,6 @@
 
 export 'api/cashu_api.dart';
+export 'api/nut_P2PK_helper.dart';
 
 export 'core/nuts/nut_00.dart';
 
