@@ -6,6 +6,52 @@ import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
 
+class NutsSupportInfo {
+  NutsSupportInfo({
+    required this.nutNum,
+    this.methods = const [],
+    this.supported = true,
+    this.disabled = false,
+  });
+
+  static Set<int> get mandatoryNut => {0, 1, 2, 3, 4, 5, 6};
+
+  final int nutNum;
+  final List<List<String>> methods;
+  final bool supported;
+  final bool disabled;
+
+  factory NutsSupportInfo.fromServerJson(String nutNum, Map json) {
+    final methods = <List<String>>[];
+    final methodsRaw = json['methods'];
+    if (methodsRaw is List) {
+      final methodList = [...methodsRaw];
+      for (var method in methodList) {
+        if (method is List) {
+          final list = [...method];
+          final target = list.map((e) => e.toString()).toList();
+          methods.add(target);
+        }
+      }
+    }
+
+    final supported = Tools.getValueAs(json, 'supported', true);
+    final disabled = Tools.getValueAs(json, 'disabled', false);
+
+    return NutsSupportInfo(
+      nutNum: int.tryParse(nutNum) ?? 0,
+      methods: methods,
+      supported: supported,
+      disabled: disabled,
+    );
+  }
+
+  @override
+  String toString() {
+    return '${super.toString()}, nutNum: $nutNum, methods: $methods, supported: $supported, disabled: $disabled';
+  }
+}
+
 @reflector
 class MintInfo extends DBObject {
 
@@ -16,10 +62,29 @@ class MintInfo extends DBObject {
     required this.version,
     required this.description,
     required this.descriptionLong,
-    required this.contact,
+    List contactRaw = const [],
     required this.motd,
-    required this.nuts,
-  }) : mintURL = MintHelper.getMintURL(mintURL);
+    Map nutsRaw = const {},
+  }) : mintURL = MintHelper.getMintURL(mintURL) {
+
+    // Contact
+    for (var entry in contactRaw) {
+      if (entry is List && entry.length > 1) {
+        contact.add(entry.map((e) => e.toString()).toList());
+      }
+    }
+
+    // Nuts
+    nutsRaw.forEach((key, value) {
+      if (value is Map) {
+        nuts[key.toString()] = value;
+      }
+    });
+    nuts.forEach((key, value) {
+      nutsInfo.add(NutsSupportInfo.fromServerJson(key, value));
+    });
+    nutsInfo.sort((a, b) => a.nutNum - b.nutNum);
+  }
 
   final String mintURL;
   final String name;
@@ -29,31 +94,26 @@ class MintInfo extends DBObject {
   final String descriptionLong;
 
   final String contactJson = '';
-  final List<List<String>> contact;
+  List<List<String>> contact = [];
 
   final String motd;
 
   final String nutsJson = '';
-  final Map<String, Map<String, dynamic>> nuts;
+  Map<String, Map> nuts = {};
+  List<NutsSupportInfo> nutsInfo = [];
 
   factory MintInfo.fromServerMap(Map json, String mintURL) {
-    var nuts = <String, Map<String, dynamic>>{};
+    var nuts = {};
     final nutsRaw = json['nuts'];
-    if (nutsRaw is Map<String, Map<String, dynamic>>) {
+    if (nutsRaw is Map) {
       nuts = nutsRaw;
     } else if (nutsRaw is List) {
       nuts = nutsRaw.fold(<String, Map<String, dynamic>>{}, (pre, e) {
-        pre[e.toString()] = {};
+        pre[e] = {};
         return pre;
       });
     }
-    var contact = <List<String>>[];
-    final contactRaw = json['contact'];
-    if (contactRaw is List<List>) {
-      contact = contactRaw.map(
-        (e) => e.map((e) => e.toString()).toList()
-      ).toList();
-    }
+
     return MintInfo(
       mintURL: mintURL,
       name: Tools.getValueAs(json, 'name', ''),
@@ -61,9 +121,9 @@ class MintInfo extends DBObject {
       version: Tools.getValueAs(json, 'version', ''),
       description: Tools.getValueAs(json, 'description', ''),
       descriptionLong: Tools.getValueAs(json, 'description_long', ''),
-      contact: contact,
+      contactRaw: Tools.getValueAs(json, 'contact', []),
       motd: Tools.getValueAs(json, 'motd', ''),
-      nuts: nuts,
+      nutsRaw: nuts,
     );
   }
 
@@ -81,19 +141,19 @@ class MintInfo extends DBObject {
     'version': version,
     'description': description,
     'descriptionLong': descriptionLong,
-    'contactJson': contact,
+    'contactJson': json.encode(contact),
     'motd': motd,
-    'nutsJson': nuts,
+    'nutsJson': json.encode(nuts),
   };
 
   static MintInfo fromMap(Map<String, Object?> map) {
-    var contact = <List<String>>[];
-    var nuts = <String, Map<String, dynamic>>{};
+    var contactRaw = [];
+    var nutsRaw = {};
 
     try {
-      contact = json.decode(Tools.getValueAs(map, 'contactJson', ''));
-      nuts = json.decode(Tools.getValueAs(map, 'nutsJson', ''));
-    } catch(_) {}
+      contactRaw = json.decode(Tools.getValueAs(map, 'contactJson', ''));
+      nutsRaw = json.decode(Tools.getValueAs(map, 'nutsJson', ''));
+    } catch(_) { }
 
     return MintInfo(
       mintURL: Tools.getValueAs(map, 'mintURL', ''),
@@ -102,12 +162,11 @@ class MintInfo extends DBObject {
       version: Tools.getValueAs(map, 'version', ''),
       description: Tools.getValueAs(map, 'description', ''),
       descriptionLong: Tools.getValueAs(map, 'descriptionLong', ''),
-      contact: contact,
+      contactRaw: contactRaw,
       motd: Tools.getValueAs(map, 'motd', ''),
-      nuts: nuts,
+      nutsRaw: nutsRaw,
     );
   }
-
 
   static String? tableName() {
     return "MintInfo";

@@ -123,7 +123,6 @@ class CashuManager {
     if (info != null) {
       mint.info = info;
     }
-    MintHelper.updateMintInfoFromRemote(mint);
   }
 
   Future<void> _setupMintKeyset(IMint mint) async {
@@ -131,7 +130,6 @@ class CashuManager {
     for (var keyset in keysets) {
       mint.updateKeysetId(keyset.id, keyset.unit);
     }
-    MintHelper.updateMintKeysetFromRemote(mint);
   }
 
   Future<void> setupBalance() async {

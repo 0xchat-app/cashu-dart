@@ -5,7 +5,10 @@ import '../../utils/database/db.dart';
 class MintInfoStore {
 
   static Future<MintInfo?> getMintInfo(String mintURL) async {
-    final mintInfo = await CashuDB.sharedInstance.objects<MintInfo>();
+    final mintInfo = await CashuDB.sharedInstance.objects<MintInfo>(
+      where: 'mintURL = ?',
+      whereArgs: [mintURL],
+    );
     return mintInfo.firstOrNull;
   }
 

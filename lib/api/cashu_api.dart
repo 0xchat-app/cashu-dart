@@ -5,6 +5,8 @@ import 'dart:math';
 import 'package:cashu_dart/business/proof/proof_helper.dart';
 import 'package:cashu_dart/core/mint_actions.dart';
 
+import '../business/mint/mint_helper.dart';
+import '../business/mint/mint_info_store.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/transaction/transaction_helper.dart';
@@ -178,8 +180,8 @@ class CashuAPI {
   }
 
   /// Retrieves mint information from the specified mint.
-  Future<CashuResponse<MintInfo>> fetchMintInfo(IMint mint) {
-    return mint.requestMintInfoAction(mintURL: mint.mintURL);
+  Future<bool> fetchMintInfo(IMint mint) async {
+    return MintHelper.updateMintInfoFromRemote(mint);
   }
 
   /**************************** Transaction ****************************/
