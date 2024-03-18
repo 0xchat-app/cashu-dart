@@ -42,7 +42,7 @@ class CashuAPIV1Client {
 
     // Get proofs for pay.
     final req = Bolt11PaymentRequest(pr);
-    final amount = req.amount.toBigInt().toInt();
+    final amount = (req.amount.toDouble() * 100000000).toInt();
     final response = await ProofHelper.getProofsToUse(
       mint: mint,
       amount: BigInt.from(amount + fee),
