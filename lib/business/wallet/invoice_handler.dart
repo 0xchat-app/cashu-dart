@@ -64,7 +64,7 @@ class InvoiceHandler {
       if (paid) {
         final response = await _exchangeCash(invoice);
         if (response.isSuccess) {
-          _deleteInvoice(invoice);
+          deleteInvoice(invoice);
           if (response.data.isNotEmpty) {
             await HistoryStore.addToHistory(
               amount: int.tryParse(invoice.amount) ?? 0,
@@ -77,7 +77,7 @@ class InvoiceHandler {
           }
           return true;
         } else if (response.code == ResponseCode.invoiceNotPaidError && invoice.isExpired) {
-          _deleteInvoice(invoice);
+          deleteInvoice(invoice);
         }
       }
 
@@ -104,9 +104,9 @@ class InvoiceHandler {
     );
   }
 
-  void _deleteInvoice(Receipt invoice) {
+  Future<bool> deleteInvoice(Receipt invoice) {
     _invoices.remove(invoice);
-    InvoiceStore.deleteInvoice([invoice]);
+    return InvoiceStore.deleteInvoice([invoice]);
   }
 
   bool _invoiceExists(Receipt invoice) {

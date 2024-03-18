@@ -308,6 +308,9 @@ class CashuAPI {
     );
   }
 
+  Future<bool> deleteLightningInvoice(Receipt receipt) =>
+      CashuManager.shared.invoiceHandler.deleteInvoice(receipt);
+
   /// Adds an invoice listener.
   void addInvoiceListener(CashuListener listener)  {
     CashuManager.shared.addListener(listener);
