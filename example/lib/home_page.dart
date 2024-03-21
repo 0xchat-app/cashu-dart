@@ -380,7 +380,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
     final amount = int.tryParse(input ?? '') ?? 0;
     if (amount == 0) return null;
     final result = await Cashu.sendEcash(mint: mint, amount: amount);
-    if (result == null) {
+    if (!result.isSuccess) {
       showMessage('Send Ecash failed', true);
     } else {
       showMessage('token: $result', false);
@@ -392,7 +392,7 @@ extension ExamplePageStateActionEx on ExamplePageState {
     if (mint == null) return null;
     final input = await showInputDialog('token');
     if (input == null || input.isEmpty) return ;
-    final response = await Cashu.redeemEcash(input);
+    final response = await Cashu.redeemEcash(ecashString: input);
     if (!response.isSuccess) {
       showMessage(response.errorMsg, true);
     } else {

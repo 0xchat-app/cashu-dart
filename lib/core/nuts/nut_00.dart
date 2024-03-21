@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import '../../utils/database/db.dart';
 import '../../utils/database/db_object.dart';
@@ -34,7 +35,7 @@ class Nut0 {
     try {
       obj = token.encodeBase64ToJson<Map>();
     } catch(e) {
-      print('[Error][Nut1 - getDecodedToken] encodeBase64ToJson failed.');
+      debugPrint('[Error][Nut1 - getDecodedToken] encodeBase64ToJson failed.');
       return null;
     }
 

@@ -1,4 +1,6 @@
+
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import '../../core/keyset_store.dart';
 import '../../core/nuts/nut_00.dart';
@@ -44,9 +46,9 @@ class CashuManager {
       await invoiceHandler.initialize();
       invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
       setupFinish.complete();
-      print('[I][Cashu - setup] Finished');
+      debugPrint('[I][Cashu - setup] Finished');
     } catch (e) {
-      print('[E][Cashu - setup] $e');
+      debugPrint('[E][Cashu - setup] $e');
     }
   }
 
@@ -95,7 +97,7 @@ class CashuManager {
       }
       await _initializeMints(dbMints);
     } catch (e) {
-      print('[E][Cashu - setupMint] $e');
+      debugPrint('[E][Cashu - setupMint] $e');
     }
   }
 

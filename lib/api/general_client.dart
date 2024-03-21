@@ -2,16 +2,14 @@
 import 'dart:convert';
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
-import 'package:cashu_dart/utils/tools.dart';
+import 'package:flutter/foundation.dart';
 
 import '../business/proof/proof_helper.dart';
 import '../business/proof/proof_store.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
-import '../core/nuts/DHKE.dart';
 import '../core/nuts/nut_00.dart';
-import '../core/nuts/v1/nut_11.dart';
 import '../model/history_entry.dart';
 import '../model/lightning_invoice.dart';
 import '../model/mint_model.dart';
@@ -71,7 +69,7 @@ class CashuAPIGeneralClient {
     await ProofHelper.deleteProofs(proofs: proofs, mint: null);
     await CashuManager.shared.updateMintBalance(mint);
 
-    print('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
+    debugPrint('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
     return CashuResponse.fromSuccessData(encodedToken);
   }
 
@@ -204,7 +202,7 @@ class CashuAPIGeneralClient {
     await ProofHelper.deleteProofs(proofs: p2pkProofs, mint: null);
     await CashuManager.shared.updateMintBalance(mint);
 
-    print('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
+    debugPrint('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
     return CashuResponse.fromSuccessData(encodedToken);
   }
 
@@ -285,7 +283,7 @@ class CashuAPIGeneralClient {
 
     final req = Bolt11PaymentRequest(pr);
     for (var tag in req.tags) {
-      print('[I][Cashu - invoice decode]${tag.type}: ${tag.data}');
+      debugPrint('[I][Cashu - invoice decode]${tag.type}: ${tag.data}');
     }
     final hash = req.tags.where((e) => e.type == 'payment_hash').firstOrNull?.data;
     if (hash == null) return false;
@@ -331,7 +329,7 @@ class CashuAPIGeneralClient {
     try {
       final req = Bolt11PaymentRequest(pr);
       for (var tag in req.tags) {
-        print('[Cashu - invoice decode]${tag.type}: ${tag.data}');
+        debugPrint('[Cashu - invoice decode]${tag.type}: ${tag.data}');
       }
       return (req.amount.toDouble() * 100000000).toInt();
     } catch (_) {
@@ -407,8 +405,8 @@ class CashuAPIGeneralClient {
       witness['signatures'] = signatures;
       proof.witness = jsonEncode(witness);
     } catch (e, stack) {
-      print('[E][Cashu - redeemEcash] $e');
-      print('[E][Cashu - redeemEcash] $stack');
+      debugPrint('[E][Cashu - redeemEcash] $e');
+      debugPrint('[E][Cashu - redeemEcash] $stack');
     }
   }
 

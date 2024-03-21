@@ -1,4 +1,5 @@
 
+import 'package:flutter/foundation.dart';
 
 import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
@@ -14,7 +15,7 @@ class MintHelper {
   static String getMintURL(String url) {
     url = url.trim();
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      print('[E][Cashu - getMintURL] mintURL must starts with https');
+      debugPrint('[E][Cashu - getMintURL] mintURL must starts with https');
       url = 'https://$url';
     }
 

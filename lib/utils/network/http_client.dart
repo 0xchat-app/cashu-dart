@@ -1,7 +1,9 @@
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'response.dart';
+
 export 'response.dart';
 
 class HTTPClient {
@@ -51,7 +53,7 @@ class HTTPClient {
     }
     try {
       final response = await request;
-      print('[http - get] url: $requestURL, response: ${response.body}, status: ${response.statusCode}');
+      debugPrint('[http - get] url: $requestURL, response: ${response.body}, status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final bodyJson = jsonDecode(response.body);
         final data = modelBuilder?.call(bodyJson);
@@ -82,7 +84,7 @@ class HTTPClient {
 
       return CashuResponse.generalError();
     } catch(e, stackTrace) {
-      print('[http - error] url: $url, e: $e, $stackTrace');
+      debugPrint('[http - error] url: $url, e: $e, $stackTrace');
       return CashuResponse.generalError();
     }
   }
@@ -109,7 +111,7 @@ class HTTPClient {
         request = request.timeout(Duration(seconds: timeOut));
       }
       final response = await request;
-      print('[http - post] url: $requestURL, params: $params, response: ${response.body}, status: ${response.statusCode}');
+      debugPrint('[http - post] url: $requestURL, params: $params, response: ${response.body}, status: ${response.statusCode}');
       if (response.statusCode == 200) {
         final bodyJson = jsonDecode(response.body);
         final data = modelBuilder?.call(bodyJson);
@@ -140,7 +142,7 @@ class HTTPClient {
 
       return CashuResponse.generalError();
     } catch(e, stackTrace) {
-      print('[http - error] url: $url, e: $e, $stackTrace');
+      debugPrint('[http - error] url: $url, e: $e, $stackTrace');
       return CashuResponse.generalError();
     }
   }

@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
@@ -90,7 +91,7 @@ class TokenHelper {
     try {
       obj = token.encodeBase64ToJson<Map>();
     } catch(e) {
-      print('[Cashu - handleTokens] $e');
+      debugPrint('[Cashu - handleTokens] $e');
     }
 
     if (obj == null) return null;

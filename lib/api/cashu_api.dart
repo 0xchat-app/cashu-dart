@@ -6,7 +6,6 @@ import 'package:cashu_dart/business/proof/proof_helper.dart';
 import 'package:cashu_dart/core/mint_actions.dart';
 
 import '../business/mint/mint_helper.dart';
-import '../business/mint/mint_info_store.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/transaction/transaction_helper.dart';
@@ -16,7 +15,6 @@ import '../core/nuts/nut_00.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
 import '../model/invoice_listener.dart';
-import '../model/mint_info.dart';
 import '../model/mint_model.dart';
 import '../utils/network/response.dart';
 import 'general_client.dart';

@@ -8,6 +8,8 @@ environment:
   flutter: '>=3.3.0'
 
 dependencies:
+  flutter:
+    sdk: flutter
   plugin_platform_interface: ^2.0.2
   sqflite_sqlcipher: ^2.2.1
   reflectable: ^4.0.5
