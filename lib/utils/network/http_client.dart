@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -53,17 +54,21 @@ class HTTPClient {
 
     final requestData = await createRequestData(
       url: url,
-      method: RequestMethod.post,
+      method: RequestMethod.get,
       query: query,
     );
 
-    final response = await request(requestData, timeOut: timeOut);
-
-    return handleWithResponse(
-      requestData: requestData,
-      response: response,
-      modelBuilder: modelBuilder,
-    );
+    try {
+      final response = await request(requestData, timeOut: timeOut);
+      return handleWithResponse(
+        requestData: requestData,
+        response: response,
+        modelBuilder: modelBuilder,
+      );
+    } catch(e, stackTrace) {
+      debugPrint('[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
+      return CashuResponse.generalError();
+    }
   }
 
   Future<CashuResponse<T>> _post<T>(
@@ -133,7 +138,9 @@ class HTTPClient {
         break ;
     }
     if (timeOut != null) {
-      request = request.timeout(Duration(seconds: timeOut));
+      request = request.timeout(Duration(seconds: timeOut), onTimeout: () {
+        throw TimeoutException('The connection has timed out, Please try again!');
+      });
     }
 
     return request;
@@ -149,39 +156,34 @@ class HTTPClient {
         'response: ${response.body}, '
         'status: ${response.statusCode}');
 
-    try {
-      if (response.statusCode == 200) {
-        final bodyJson = jsonDecode(response.body);
-        final data = modelBuilder?.call(bodyJson);
-        if (data != null) {
-          return CashuResponse(
-            code: ResponseCode.success,
-            data: data,
-          );
-        }
-      } else if (response.statusCode == 400) {
-        final bodyJson = jsonDecode(response.body);
-        if (bodyJson is Map) {
-          final code = bodyJson['code'];
-          final detail = bodyJson['detail'];
+    if (response.statusCode == 200) {
+      final bodyJson = jsonDecode(response.body);
+      final data = modelBuilder?.call(bodyJson);
+      if (data != null) {
+        return CashuResponse(
+          code: ResponseCode.success,
+          data: data,
+        );
+      }
+    } else if (response.statusCode == 400) {
+      final bodyJson = jsonDecode(response.body);
+      if (bodyJson is Map) {
+        final code = bodyJson['code'];
+        final detail = bodyJson['detail'];
+        if (code != null) {
+          return CashuResponse.fromErrorMap(bodyJson);
+        } else if (detail != null) {
+          final code = ResponseCodeEx.tryGetCodeWithErrorMsg(detail);
           if (code != null) {
-            return CashuResponse.fromErrorMap(bodyJson);
-          } else if (detail != null) {
-            final code = ResponseCodeEx.tryGetCodeWithErrorMsg(detail);
-            if (code != null) {
-              return CashuResponse(
-                code: code,
-                errorMsg: detail,
-              );
-            }
+            return CashuResponse(
+              code: code,
+              errorMsg: detail,
+            );
           }
         }
       }
-
-      return CashuResponse.generalError();
-    } catch(e, stackTrace) {
-      debugPrint('[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
-      return CashuResponse.generalError();
     }
+
+    return CashuResponse.generalError();
   }
 }
