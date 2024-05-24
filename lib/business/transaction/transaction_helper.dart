@@ -13,6 +13,7 @@ import '../proof/keyset_helper.dart';
 import '../proof/proof_helper.dart';
 import '../proof/proof_store.dart';
 import '../wallet/cashu_manager.dart';
+import '../wallet/ecash_manager.dart';
 import 'hitstory_store.dart';
 import 'invoice_store.dart';
 
@@ -83,24 +84,21 @@ class TransactionHelper {
     }
 
     // unblinding
-    final proofs = await DHKE.constructProofs(
-      promises: response.data,
-      rs: rs,
-      secrets: secrets,
-      keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
-    );
-
-    if (proofs == null) {
-      return CashuResponse.fromErrorMsg('Unblinding error.');
+    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+      mint,
+      unit,
+      response.data,
+      secrets,
+      rs,
+    ));
+    if (!unblindingResponse.isSuccess) {
+      return unblindingResponse;
     }
 
-    await ProofStore.addProofs(proofs);
-    await CashuManager.shared.updateMintBalance(mint);
-
-    return CashuResponse.fromSuccessData(proofs);
+    return CashuResponse.fromSuccessData(unblindingResponse.data);
   }
 
-  static Future<PayingTheInvoiceResponse> payingTheQuote({
+  static Future<CashuResponse<MeltResponse>> payingTheQuote({
     required IMint mint,
     String paymentKey = '',
     required List<Proof> proofs,
@@ -115,12 +113,11 @@ class TransactionHelper {
   }) async {
 
     proofs = [...proofs];
-    const failResult = (false, '');
 
     // get keyset
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
     final keyset = keysetInfo?.keyset ?? {};
-    if (keysetInfo == null || keyset.isEmpty) return failResult;
+    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset is empty');
 
     // create outputs
     final ( blindedMessages, secrets, rs, _ ) =
@@ -130,25 +127,30 @@ class TransactionHelper {
     );
 
     // melt token
-    final response = await meltAction(
+    final meltResponse = await meltAction(
       mintURL: mint.mintURL,
       quote: paymentKey,
       inputs: proofs,
       outputs: blindedMessages,
     );
-    if (!response.isSuccess) return failResult;
+    if (!meltResponse.isSuccess) return meltResponse;
 
     // unbinding
-    final ( paid, preimage, change ) = response.data;
-    final newProofs = await DHKE.constructProofs(
-      promises: change,
-      rs: rs,
-      secrets: secrets,
-      keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
-    );
-    if (newProofs == null) return failResult;
+    final ( _, _, change ) = meltResponse.data;
 
-    await ProofStore.addProofs([...newProofs]);
+    // unblinding
+    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+      mint,
+      unit,
+      change,
+      secrets,
+      rs,
+    ));
+    if (!unblindingResponse.isSuccess) {
+      return CashuResponse.fromErrorMsg('Unblinding error: ${unblindingResponse.errorMsg}');
+    }
+    final newProofs = unblindingResponse.data;
+
     await ProofHelper.deleteProofs(proofs: proofs, mint: mint);
 
     final amount = newProofs.totalAmount - proofs.totalAmount;
@@ -160,9 +162,6 @@ class TransactionHelper {
       fee: fee,
     );
 
-    return (
-      paid,
-      preimage,
-    );
+    return meltResponse;
   }
 }

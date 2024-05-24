@@ -96,7 +96,7 @@ class CashuAPI {
 
     mint.balance = validAmount;
     await CashuManager.shared.updateMintBalance(mint);
-    await ProofHelper.deleteProofs(proofs: burnedProofs, mint: null);
+    await ProofHelper.deleteProofs(proofs: burnedProofs);
 
     return burnedAmount;
   }
@@ -282,7 +282,7 @@ class CashuAPI {
   /// [amount]: The amount to pay.
   ///
   /// Returns true if payment is successful.
-  Future<bool> payingLightningInvoice({
+  Future<CashuResponse> payingLightningInvoice({
     required IMint mint,
     required String pr,
   }) {

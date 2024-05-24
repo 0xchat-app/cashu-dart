@@ -1,4 +1,5 @@
 
+import 'package:cashu_dart/business/wallet/ecash_manager.dart';
 import 'package:cashu_dart/utils/tools.dart';
 
 import '../../core/DHKE_helper.dart';
@@ -34,7 +35,7 @@ class ProofHelper {
     BigInt? amount,
     List<Proof>? proofs,
     bool orderAsc = false,
-    bool checkState = true,
+    bool checkState = false,
     bool isFromSwap = false,
   }) async {
     proofs ??= await getProofs(mint.mintURL, orderAsc);
@@ -99,14 +100,14 @@ class ProofHelper {
     return finalProofs;
   }
 
-  static Future deleteProofs({
-    IMint? mint,
+  static Future<bool> deleteProofs({
     required List<Proof> proofs,
+    IMint? mint,
   }) async {
     final burnedProofs = <Proof>[];
     if (mint != null) {
       final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: proofs);
-      if (!response.isSuccess) return null;
+      if (!response.isSuccess) return false;
       if (response.data.length != proofs.length) {
         throw Exception('[E][Cashu - checkProofsAvailable] '
             'The length of states(${response.data.length}) and proofs(${proofs.length}) is not consistent');
@@ -120,7 +121,7 @@ class ProofHelper {
       burnedProofs.addAll(proofs);
     }
 
-    await ProofStore.deleteProofs(burnedProofs);
+    return await ProofStore.deleteProofs(burnedProofs);
   }
 
   static Future<CashuResponse<List<Proof>>> swapProofs({
@@ -172,17 +173,20 @@ class ProofHelper {
       return response.cast();
     }
 
-    final newProofs = await DHKE.constructProofs(
-      promises: response.data,
-      rs: rs,
-      secrets: secrets,
-      keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
-    );
-    if (newProofs == null) return CashuResponse.fromErrorMsg('Construct proofs failed.');
+    // unblinding
+    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+      mint,
+      unit,
+      response.data,
+      secrets,
+      rs,
+    ));
+    if (!unblindingResponse.isSuccess) {
+      return unblindingResponse;
+    }
 
-    await ProofStore.addProofs(newProofs);
     await deleteProofs(proofs: proofs, mint: mint);
-    return CashuResponse.fromSuccessData(newProofs);
+    return unblindingResponse;
   }
 
   static Future<CashuResponse<List<Proof>>> swapProofsForP2PK({
@@ -239,17 +243,20 @@ class ProofHelper {
       return response.cast();
     }
 
-    final newProofs = await DHKE.constructProofs(
-      promises: response.data,
-      rs: rs,
-      secrets: pSecrets,
-      keysFetcher: (keysetId) => KeysetHelper.keysetFetcher(mint, unit, keysetId),
-    );
-    if (newProofs == null) return CashuResponse.fromErrorMsg('Construct proofs failed.');
+    // unblinding
+    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+      mint,
+      unit,
+      response.data,
+      secrets,
+      rs,
+    ));
+    if (!unblindingResponse.isSuccess) {
+      return unblindingResponse;
+    }
 
-    await ProofStore.addProofs(newProofs);
     await deleteProofs(proofs: proofs, mint: mint);
-    return CashuResponse.fromSuccessData(newProofs);
+    return unblindingResponse;
   }
 
   static int _hammingWeight(int n) {

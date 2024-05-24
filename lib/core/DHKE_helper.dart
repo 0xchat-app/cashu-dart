@@ -1,7 +1,11 @@
 
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:cashu_dart/utils/tools.dart';
+import 'package:crypto/crypto.dart';
+import 'package:pointycastle/export.dart';
 
 import 'nuts/DHKE.dart';
 import 'nuts/define.dart';
@@ -93,5 +97,38 @@ class DHKEHelper {
       keysetId: keysetId,
       amounts: amounts,
     );
+  }
+
+  static Uint8List get domainSeparator => 'Secp256k1_HashToCurve_Cashu_'.asBytes();
+
+  static String hashToCurve(String message) {
+
+    Uint8List messageBytes = message.asBytes();
+    Uint8List msgToHash = Uint8List.fromList(
+      sha256
+          .convert([...domainSeparator, ...messageBytes])
+          .bytes,
+    );
+
+    int counter = 0;
+    while (counter < 1 << 16) {
+      Uint8List hash = Uint8List.fromList(
+        sha256.convert([...msgToHash, ...byteBufferFromInt(counter)]).bytes,
+      );
+      try {
+        // will error if point does not lie on curve
+        final point = DHKE.pointFromHex('02${hash.asHex()}');
+        return DHKE.ecPointToHex(point);
+      } catch (e) {
+        counter++;
+      }
+    }
+    throw Exception("No valid point found");
+  }
+
+  static Uint8List byteBufferFromInt(int value) {
+    var buffer = Uint8List(4);
+    ByteData.view(buffer.buffer).setUint32(0, value, Endian.little);
+    return buffer;
   }
 }

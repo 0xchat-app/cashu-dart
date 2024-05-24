@@ -1,4 +1,6 @@
 
+import 'package:cashu_dart/core/DHKE_helper.dart';
+
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
@@ -24,8 +26,8 @@ class Nut7 {
     return HTTPClient.post(
       nutURLJoin(mintURL, 'checkstate'),
       params: {
-        'secrets': proofList.map((e) {
-          return e.secret;
+        'Ys': proofList.map((e) {
+          return e.Y;
         }).toList(),
       },
       modelBuilder: (json) {
@@ -39,10 +41,10 @@ class Nut7 {
           final stateEntry = states[i];
           if (stateEntry is! Map) return null;
 
-          final secret = stateEntry['secret'];
+          final Y = stateEntry['Y'];
           final state = TokenStateEx.fromState(stateEntry['state']);
 
-          if (proof.secret == secret && state != null) {
+          if (proof.Y == Y && state != null) {
             result.add(state);
           }
         }

@@ -151,10 +151,9 @@ class HTTPClient {
     required http.Response response,
     T? Function(dynamic json)? modelBuilder,
   }) async {
-    debugPrint('[http - ${requestData.method.text}] '
-        'uri: ${requestData.uri}, '
-        'response: ${response.body}, '
-        'status: ${response.statusCode}');
+    final logPrefix = '[http - ${requestData.method.text}] uri: ${requestData.uri}';
+    debugPrint('$logPrefix, request: ${requestData.body}');
+    debugPrint('$logPrefix, response: ${response.body}, status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final bodyJson = jsonDecode(response.body);

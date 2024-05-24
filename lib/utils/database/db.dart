@@ -53,6 +53,7 @@ class CashuDB {
       }
       await batch.commit();
     }, onUpgrade: (db, oldVersion, newVersion) async {
+
       // Update Table
       List<Map<String, dynamic>> tables = await db
           .rawQuery("SELECT name FROM sqlite_master WHERE type='table'");

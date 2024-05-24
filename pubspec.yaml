@@ -18,6 +18,7 @@ dependencies:
   bolt11_decoder: ^1.0.2
   pointycastle: ^3.3.0
   uuid: ^3.0.6
+  decimal: ^2.3.3
 
 dev_dependencies:
   flutter_test:

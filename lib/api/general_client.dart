@@ -66,7 +66,7 @@ class CashuAPIGeneralClient {
       mints: [mint.mintURL],
     );
 
-    await ProofHelper.deleteProofs(proofs: proofs, mint: null);
+    await ProofHelper.deleteProofs(proofs: proofs);
     await CashuManager.shared.updateMintBalance(mint);
 
     debugPrint('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
@@ -142,7 +142,7 @@ class CashuAPIGeneralClient {
         mints: [mint.mintURL],
       );
       deletedHistoryIds.add(history.id);
-      await ProofHelper.deleteProofs(proofs: proofs, mint: null);
+      await ProofHelper.deleteProofs(proofs: proofs);
     }
 
     return CashuResponse.fromSuccessData(tokenList);
@@ -199,7 +199,7 @@ class CashuAPIGeneralClient {
       mints: [mint.mintURL],
     );
 
-    await ProofHelper.deleteProofs(proofs: p2pkProofs, mint: null);
+    await ProofHelper.deleteProofs(proofs: p2pkProofs);
     await CashuManager.shared.updateMintBalance(mint);
 
     debugPrint('[I][Cashu - sendEcash] Create Ecash: $encodedToken');

@@ -4,6 +4,7 @@ import '../../core/nuts/define.dart';
 import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
 import '../mint/mint_helper.dart';
+import '../wallet/cashu_manager.dart';
 
 class KeysetHelper {
 
@@ -30,9 +31,13 @@ class KeysetHelper {
     return keysetInfo;
   }
 
-  static Future<MintKeys?> keysetFetcher(IMint mint, String unit, String keysetId) async {
+  static Future<MintKeys?> keysetFetcher(String mintURL, String unit, String keysetId) async {
+    final mint = await CashuManager.shared.getMint(mintURL);
+    if (mint == null) return null;
+
     final info = await tryGetMintKeysetInfo(mint, unit, keysetId);
     if (info?.keyset.isEmpty ?? true) return null;
+
     return info?.keyset;
   }
 }

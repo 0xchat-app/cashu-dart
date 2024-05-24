@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'package:cashu_dart/core/DHKE_helper.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/keyset_store.dart';
@@ -11,6 +12,7 @@ import '../../model/keyset_info.dart';
 import '../../model/lightning_invoice.dart';
 import '../../model/mint_info.dart';
 import '../../model/mint_model.dart';
+import '../../model/unblinding_data.dart';
 import '../../utils/database/db.dart';
 import '../mint/mint_helper.dart';
 import '../mint/mint_info_store.dart';
@@ -81,6 +83,7 @@ class CashuManager {
       LightningInvoice,
       MintInfo,
       IMint,
+      UnblindingData,
     ];
     await CashuDB.sharedInstance.open(
       dbNameWithIdentify(dbName),
@@ -193,18 +196,23 @@ class CashuManager {
     return await MintStore.updateMint(mint);
   }
 
-  Future updateMintBalance(IMint mint) async {
-    final index = mints.indexWhere((element) => element.mintURL == mint.mintURL);
-    if (index < 0) {
+  Future updateMintBalance([IMint? mint]) async {
+    final mints = this.mints.where((element) => mint == null || element.mintURL == mint.mintURL);
+    if (mints.isEmpty) {
       return false;
     }
-    var total = 0;
-    final proofs = await ProofHelper.getProofs(mint.mintURL);
-    for (final proof in proofs) {
-      total += proof.amountNum;
+
+    for (var mint in mints) {
+      var total = 0;
+      final proofs = await ProofHelper.getProofs(mint.mintURL);
+      for (final proof in proofs) {
+        total += proof.amountNum;
+      }
+      if (mint.balance != total) {
+        mint.balance = total;
+        notifyListenerForBalanceChanged(mint);
+      }
     }
-    mints[index].balance = total;
-    notifyListenerForBalanceChanged(mint);
   }
 
   Future<bool> deleteMint(IMint mint) async {

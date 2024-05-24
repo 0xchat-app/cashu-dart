@@ -1,5 +1,6 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
+import 'package:decimal/decimal.dart';
 
 import '../../business/proof/proof_helper.dart';
 import '../../business/transaction/transaction_helper.dart';
@@ -7,6 +8,7 @@ import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/v1/nut_05.dart';
 import '../../core/nuts/v1/nut_08.dart';
 import '../../model/mint_model.dart';
+import '../../utils/network/response.dart';
 
 class CashuAPIV1Client {
 
@@ -15,21 +17,21 @@ class CashuAPIV1Client {
   /// [pr]: The payment request string of the Lightning invoice.
   /// [amount]: The amount to pay.
   /// Returns true if payment is successful.
-  static Future<bool> payingLightningInvoice({
+  static Future<CashuResponse> payingLightningInvoice({
     required IMint mint,
     required String pr,
   }) async {
 
     await CashuManager.shared.setupFinish.future;
 
-    if (pr.isEmpty) return false;
+    if (pr.isEmpty) return CashuResponse.fromErrorMsg('pr is empty');
 
     // Get quote ID.
     final quoteResponse = await Nut5.requestMeltQuote(
       mintURL: mint.mintURL,
       request: pr,
     );
-    if (!quoteResponse.isSuccess || quoteResponse.data.quote.isEmpty) return false;
+    if (!quoteResponse.isSuccess || quoteResponse.data.quote.isEmpty) return quoteResponse;
     final quoteID = quoteResponse.data.quote;
 
     // Get fee.
@@ -37,29 +39,30 @@ class CashuAPIV1Client {
       mintURL: mint.mintURL,
       quoteID: quoteID,
     );
-    if (!quoteInfoResponse.isSuccess) return false;
-    final fee = int.parse(quoteInfoResponse.data.fee);
+    if (!quoteInfoResponse.isSuccess) return quoteInfoResponse;
+    final fee = BigInt.tryParse(quoteInfoResponse.data.fee) ?? BigInt.zero;
 
     // Get proofs for pay.
     final req = Bolt11PaymentRequest(pr);
-    final amount = (req.amount.toDouble() * 100000000).toInt();
+    final amount = (req.amount * Decimal.fromInt(100000000)).toBigInt();
+
     final response = await ProofHelper.getProofsToUse(
       mint: mint,
-      amount: BigInt.from(amount + fee),
+      amount: amount + fee,
     );
-    if (!response.isSuccess) return false;
+    if (!response.isSuccess) return response;
 
     final proofs = response.data;
-    final (paid, preimage) = await TransactionHelper.payingTheQuote(
+    final payingResponse = await TransactionHelper.payingTheQuote(
       mint: mint,
       paymentKey: quoteID,
       proofs: proofs,
-      fee: fee,
+      fee: fee.toInt(),
       meltAction: Nut8.payingTheQuote,
     );
-    if (paid) {
+    if (payingResponse.isSuccess) {
       await CashuManager.shared.updateMintBalance(mint);
     }
-    return paid;
+    return payingResponse;
   }
 }

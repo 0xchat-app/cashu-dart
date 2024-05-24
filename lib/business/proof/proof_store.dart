@@ -21,12 +21,13 @@ class ProofStore {
   }
 
   static Future<List<Proof>> getProofs({List<String> ids = const [], String c = ''}) async {
-    final quotedIds = ids.map((e) => '"$e"').toList().join(',');
+    final placeholders = ids.map((_) => '?').toList().join(',');
     final whereString = [
-      if (ids.isNotEmpty) ' id in ($quotedIds) ',
+      if (ids.isNotEmpty) ' id in ($placeholders) ',
       if (c.isNotEmpty) ' C = ? ',
     ];
     final whereArgs = [
+      if (ids.isNotEmpty) ...ids,
       if (c.isNotEmpty) c,
     ];
     return CashuDB.sharedInstance.objects<Proof>(

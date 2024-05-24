@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../utils/database/db.dart';
 import '../../utils/database/db_object.dart';
 import '../../utils/tools.dart';
+import '../DHKE_helper.dart';
 
 class Nut0 {
   static const tokenPrefix = 'cashu';
@@ -145,6 +146,9 @@ class Proof extends DBObject {
   Map<String, dynamic>? dleq;
 
   int get amountNum => int.tryParse(amount) ?? 0;
+
+  /// Y: hash_to_curve(secret)
+  String get Y => DHKEHelper.hashToCurve(secret);
 
   Map<String, dynamic> toJson() => {
     'id': id,

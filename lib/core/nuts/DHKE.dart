@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:cashu_dart/utils/tools.dart';
 import 'package:pointycastle/export.dart';
 
+import '../../model/unblinding_data.dart';
 import 'define.dart';
 import 'nut_00.dart';
 
@@ -51,7 +52,7 @@ class DHKE {
       try {
         point = pointFromHex(pointXHex);
       } catch (error) {
-        secret = digest.process(secret); // 重新哈希处理
+        secret = digest.process(secret);
       }
     }
     return point;
@@ -62,10 +63,10 @@ class DHKE {
 
     var Y = hashToCurve(secret);
 
-    // 生成随机私钥 r
-    r ??= BigInt.from(1); // randomPrivateKey().asBigInt();
+    // Random r
+    r ??= randomPrivateKey().asBigInt();
 
-    // 计算椭圆曲线上的点 rG
+    // Calculate the point rG
     final domainParams = ECCurve_secp256k1();
     final G = domainParams.G;
     final rG = G * r;
@@ -90,20 +91,19 @@ class DHKE {
   }
 
   static Future<List<Proof>?> constructProofs({
-    required List<BlindedSignature> promises,
-    required List<BigInt> rs,
-    required List<String> secrets,
-    required Future<MintKeys?> Function(String keysetId) keysFetcher,
+    required List<UnblindingData> data,
+    required Future<MintKeys?> Function(String mintURL, String unit, String keysetId,) keysFetcher,
   }) async {
     final List<Proof> proofs = [];
-    for (int i = 0; i < promises.length; i++) {
-      final promise = promises[i];
-      final secret = secrets[i];
+    for (int i = 0; i < data.length; i++) {
+      final unblindingData = data[i];
+      final promise = unblindingData.signature;
+      final secret = unblindingData.secret;
       final keysetId = promise.id;
-      final keys = await keysFetcher(keysetId);
+      final keys = await keysFetcher(unblindingData.mintURL, unblindingData.unit, keysetId,);
       if (keys == null) return null;
 
-      final r = rs[i];
+      final r = unblindingData.r.asBigInt();
       final K = keys[promise.amount];
       if (K == null) {
         throw Exception('[E][Cashu - constructProofs] key not found.');
@@ -135,7 +135,7 @@ class DHKE {
   }
 
   static ECPoint pointFromHex(String hex) {
-    var curve = ECCurve_secp256k1();
-    return curve.curve.decodePoint(hex.hexToBytes())!;
+    final handler = ECCurve_secp256k1();
+    return handler.curve.decodePoint(hex.hexToBytes())!;
   }
 }

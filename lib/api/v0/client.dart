@@ -7,6 +7,7 @@ import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/v0/nut_05.dart';
 import '../../core/nuts/v0/nut_08.dart';
 import '../../model/mint_model.dart';
+import '../../utils/network/response.dart';
 
 class CashuAPIV0Client {
 
@@ -15,7 +16,7 @@ class CashuAPIV0Client {
   /// [pr]: The payment request string of the Lightning invoice.
   /// [amount]: The amount to pay.
   /// Returns true if payment is successful.
-  static Future<bool> payingLightningInvoice({
+  static Future<CashuResponse> payingLightningInvoice({
     required IMint mint,
     required String pr,
   }) async {
@@ -24,7 +25,7 @@ class CashuAPIV0Client {
 
     // Get fee
     final checkResponse = await Nut5.checkingLightningFees(mintURL: mint.mintURL, pr: pr);
-    if (!checkResponse.isSuccess) return false;
+    if (!checkResponse.isSuccess) return checkResponse;
     final fee = checkResponse.data;
 
     // Get amount
@@ -35,10 +36,10 @@ class CashuAPIV0Client {
       mint: mint,
       amount: BigInt.from(amount + fee),
     );
-    if (!proofsResponse.isSuccess) return false;
+    if (!proofsResponse.isSuccess) return proofsResponse;
 
     final proofs = proofsResponse.data;
-    final (paid, preimage) = await TransactionHelper.payingTheQuote(
+    final payingResponse = await TransactionHelper.payingTheQuote(
       mint: mint,
       paymentKey: pr,
       proofs: proofs,
@@ -46,10 +47,10 @@ class CashuAPIV0Client {
       meltAction: Nut8.payingTheInvoice,
     );
 
-    if (paid) {
+    if (payingResponse.isSuccess) {
       await CashuManager.shared.updateMintBalance(mint);
     }
 
-    return paid;
+    return payingResponse;
   }
 }
