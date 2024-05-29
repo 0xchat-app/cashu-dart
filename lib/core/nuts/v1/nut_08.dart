@@ -35,7 +35,7 @@ class Nut8 {
       modelBuilder: (json) {
         if (json is! Map) return null;
         final paid = Tools.getValueAs<bool>(json, 'paid', false);
-        final preimage = Tools.getValueAs<String>(json, 'preimage', '');
+        final preimage = Tools.getValueAs<String>(json, 'payment_preimage', '');
         final change = Tools.getValueAs<List>(json, 'change', []).map((map) {
           if (map is! Map) return null;
           return BlindedSignature.fromServerMap(map);
