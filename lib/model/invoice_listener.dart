@@ -3,7 +3,8 @@ import 'invoice.dart';
 import 'mint_model.dart';
 
 abstract mixin class CashuListener {
-  void onInvoicePaid(Receipt receipt) { }
-  void onBalanceChanged(IMint mint) { }
-  void onMintListChanged(List<IMint> mints) { }
+  void handleInvoicePaid(Receipt receipt) { }
+  void handleBalanceChanged(IMint mint) { }
+  void handleMintListChanged(List<IMint> mints) { }
+  void handlePaymentCompleted(String paymentKey) { }
 }

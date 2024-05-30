@@ -285,11 +285,20 @@ class CashuAPI {
   Future<CashuResponse> payingLightningInvoice({
     required IMint mint,
     required String pr,
+    String paymentKey = '',
   }) {
     if (mint.maxNutsVersion >= 1) {
-      return CashuAPIV1Client.payingLightningInvoice(mint: mint, pr: pr);
+      return CashuAPIV1Client.payingLightningInvoice(
+        mint: mint,
+        pr: pr,
+        paymentKey: paymentKey,
+      );
     }
-    return CashuAPIV0Client.payingLightningInvoice(mint: mint, pr: pr);
+    return CashuAPIV0Client.payingLightningInvoice(
+      mint: mint,
+      pr: pr,
+      paymentKey: paymentKey,
+    );
   }
 
   /// Creates a Lightning invoice with the given amount.

@@ -321,12 +321,12 @@ class ExamplePageState extends State<ExamplePage> with CashuListener {
   }
 
   @override
-  void onInvoicePaid(Receipt receipt) {
+  void handleInvoicePaid(Receipt receipt) {
     updateUI();
   }
 
   @override
-  void onBalanceChanged(IMint mint) {
+  void handleBalanceChanged(IMint mint) {
     updateUI();
   }
 }

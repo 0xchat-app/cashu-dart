@@ -19,6 +19,7 @@ class CashuAPIV0Client {
   static Future<CashuResponse> payingLightningInvoice({
     required IMint mint,
     required String pr,
+    String paymentKey = '',
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -41,10 +42,11 @@ class CashuAPIV0Client {
     final proofs = proofsResponse.data;
     final payingResponse = await TransactionHelper.payingTheQuote(
       mint: mint,
-      paymentKey: pr,
+      paymentId: pr,
       proofs: proofs,
       fee: fee,
       meltAction: Nut8.payingTheInvoice,
+      paymentKey: paymentKey,
     );
 
     if (payingResponse.isSuccess) {

@@ -100,7 +100,7 @@ class TransactionHelper {
 
   static Future<CashuResponse<MeltResponse>> payingTheQuote({
     required IMint mint,
-    String paymentKey = '',
+    String paymentId = '',
     required List<Proof> proofs,
     String unit = 'sat',
     required int fee,
@@ -110,6 +110,7 @@ class TransactionHelper {
       required List<Proof> inputs,
       required List<BlindedMessage> outputs,
     }) meltAction,
+    String paymentKey = '',
   }) async {
 
     proofs = [...proofs];
@@ -129,7 +130,7 @@ class TransactionHelper {
     // melt token
     final meltResponse = await meltAction(
       mintURL: mint.mintURL,
-      quote: paymentKey,
+      quote: paymentId,
       inputs: proofs,
       outputs: blindedMessages,
     );
@@ -157,10 +158,14 @@ class TransactionHelper {
     await HistoryStore.addToHistory(
       amount: amount,
       type: IHistoryType.lnInvoice,
-      value: paymentKey,
+      value: paymentId,
       mints: [mint.mintURL],
       fee: fee,
     );
+
+    if (paymentKey.isNotEmpty) {
+      CashuManager.shared.notifyListenerForPaymentCompleted(paymentKey);
+    }
 
     return meltResponse;
   }

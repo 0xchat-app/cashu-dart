@@ -235,19 +235,25 @@ class CashuManager {
 
   void notifyListenerForPaidSuccess(Receipt receipt) {
     for (var e in _listeners) {
-      e.onInvoicePaid(receipt);
+      e.handleInvoicePaid(receipt);
     }
   }
 
   void notifyListenerForBalanceChanged(IMint mint) {
     for (var e in _listeners) {
-      e.onBalanceChanged(mint);
+      e.handleBalanceChanged(mint);
     }
   }
 
   void notifyListenerForMintListChanged() {
     for (var e in _listeners) {
-      e.onMintListChanged(mints);
+      e.handleMintListChanged(mints);
+    }
+  }
+
+  void notifyListenerForPaymentCompleted(String paymentKey) {
+    for (var e in _listeners) {
+      e.handlePaymentCompleted(paymentKey);
     }
   }
 }
