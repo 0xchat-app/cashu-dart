@@ -48,12 +48,21 @@ class IInvoice extends DBObject implements Receipt {
   @override
   final String mintURL;
 
+  static int get expiryMax => DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch ~/ 1000;
+
   static IInvoice? fromServerMap(Map json, String mintURL, String amount) {
     final quote = Tools.getValueAs<String>(json, 'quote', '');
     final request = Tools.getValueAs<String>(json, 'request', '');
     final paid = Tools.getValueAs<bool>(json, 'paid', false);
     final expiryInterval = Tools.getValueAs<int>(json, 'expiry', 0);
-    final expiry = expiryInterval == 0 ? 0 : DateTime.now().millisecondsSinceEpoch ~/ 1000 + expiryInterval;
+
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    var expiry = 0;
+    if (expiryInterval > now && expiryInterval < expiryMax) {
+      expiry = expiryInterval;
+    } else if (expiryInterval < const Duration(days: 30).inSeconds) {
+      expiry = now + expiryInterval;
+    }
     if (quote.isEmpty || request.isEmpty) return null;
     return IInvoice(
       quote: quote,
@@ -113,6 +122,8 @@ class IInvoice extends DBObject implements Receipt {
 
   @override
   bool get isExpired {
+    // Error expiry data
+    if (expiry > expiryMax) return true;
     return expiry != 0 && expiry < DateTime.now().millisecondsSinceEpoch ~/ 1000;
   }
 }

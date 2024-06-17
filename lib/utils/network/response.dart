@@ -10,7 +10,7 @@ enum ResponseCode {
   keysetError(12000),
   keysetNotFoundError(12001),
   lightningError(20000),
-  invoiceNotPaidError(20001);
+  invoiceNotPaidError(2001);
 
   final int value;
 
