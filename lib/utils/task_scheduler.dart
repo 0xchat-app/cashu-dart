@@ -7,12 +7,13 @@ class TaskScheduler {
   Future Function() task;
   bool isDispose = false;
   int _taskExecutionCount = 0;
-  Stopwatch stopwatch = Stopwatch();
+
+  bool useFixedInterval = false;
+  Timer? taskTimer;
 
   TaskScheduler({required this.task});
 
   void start() {
-    stopwatch.start();
     _completer.future.then((_) => _scheduleTask());
   }
 
@@ -26,8 +27,26 @@ class TaskScheduler {
     isDispose = true;
   }
 
+  void enableFixedInterval(Duration interval) {
+    useFixedInterval = true;
+    if (taskTimer != null) {
+      taskTimer?.cancel();
+    }
+    taskTimer = Timer.periodic(interval, (_) {
+      if (!useFixedInterval) return ;
+      _executeTask();
+    });
+  }
+
+  void disableFixedInterval() {
+    useFixedInterval = false;
+    taskTimer?.cancel();
+    taskTimer = null;
+    start();
+  }
+
   void _scheduleTask() {
-    if (isDispose) return;
+    if (isDispose || useFixedInterval) return;
 
     _taskExecutionCount += 1;
     _executeTask();

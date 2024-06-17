@@ -34,6 +34,14 @@ class InvoiceHandler {
     checkInvoice(invoice);
   }
 
+  void startHighFrequencyDetection() {
+    invoiceChecker?.enableFixedInterval(const Duration(seconds: 5));
+  }
+
+  void stopHighFrequencyDetection() {
+    invoiceChecker?.disableFixedInterval();
+  }
+
   Future _periodicCheck() async {
     final invoices = [..._invoices].reversed;
     for (var invoice in invoices) {

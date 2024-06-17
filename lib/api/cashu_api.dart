@@ -368,4 +368,14 @@ class CashuAPI {
         privateKeyList: privateKeyList,
         signFunction: signFunction,
       );
+
+  void startHighFrequencyDetection() async {
+    await CashuManager.shared.setupFinish.future;
+    CashuManager.shared.invoiceHandler.startHighFrequencyDetection();
+  }
+
+  void stopHighFrequencyDetection() async {
+    await CashuManager.shared.setupFinish.future;
+    CashuManager.shared.invoiceHandler.stopHighFrequencyDetection();
+  }
 }
