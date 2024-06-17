@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 import 'package:cashu_dart/cashu_dart.dart';
 
+import '../../utils/task_scheduler.dart';
 import '../transaction/hitstory_store.dart';
 import '../transaction/invoice_store.dart';
 import '../transaction/transaction_helper.dart';
@@ -14,16 +15,17 @@ class InvoiceHandler {
   final _pendingInvoices = <Receipt>{};
   Function(Receipt invoice)? invoiceOnPaidCallback;
 
-  Timer? _checkTimer;
+  TaskScheduler? invoiceChecker;
 
   Future<void> initialize() async {
     _invoices.addAll(await InvoiceStore.getAllInvoice());
-    _checkTimer = Timer.periodic(const Duration(seconds: 5), _periodicCheck);
+    invoiceChecker = TaskScheduler(task: _periodicCheck)..start();
+    Future.delayed(const Duration(seconds: 10), () => invoiceChecker?.complete());
   }
 
   void dispose() {
     _invoices.clear();
-    _checkTimer?.cancel();
+    invoiceChecker?.dispose();
   }
 
   void addInvoice(Receipt invoice) {
@@ -32,10 +34,10 @@ class InvoiceHandler {
     checkInvoice(invoice);
   }
 
-  void _periodicCheck(Timer timer) async {
+  Future _periodicCheck() async {
     final invoices = [..._invoices].reversed;
     for (var invoice in invoices) {
-      checkInvoice(invoice);
+      await checkInvoice(invoice);
     }
   }
 
