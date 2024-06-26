@@ -13,7 +13,7 @@ dependencies:
   plugin_platform_interface: ^2.0.2
   sqflite_sqlcipher: ^2.2.1
   reflectable: ^4.0.5
-  http: ^0.13.3
+  http: ^1.0.0
   crypto: ^3.0.2
   bolt11_decoder: ^1.0.2
   pointycastle: ^3.3.0
