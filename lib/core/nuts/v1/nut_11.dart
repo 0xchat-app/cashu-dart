@@ -1,6 +1,14 @@
 
 import 'nut_10.dart';
 
+enum P2PKSecretSigFlag {
+  inputs('SIG_INPUTS'),
+  all('SIG_ALL');
+
+  const P2PKSecretSigFlag(this.value);
+  final String value;
+}
+
 enum P2PKSecretTagKey {
 
   sigflag('sigflag'),

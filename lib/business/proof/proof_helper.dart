@@ -196,6 +196,7 @@ class ProofHelper {
     List<String>? refundPubKeys,
     int? locktime,
     int? signNumRequired,
+    P2PKSecretSigFlag? sigFlag,
     String unit = 'sat',
   }) async {
 
@@ -205,6 +206,7 @@ class ProofHelper {
       if (refundPubKeys != null && refundPubKeys.isNotEmpty) P2PKSecretTagKey.refund.appendValues(refundPubKeys),
       if (signNumRequired != null && signNumRequired > 0) P2PKSecretTagKey.nSigs.appendValues(['$signNumRequired']),
       if (locktime != null) P2PKSecretTagKey.lockTime.appendValues([locktime.toString()]),
+      if (sigFlag != null) P2PKSecretTagKey.sigflag.appendValues([sigFlag.value]),
     ];
     final secrets = proofs.map((_) =>
         P2PKSecret(

@@ -2,16 +2,16 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:cashu_dart/business/proof/proof_helper.dart';
-import 'package:cashu_dart/core/mint_actions.dart';
-
 import '../business/mint/mint_helper.dart';
+import '../business/proof/proof_helper.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/transaction/transaction_helper.dart';
 import '../business/wallet/cashu_manager.dart';
+import '../core/mint_actions.dart';
 import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
+import '../core/nuts/v1/nut_11.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
 import '../model/invoice_listener.dart';
@@ -244,8 +244,10 @@ class CashuAPI {
     List<String>? refundPubKeys,
     int? locktime,
     int? signNumRequired,
+    P2PKSecretSigFlag? sigFlag,
     String memo = '',
     String unit = 'sat',
+    List<Proof>? proofs,
   }) => CashuAPIGeneralClient.sendEcashToPublicKeys(
     mint: mint,
     amount: amount,
@@ -253,8 +255,10 @@ class CashuAPI {
     refundPubKeys: refundPubKeys,
     locktime: locktime,
     signNumRequired: signNumRequired,
+    sigFlag: sigFlag,
     memo: memo,
     unit: unit,
+    proofs: proofs,
   );
 
   /// Redeems e-cash from the given string.

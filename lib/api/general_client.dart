@@ -10,6 +10,7 @@ import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
 import '../core/nuts/nut_00.dart';
+import '../core/nuts/v1/nut_11.dart';
 import '../model/history_entry.dart';
 import '../model/lightning_invoice.dart';
 import '../model/mint_model.dart';
@@ -155,8 +156,10 @@ class CashuAPIGeneralClient {
     List<String>? refundPubKeys,
     int? locktime,
     int? signNumRequired,
+    P2PKSecretSigFlag? sigFlag,
     String memo = '',
     String unit = 'sat',
+    List<Proof>? proofs,
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -166,20 +169,35 @@ class CashuAPIGeneralClient {
     }
 
     // get proofs
-    final response = await ProofHelper.getProofsToUse(
-      mint: mint,
-      amount: BigInt.from(amount),
-    );
-    if (!response.isSuccess) return response.cast();
+    if (proofs == null) {
+      final response = await ProofHelper.getProofsToUse(
+        mint: mint,
+        amount: BigInt.from(amount),
+      );
+      if (!response.isSuccess) return response.cast();
 
-    final localProofs = response.data;
+      proofs = response.data;
+    }
+
+    if (proofs.totalAmount != amount) {
+      final response = await ProofHelper.getProofsToUse(
+        mint: mint,
+        amount: BigInt.from(amount),
+        proofs: proofs,
+      );
+      if (!response.isSuccess) return response.cast();
+
+      proofs = response.data;
+    }
+
     final swapResponse = await ProofHelper.swapProofsForP2PK(
       mint: mint,
-      proofs: localProofs,
+      proofs: proofs,
       publicKeys: publicKeys,
       refundPubKeys: refundPubKeys,
       locktime: locktime,
       signNumRequired: signNumRequired,
+      sigFlag: sigFlag,
     );
     if (!swapResponse.isSuccess) return swapResponse.cast();
 
