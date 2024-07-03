@@ -94,9 +94,9 @@ class CashuAPI {
       }
     }
 
-    mint.balance = validAmount;
-    await CashuManager.shared.updateMintBalance(mint);
+    // Delete the proofs before updating the assets; otherwise, the updated asset data will be inaccurate.
     await ProofHelper.deleteProofs(proofs: burnedProofs);
+    await CashuManager.shared.updateMintBalance(mint);
 
     return burnedAmount;
   }
