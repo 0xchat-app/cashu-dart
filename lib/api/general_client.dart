@@ -20,6 +20,18 @@ typedef SignWithKeyFunction = Future<String> Function(String key, String message
 
 class CashuAPIGeneralClient {
 
+  static const _lnPrefix = [
+    'lightning:',
+    'lightning=',
+    'lightning://',
+    'lnurlp://',
+    'lnurlp=',
+    'lnurlp:',
+    'lnurl:',
+    'lnurl=',
+    'lnurl://',
+  ];
+
   static Future<CashuResponse<String>> sendEcash({
     required IMint mint,
     required int amount,
@@ -346,16 +358,30 @@ class CashuAPIGeneralClient {
     );
   }
 
-  static int? amountOfLightningInvoice(String pr) {
+  static Bolt11PaymentRequest? _tryConstructRequestFromPr(String pr) {
+    pr = pr.trim();
+    for (var prefix in _lnPrefix) {
+      if (pr.startsWith(prefix)) {
+        pr = pr.substring(prefix.length).trim();
+        break; // Important to exit the loop once a match is found
+      }
+    }
+    if (pr.isEmpty) return null;
     try {
       final req = Bolt11PaymentRequest(pr);
       for (var tag in req.tags) {
         debugPrint('[Cashu - invoice decode]${tag.type}: ${tag.data}');
       }
-      return (req.amount.toDouble() * 100000000).toInt();
+      return req;
     } catch (_) {
       return null;
     }
+  }
+
+  static int? amountOfLightningInvoice(String pr) {
+    final request = _tryConstructRequestFromPr(pr);
+    if (request == null) return null;
+    return (request.amount.toDouble() * 100000000).toInt();
   }
 
   static (String memo, int amount, List secretData)? infoOfToken(String ecashToken) {
@@ -373,34 +399,8 @@ class CashuAPIGeneralClient {
 
 
   static bool isLnInvoice(String str) {
-    if (str.isEmpty) return false;
-
-    str = str.trim();
-    final uriPrefixes = [
-      'lightning:',
-      'lightning=',
-      'lightning://',
-      'lnurlp://',
-      'lnurlp=',
-      'lnurlp:',
-      'lnurl:',
-      'lnurl=',
-      'lnurl://',
-    ];
-    for (var prefix in uriPrefixes) {
-      if (str.startsWith(prefix)) {
-        str = str.substring(prefix.length).trim();
-        break; // Important to exit the loop once a match is found
-      }
-    }
-    if (str.isEmpty) return false;
-
-    try {
-      Bolt11PaymentRequest(str);
-    } catch (_) {
-      return false;
-    }
-    return true;
+    final request = _tryConstructRequestFromPr(str);
+    return request != null;
   }
 
   static Future addSignatureToProof({
