@@ -85,6 +85,7 @@ class InvoiceHandler {
             );
             invoiceOnPaidCallback?.call(invoice);
           }
+          CashuManager.shared.updateMintBalance();
           return true;
         } else if (response.code == ResponseCode.invoiceNotPaidError && invoice.isExpired) {
           deleteInvoice(invoice);

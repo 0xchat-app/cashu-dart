@@ -1,4 +1,6 @@
 
+import 'package:cashu_dart/business/wallet/cashu_manager.dart';
+
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../utils/database/db.dart';
@@ -51,7 +53,8 @@ class HistoryStore {
       fee: fee,
       isSpent: isSpent,
     );
-    _add(item);
+    await _add(item);
+    CashuManager.shared.notifyListenerForHistoryChanged();
     return item;
   }
 
@@ -59,6 +62,7 @@ class HistoryStore {
     await CashuDB.sharedInstance.delete<IHistoryEntry>(
       where: 'id in (${ids.map((e) => '"$e"').join(',')})',
     );
+    CashuManager.shared.notifyListenerForHistoryChanged();
   }
 
   static Future<bool> hasReceiptRedeemHistory(Receipt receipt) async {

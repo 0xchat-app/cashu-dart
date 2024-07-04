@@ -256,4 +256,10 @@ class CashuManager {
       e.handlePaymentCompleted(paymentKey);
     }
   }
+
+  void notifyListenerForHistoryChanged() {
+    for (var e in _listeners) {
+      e.handleHistoryChanged();
+    }
+  }
 }

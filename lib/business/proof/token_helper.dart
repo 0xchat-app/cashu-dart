@@ -74,7 +74,7 @@ class TokenHelper {
   }
 
   static Token? getDecodedToken(String token) {
-    List<String> uriPrefixes = ['web+cashu://', 'cashu://', 'cashu:', 'cashuA'];
+    List<String> uriPrefixes = Nut0.uriPrefixes;
 
     for (var prefix in uriPrefixes) {
       if (token.startsWith(prefix)) {

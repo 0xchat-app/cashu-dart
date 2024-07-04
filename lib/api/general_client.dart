@@ -146,6 +146,8 @@ class CashuAPIGeneralClient {
       await ProofHelper.deleteProofs(proofs: proofs);
     }
 
+    await CashuManager.shared.updateMintBalance(mint);
+
     return CashuResponse.fromSuccessData(tokenList);
   }
 
@@ -284,6 +286,7 @@ class CashuAPIGeneralClient {
           value: ecashString,
           mints: mints.toList(),
         );
+        // If it is a self-issued token, set its status to "Spent."
         (await HistoryStore.getHistory(value: [ecashString]))
             .where((history) => history.amount < 0)
             .forEach((history) {
