@@ -12,6 +12,7 @@ import '../core/mint_actions.dart';
 import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
 import '../core/nuts/v1/nut_11.dart';
+import '../model/cashu_token_info.dart';
 import '../model/history_entry.dart';
 import '../model/invoice.dart';
 import '../model/invoice_listener.dart';
@@ -350,7 +351,7 @@ class CashuAPI {
   /// [ecashToken]: The e-cash token string.
   ///
   /// Returns a tuple of memo and total amount if successful, otherwise null.
-  (String memo, int amount, List secretData)? infoOfToken(String ecashToken) =>
+  CashuTokenInfo? infoOfToken(String ecashToken) =>
       CashuAPIGeneralClient.infoOfToken(ecashToken);
 
   /// Checks if a given string is a valid Cashu token.

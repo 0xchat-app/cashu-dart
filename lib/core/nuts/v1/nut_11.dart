@@ -7,6 +7,10 @@ enum P2PKSecretSigFlag {
 
   const P2PKSecretSigFlag(this.value);
   final String value;
+
+  static P2PKSecretSigFlag? fromValue(dynamic value) {
+    return P2PKSecretSigFlag.values.where((element) => element.value == value).firstOrNull;
+  }
 }
 
 enum P2PKSecretTagKey {

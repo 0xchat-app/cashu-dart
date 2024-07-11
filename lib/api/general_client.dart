@@ -11,10 +11,12 @@ import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
 import '../core/nuts/nut_00.dart';
 import '../core/nuts/v1/nut_11.dart';
+import '../model/cashu_token_info.dart';
 import '../model/history_entry.dart';
 import '../model/lightning_invoice.dart';
 import '../model/mint_model.dart';
 import '../utils/network/response.dart';
+import 'nut_P2PK_helper.dart';
 
 typedef SignWithKeyFunction = Future<String> Function(String key, String message);
 
@@ -384,17 +386,20 @@ class CashuAPIGeneralClient {
     return (request.amount.toDouble() * 100000000).toInt();
   }
 
-  static (String memo, int amount, List secretData)? infoOfToken(String ecashToken) {
+  static CashuTokenInfo? infoOfToken(String ecashToken) {
     final token = TokenHelper.getDecodedToken(ecashToken);
     if (token == null) return null;
+
     final proofs = token.token.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
 
-    List secretData = [];
-    try {
-      secretData = jsonDecode( proofs.firstOrNull?.secret ?? '');
-    } catch (_) { }
+    final firstProofsSecret = proofs.firstOrNull?.secret ?? '';
 
-    return (token.memo, proofs.totalAmount, secretData);
+    return CashuTokenInfo(
+      amount: token.sumProofsValue.toInt(),
+      unit: token.unit,
+      memo: token.memo,
+      p2pkInfo: NutP2PKHelper.getInfoWithSecret(firstProofsSecret),
+    );
   }
 
 
