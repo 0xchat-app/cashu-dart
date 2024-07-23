@@ -101,6 +101,7 @@ class TransactionHelper {
   static Future<CashuResponse<MeltResponse>> payingTheQuote({
     required IMint mint,
     String paymentId = '',
+    required String historyValue,
     required List<Proof> proofs,
     String unit = 'sat',
     required int fee,
@@ -158,7 +159,7 @@ class TransactionHelper {
     await HistoryStore.addToHistory(
       amount: amount,
       type: IHistoryType.lnInvoice,
-      value: paymentId,
+      value: historyValue,
       mints: [mint.mintURL],
       fee: fee,
     );

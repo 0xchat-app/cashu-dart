@@ -57,6 +57,7 @@ class CashuAPIV1Client {
     final payingResponse = await TransactionHelper.payingTheQuote(
       mint: mint,
       paymentId: quoteID,
+      historyValue: pr,
       proofs: proofs,
       fee: fee.toInt(),
       meltAction: Nut8.payingTheQuote,

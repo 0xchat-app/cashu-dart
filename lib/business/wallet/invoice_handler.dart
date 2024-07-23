@@ -79,7 +79,7 @@ class InvoiceHandler {
             await HistoryStore.addToHistory(
               amount: int.tryParse(invoice.amount) ?? 0,
               type: IHistoryType.lnInvoice,
-              value: invoice.paymentKey,
+              value: invoice.request,
               mints: [invoice.mintURL],
               fee: 0,
             );
