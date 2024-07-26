@@ -36,7 +36,7 @@ class Nut0 {
     try {
       obj = token.encodeBase64ToJson<Map>();
     } catch(e) {
-      debugPrint('[Error][Nut1 - getDecodedToken] encodeBase64ToJson failed.');
+      debugPrint('[Error][Nut1 - getDecodedToken] encodeBase64ToJson failed, object: $token');
       return null;
     }
 

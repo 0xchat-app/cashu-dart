@@ -26,8 +26,8 @@ class EcashManager {
 
     if (signatures.isEmpty) return CashuResponse.fromSuccessData([]);
 
-    if (signatures.length != secrets.length ||
-        signatures.length != rs.length) {
+    if (signatures.length > secrets.length ||
+        signatures.length > rs.length) {
       return CashuResponse.fromErrorMsg('Data length error: '
           '${signatures.length}(signatures), '
           '${secrets.length}(secrets), '
