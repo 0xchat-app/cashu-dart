@@ -278,6 +278,7 @@ class CashuAPIGeneralClient {
         final response = await ProofHelper.swapProofs(
           mint: mint,
           proofs: proofs,
+          syncDelete: false,
         );
         if (!response.isSuccess) return response.cast();
 

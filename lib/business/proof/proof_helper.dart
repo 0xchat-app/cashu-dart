@@ -66,6 +66,17 @@ class ProofHelper {
       return CashuResponse.fromErrorMsg('Insufficient proofs');
     }
 
+    // Try use
+    if (amount != null) {
+      final proofIndex = _findOneSubsetWithSum(proofs.map((p) => p.amountNum).toList(), amount.toInt());
+      if (proofIndex != null && proofIndex.isNotEmpty) {
+        try {
+          final responseProofs = proofIndex.map((index) => proofs![index]).toList();
+          return CashuResponse.fromSuccessData(responseProofs);
+        } catch (_) { }
+      }
+    }
+
     for (final proof in proofs) {
       if (amount != null && amountAvailable >= amount) break;
       amountAvailable += proof.amount.asBigInt();
@@ -129,6 +140,7 @@ class ProofHelper {
     required List<Proof> proofs,
     int? supportAmount,
     String unit = 'sat',
+    bool syncDelete = true,
   }) async {
     // get keyset
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
@@ -185,7 +197,11 @@ class ProofHelper {
       return unblindingResponse;
     }
 
-    await deleteProofs(proofs: proofs, mint: mint);
+    if (syncDelete) {
+      await deleteProofs(proofs: proofs, mint: mint);
+    } else {
+      deleteProofs(proofs: proofs, mint: mint);
+    }
     return unblindingResponse;
   }
 
@@ -268,5 +284,26 @@ class ProofHelper {
       n >>= 1;
     }
     return count;
+  }
+
+  static List<int>? _findOneSubsetWithSum(List<int> nums, int target) {
+    List<List<int>?> dp = List.filled(target + 1, null);
+    dp[0] = [];
+
+    for (int i = 0; i < nums.length; i++) {
+      int num = nums[i];
+
+      for (int t = target; t >= num; t--) {
+        if (dp[t - num] != null) {
+          dp[t] = List.from(dp[t - num]!)..add(i);
+
+          if (t == target) {
+            return dp[target];
+          }
+        }
+      }
+    }
+
+    return null;
   }
 }
