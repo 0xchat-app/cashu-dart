@@ -41,6 +41,7 @@ class CashuManager {
     List<String>? defaultMint,
   }) async {
     try {
+      clean();
       this.defaultMint = defaultMint;
       await setupDB(dbName: identify, dbPassword: dbPassword);
       await setupMint();
