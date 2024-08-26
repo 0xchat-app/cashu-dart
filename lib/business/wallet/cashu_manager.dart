@@ -41,7 +41,7 @@ class CashuManager {
     List<String>? defaultMint,
   }) async {
     try {
-      clean();
+      await clean();
       this.defaultMint = defaultMint;
       await setupDB(dbName: identify, dbPassword: dbPassword);
       await setupMint();
@@ -65,9 +65,9 @@ class CashuManager {
     );
   }
 
-  void clean() {
+  Future<void> clean() async {
     setupFinish = Completer();
-    CashuDB.sharedInstance.closeDatabase();
+    await CashuDB.sharedInstance.closeDatabase();
     mints.clear();
     invoiceHandler.dispose();
   }
