@@ -19,7 +19,8 @@ class CashuDB {
   List<Type> schemes = [];
   List<String> allTablenames = [];
   bool deleteDBIfNeedMirgration = false;
-  late Database db;
+  Database? _db;
+  Database get db => _db!;
 
   static final CashuDB sharedInstance = CashuDB._internal();
 
@@ -37,7 +38,7 @@ class CashuDB {
         await deleteDatabase(dbPath);
       }
     }
-    db = await openDatabase(dbPath, version: version, password: password,
+    _db = await openDatabase(dbPath, version: version, password: password,
         onCreate: (db, version) async {
       var batch = db.batch();
       for (var type in schemes) {
@@ -125,7 +126,7 @@ class CashuDB {
       String dbPath = db.path;
       await db.close();
       await deleteDatabase(dbPath);
-      db = newDb;
+      _db = newDb;
       if (!completer.isCompleted) completer.complete();
     });
     return completer.future;
@@ -133,7 +134,9 @@ class CashuDB {
 
   Future<void> closeDatabase() async {
     allTablenames.clear();
-    await db.close();
+    if (_db != null) {
+      await db.close();
+    }
   }
 
   Future<void> execute(String sql, [List<Object?>? arguments]) async {
