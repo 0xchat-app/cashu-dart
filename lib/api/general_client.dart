@@ -18,8 +18,6 @@ import '../model/mint_model.dart';
 import '../utils/network/response.dart';
 import 'nut_P2PK_helper.dart';
 
-typedef SignWithKeyFunction = Future<String> Function(String key, String message);
-
 class CashuAPIGeneralClient {
 
   static const _lnPrefix = [
@@ -243,7 +241,6 @@ class CashuAPIGeneralClient {
   static Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
     List<String> redeemPrivateKey = const [],
-    SignWithKeyFunction? signFunction,
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -265,14 +262,11 @@ class CashuAPIGeneralClient {
 
         final proofs = [...entry.proofs];
 
-        if (redeemPrivateKey.isNotEmpty && signFunction != null) {
-          for (var proof in proofs) {
-            await addSignatureToProof(
-              proof: proof,
-              privateKeyList: redeemPrivateKey,
-              signFunction: signFunction,
-            );
-          }
+        for (var proof in proofs) {
+          await ProofHelper.addSignatureToProof(
+            proof: proof,
+            privateKeyList: redeemPrivateKey,
+          );
         }
 
         final response = await ProofHelper.swapProofs(
@@ -403,44 +397,14 @@ class CashuAPIGeneralClient {
     );
   }
 
-
   static bool isLnInvoice(String str) {
     final request = _tryConstructRequestFromPr(str);
     return request != null;
   }
 
-  static Future addSignatureToProof({
-    required Proof proof,
-    required List<String> privateKeyList,
-    required SignWithKeyFunction signFunction,
-  }) async {
-    try {
-      final witnessRaw = proof.witness;
-      Map witness = {};
-      if (witnessRaw.isNotEmpty) {
-        witness = jsonDecode(proof.witness) as Map;
-      }
-      var originSign = witness['signatures'];
-      if (originSign is! List) {
-        originSign = [];
-      }
-      final signatures = [...originSign.map((e) => e.toString()).toList().cast<String>()];
-      for (var privkey in privateKeyList) {
-        final sign = await signFunction(privkey, proof.secret);
-        signatures.add(sign);
-      }
-      witness['signatures'] = signatures;
-      proof.witness = jsonEncode(witness);
-    } catch (e, stack) {
-      debugPrint('[E][Cashu - redeemEcash] $e');
-      debugPrint('[E][Cashu - redeemEcash] $stack');
-    }
-  }
-
   static Future<String?> addSignatureToToken({
     required String ecashString,
     required List<String> privateKeyList,
-    required SignWithKeyFunction signFunction,
   }) async {
     final tokenPackage = TokenHelper.getDecodedToken(ecashString);
     if (tokenPackage == null) return null;
@@ -448,10 +412,9 @@ class CashuAPIGeneralClient {
     final tokenEntryList = tokenPackage.token;
     for (var entry in tokenEntryList) {
       for (var proof in entry.proofs) {
-        await addSignatureToProof(
+        await ProofHelper.addSignatureToProof(
           proof: proof,
           privateKeyList: privateKeyList,
-          signFunction: signFunction,
         );
       }
     }

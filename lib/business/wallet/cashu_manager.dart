@@ -18,7 +18,10 @@ import '../mint/mint_helper.dart';
 import '../mint/mint_info_store.dart';
 import '../mint/mint_store.dart';
 import '../proof/proof_helper.dart';
+import 'ecash_manager.dart';
 import 'invoice_handler.dart';
+
+typedef SignWithKeyFunction = Future<String> Function(String key, String message);
 
 class CashuManager {
   static final CashuManager shared = CashuManager._internal();
@@ -33,8 +36,11 @@ class CashuManager {
 
   Completer setupFinish = Completer();
 
-  static const int dbVersion = 3;
+  static const int dbVersion = 4;
   String dbNameWithIdentify(String identify) => 'cashu-$identify.db';
+
+  String Function()? defaultSignKey;
+  SignWithKeyFunction? signFn;
 
   Future<void> setup(String identify, {
     String? dbPassword,
@@ -47,6 +53,7 @@ class CashuManager {
       await setupMint();
       await setupBalance();
       await invoiceHandler.initialize();
+      await ProofBlindingManager.shared.initialize();
       invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
       setupFinish.complete();
       debugPrint('[I][Cashu - setup] Finished');
@@ -70,6 +77,7 @@ class CashuManager {
     await CashuDB.sharedInstance.closeDatabase();
     mints.clear();
     invoiceHandler.dispose();
+    ProofBlindingManager.shared.dispose();
   }
 
   Future<void> setupDB({

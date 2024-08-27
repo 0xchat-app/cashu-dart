@@ -105,7 +105,7 @@ class DHKE {
 
       final r = unblindingData.r.asBigInt();
       final K = keys[promise.amount];
-      if (K == null) {
+      if (K == null || r == BigInt.zero) {
         throw Exception('[E][Cashu - constructProofs] key not found.');
       }
       
@@ -125,6 +125,9 @@ class DHKE {
       );
       proofs.add(unblindingProof);
     }
+
+    if (proofs.length != data.length) return null;
+
     return proofs;
   }
 

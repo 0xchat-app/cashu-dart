@@ -6,29 +6,62 @@ import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
 
+enum ProofBlindingAction {
+  unknown(0),
+  minting(1),
+  melt(2),
+  multiMintSwap(3),
+  swapForP2PK(4);
+
+  final int value;
+
+  const ProofBlindingAction(this.value);
+
+  static ProofBlindingAction fromValue(dynamic value) =>
+      ProofBlindingAction.values.where(
+            (element) => element.value == value,
+      ).firstOrNull ?? ProofBlindingAction.unknown;
+
+  String get text {
+    switch (this) {
+      case ProofBlindingAction.unknown: return 'unknown';
+      case ProofBlindingAction.minting: return 'Minting';
+      case ProofBlindingAction.melt: return 'Melt';
+      case ProofBlindingAction.multiMintSwap: return 'Swap';
+      case ProofBlindingAction.swapForP2PK: return 'SwapForP2PK';
+    }
+  }
+}
+
 @reflector
 class UnblindingData extends DBObject {
 
   UnblindingData({
     required this.mintURL,
     required this.unit,
+    required this.actionType,
+    required this.actionValue,
     required this.id,
     required this.amount,
     required this.C_,
     this.dleq,
     required this.r,
     required this.secret,
-  });
+  }) : actionTypeRaw = actionType.value;
 
   factory UnblindingData.fromSignature({
     required BlindedSignature signature,
     required String mintURL,
+    required ProofBlindingAction action,
+    required String actionValue,
     required String unit,
     required String r,
     required String secret,
   }) => UnblindingData(
     mintURL: mintURL,
     unit: unit,
+    actionType: action,
+    actionValue: actionValue,
     id: signature.id,
     amount: signature.amount,
     C_: signature.C_,
@@ -39,6 +72,10 @@ class UnblindingData extends DBObject {
 
   final String mintURL;
   final String unit;
+  final ProofBlindingAction actionType;
+  final int actionTypeRaw;
+
+  final String actionValue;
 
   // BlindedSignature
   final String id;
@@ -62,6 +99,8 @@ class UnblindingData extends DBObject {
   Map<String, Object?> toMap() => {
     'mintURL': mintURL,
     'unit': unit,
+    'actionTypeRaw': actionType.value,
+    'actionValue': actionValue,
     'id': id,
     'amount': amount,
     'C_': C_,
@@ -83,6 +122,10 @@ class UnblindingData extends DBObject {
     return UnblindingData(
       mintURL: Tools.getValueAs<String>(map, 'mintURL', ''),
       unit: Tools.getValueAs<String>(map, 'unit', ''),
+      actionType: ProofBlindingAction.fromValue(
+        Tools.getValueAs<int>(map, 'actionTypeRaw', ProofBlindingAction.unknown.value),
+      ),
+      actionValue: Tools.getValueAs<String>(map, 'actionValue', ''),
       id: Tools.getValueAs<String>(map, 'id', ''),
       amount: Tools.getValueAs<String>(map, 'amount', '0'),
       C_: Tools.getValueAs<String>(map, 'C_', ''),
@@ -105,7 +148,10 @@ class UnblindingData extends DBObject {
   }
 
   static Map<String, String?> updateTable() {
-    return { };
+    return {
+      "4":
+      '''alter table UnblindingData add actionTypeRaw INT; alter table UnblindingData add actionValue TEXT;''',
+    };
   }
 
   @override

@@ -268,11 +268,9 @@ class CashuAPI {
   Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
     List<String> redeemPrivateKey = const [],
-    SignWithKeyFunction? signFunction,
   }) => CashuAPIGeneralClient.redeemEcash(
     ecashString: ecashString,
     redeemPrivateKey: redeemPrivateKey,
-    signFunction: signFunction,
   );
 
   Future<bool> redeemEcashFromInvoice({
@@ -366,12 +364,10 @@ class CashuAPI {
   Future<String?> addSignatureToToken({
     required String ecashString,
     required List<String> privateKeyList,
-    required SignWithKeyFunction signFunction,
   }) =>
       CashuAPIGeneralClient.addSignatureToToken(
         ecashString: ecashString,
         privateKeyList: privateKeyList,
-        signFunction: signFunction,
       );
 
   void startHighFrequencyDetection() async {

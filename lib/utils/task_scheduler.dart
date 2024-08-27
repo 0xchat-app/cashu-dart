@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:math';
 
 class TaskScheduler {
-  final Completer<void> _completer = Completer<void>();
+  final Completer<void> _initCompleter = Completer<void>();
   Future Function() task;
   bool isDispose = false;
   int _taskExecutionCount = 0;
@@ -14,12 +14,12 @@ class TaskScheduler {
   TaskScheduler({required this.task});
 
   void start() {
-    _completer.future.then((_) => _scheduleTask());
+    _initCompleter.future.then((_) => _scheduleTask());
   }
 
-  void complete() {
-    if (!_completer.isCompleted) {
-      _completer.complete();
+  void initComplete() {
+    if (!_initCompleter.isCompleted) {
+      _initCompleter.complete();
     }
   }
 

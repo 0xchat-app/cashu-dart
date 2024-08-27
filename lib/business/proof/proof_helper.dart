@@ -1,7 +1,10 @@
 
-import 'package:cashu_dart/business/wallet/ecash_manager.dart';
-import 'package:cashu_dart/utils/tools.dart';
+import 'dart:convert';
 
+import 'package:cashu_dart/core/nuts/v1/nut_10.dart';
+import 'package:flutter/foundation.dart';
+
+import '../../business/wallet/ecash_manager.dart';
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
@@ -11,6 +14,8 @@ import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/v1/nut_11.dart';
 import '../../model/mint_model.dart';
 import '../../utils/network/response.dart';
+import '../../utils/tools.dart';
+import '../wallet/cashu_manager.dart';
 import 'keyset_helper.dart';
 import 'proof_store.dart';
 
@@ -71,7 +76,11 @@ class ProofHelper {
       final proofIndex = _findOneSubsetWithSum(proofs.map((p) => p.amountNum).toList(), amount.toInt());
       if (proofIndex != null && proofIndex.isNotEmpty) {
         try {
-          final responseProofs = proofIndex.map((index) => proofs![index]).toList();
+          final responseProofs = proofIndex.map((index) {
+            final proof = proofs![index];
+            addSignatureToProof(proof: proof, privateKeyList: []);
+            return proof;
+          }).toList();
           return CashuResponse.fromSuccessData(responseProofs);
         } catch (_) { }
       }
@@ -80,6 +89,7 @@ class ProofHelper {
     for (final proof in proofs) {
       if (amount != null && amountAvailable >= amount) break;
       amountAvailable += proof.amount.asBigInt();
+      addSignatureToProof(proof: proof, privateKeyList: []);
       proofsToSend.add(proof);
     }
 
@@ -186,12 +196,14 @@ class ProofHelper {
     }
 
     // unblinding
-    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
       mint,
       unit,
       response.data,
       secrets,
       rs,
+      ProofBlindingAction.multiMintSwap,
+      '',
     ));
     if (!unblindingResponse.isSuccess) {
       return unblindingResponse;
@@ -262,12 +274,14 @@ class ProofHelper {
     }
 
     // unblinding
-    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
       mint,
       unit,
       response.data,
       secrets,
       rs,
+      ProofBlindingAction.swapForP2PK,
+      '',
     ));
     if (!unblindingResponse.isSuccess) {
       return unblindingResponse;
@@ -305,5 +319,51 @@ class ProofHelper {
     }
 
     return null;
+  }
+
+  static Future addSignatureToProof({
+    required Proof proof,
+    required List<String> privateKeyList,
+  }) async {
+
+    final nut10Data = Nut10.dataFromSecretString(proof.secret);
+    if (nut10Data == null) return ;
+
+    final (kind, _, _, _) = nut10Data;
+    if (kind != ConditionType.p2pk) return ;
+
+    final defaultKey = CashuManager.shared.defaultSignKey?.call() ?? '';
+    privateKeyList = [
+      ...privateKeyList,
+      if (defaultKey.isNotEmpty && !privateKeyList.contains(defaultKey))
+        defaultKey
+    ];
+    try {
+      final witnessRaw = proof.witness;
+      Map witness = {};
+      if (witnessRaw.isNotEmpty) {
+        witness = jsonDecode(witnessRaw) as Map;
+      }
+      var originSign = witness['signatures'];
+      if (originSign is! List) {
+        originSign = [];
+      }
+      final signatures = [...originSign.map((e) => e.toString()).toList().cast<String>()];
+      for (var privkey in privateKeyList) {
+        final sign = await CashuManager.shared.signFn?.call(privkey, proof.secret);
+        if (sign != null && sign.isNotEmpty) signatures.add(sign);
+      }
+
+      if (signatures.isNotEmpty) {
+        witness['signatures'] = signatures;
+      }
+
+      if (witness.isNotEmpty) {
+        proof.witness = jsonEncode(witness);
+      }
+    } catch (e, stack) {
+      debugPrint('[E][Cashu - addSignatureToProof] $e');
+      debugPrint('[E][Cashu - addSignatureToProof] $stack');
+    }
   }
 }

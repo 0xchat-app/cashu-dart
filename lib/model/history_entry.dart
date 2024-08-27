@@ -11,7 +11,8 @@ enum IHistoryType {
   unknown(0),
   eCash(1),
   lnInvoice(2),
-  multiMintSwap(3);
+  multiMintSwap(3),
+  swapForP2PK(4);
 
   final int value;
 

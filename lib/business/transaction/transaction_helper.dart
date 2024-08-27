@@ -42,6 +42,7 @@ class TransactionHelper {
     required IMint mint,
     required String quoteID,
     required int amount,
+    String invoice = '',
     String unit = 'sat',
   }) async {
     // // check quote state
@@ -84,12 +85,14 @@ class TransactionHelper {
     }
 
     // unblinding
-    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
       mint,
       unit,
       response.data,
       secrets,
       rs,
+      ProofBlindingAction.minting,
+      invoice,
     ));
     if (!unblindingResponse.isSuccess) {
       return unblindingResponse;
@@ -141,12 +144,14 @@ class TransactionHelper {
     final ( _, _, change ) = meltResponse.data;
 
     // unblinding
-    final unblindingResponse = await EcashManager.shared.unblindingBlindedSignature((
+    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
       mint,
       unit,
       change,
       secrets,
       rs,
+      ProofBlindingAction.melt,
+      historyValue,
     ));
     if (!unblindingResponse.isSuccess) {
       return CashuResponse.fromErrorMsg('Unblinding error: ${unblindingResponse.errorMsg}');

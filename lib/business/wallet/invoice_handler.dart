@@ -20,7 +20,7 @@ class InvoiceHandler {
   Future<void> initialize() async {
     _invoices.addAll(await InvoiceStore.getAllInvoice());
     invoiceChecker = TaskScheduler(task: _periodicCheck)..start();
-    Future.delayed(const Duration(seconds: 10), () => invoiceChecker?.complete());
+    Future.delayed(const Duration(seconds: 10), () => invoiceChecker?.initComplete());
   }
 
   void dispose() {
@@ -112,6 +112,7 @@ class InvoiceHandler {
       mint: mint,
       quoteID: invoice.redemptionKey,
       amount: amount,
+      invoice: invoice.request,
     );
   }
 
