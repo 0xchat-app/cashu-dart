@@ -155,10 +155,13 @@ class CashuDB {
     String tableName = DBHelper.getTableName(T);
     await createTableForDBObject<T>(tableName);
     int successCount = 0;
-    db.transaction((txn) async {
+    await db.transaction((txn) async {
       for (int i = 0; i < objects.length; i++) {
-        successCount += await txn.insert(tableName, objects[i].toMap(),
+        int rowId = await txn.insert(tableName, objects[i].toMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
+        if (rowId > 0) {
+          successCount++;
+        }
       }
     });
     return successCount;

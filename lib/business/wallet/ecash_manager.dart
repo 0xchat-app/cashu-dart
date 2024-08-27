@@ -81,10 +81,12 @@ class ProofBlindingManager {
     );
 
     if (proofs == null) {
-      return CashuResponse.fromErrorMsg('Unblinding error.');
+      return CashuResponse.fromErrorMsg('Unblinding: proofs is null.');
     }
 
-    await ProofStore.addProofs(proofs);
+    final isAddProofSuccess = await ProofStore.addProofs(proofs);
+    if (!isAddProofSuccess) return CashuResponse.fromErrorMsg('Unblinding: add proof error.');
+
     await UnblindingDataStore.delete(unblindingDataList);
 
     return CashuResponse.fromSuccessData(proofs);
@@ -107,7 +109,9 @@ class ProofBlindingManager {
 
       if (proofs == null) continue ;
 
-      await ProofStore.addProofs(proofs);
+      final isAddProofSuccess = await ProofStore.addProofs(proofs);
+      if (!isAddProofSuccess) continue ;
+
       await HistoryStore.addToHistory(
         amount: proofs.totalAmount,
         type: data.first.actionType.asHistoryType(),
