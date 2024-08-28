@@ -168,8 +168,6 @@ class CashuManager {
 
   Future<IMint?> addMint(String mintURL) async {
 
-    if (!mintURL.startsWith('https://')) throw Exception('mintURL must starts with \'https://\'');
-
     final url = MintHelper.getMintURL(mintURL);
 
     if (mints.any((element) => element.mintURL == url)) {
