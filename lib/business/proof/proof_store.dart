@@ -22,8 +22,8 @@ class ProofStore {
       if (c.isNotEmpty) c,
     ];
     return CashuDB.sharedInstance.objects<Proof>(
-      where: whereString.join('and'),
-      whereArgs: whereArgs,
+      where: whereString.isNotEmpty ? whereString.join('and') : null,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
     );
   }
 
