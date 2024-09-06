@@ -59,12 +59,12 @@ class TokenHelper {
 
       final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: entry.proofs);
       if (!response.isSuccess) return null;
-      if (response.data.any((state) => state == TokenState.live)) {
-        return true;
+      if (response.data.any((state) => state != TokenState.live)) {
+        return false;
       }
     }
 
-    return false;
+    return true;
   }
 
   static String getEncodedToken(Token token) {

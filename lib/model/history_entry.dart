@@ -66,7 +66,7 @@ class IHistoryEntry extends DBObject {
 
   final num? fee;
 
-  /// is token spendable
+  /// Whether the token is spent
   bool? isSpent;
 
   @override
