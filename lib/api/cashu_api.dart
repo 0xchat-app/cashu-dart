@@ -133,6 +133,9 @@ class CashuAPI {
     return spendable;
   }
 
+  Future<String?> tryCreateSpendableEcashToken(String token) =>
+      CashuAPIGeneralClient.tryCreateSpendableEcashToken(token);
+
   Future<CashuResponse<Receipt>> checkReceiptCompleted(Receipt receipt) async {
 
     var isRedeemed = await HistoryStore.hasReceiptRedeemHistory(receipt);

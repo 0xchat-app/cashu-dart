@@ -52,7 +52,7 @@ class TokenHelper {
     final token = TokenHelper.getDecodedToken(ecashToken);
     if (token == null) return null;
 
-    final tokenEntry = token.token;
+    final tokenEntry = token.entries;
     for (final entry in tokenEntry) {
       final mint = await CashuManager.shared.getMint(entry.mint);
       if (mint == null) continue ;
@@ -107,7 +107,7 @@ class TokenHelper {
       final mints = obj['mints'];
       if (proofs is List && mints is List) {
         return Token(
-          token: proofs.map((e) => TokenEntry.fromJson(e)).toList(),
+          entries: proofs.map((e) => TokenEntry.fromJson(e)).toList(),
           memo: mints.firstOrNull?['url'] ?? '',
         );
       }
@@ -116,7 +116,7 @@ class TokenHelper {
     // check if v1
     if (obj is List) {
       return Token(
-        token: obj.map((e) => TokenEntry.fromJson(e)).toList(),
+        entries: obj.map((e) => TokenEntry.fromJson(e)).toList(),
       );
     }
 
@@ -126,7 +126,7 @@ class TokenHelper {
   static Token cleanToken(Token token) {
     Map<String, TokenEntry> tokenEntryMap = {};
 
-    for (final tokenEntry in token.token) {
+    for (final tokenEntry in token.entries) {
       if (tokenEntry.proofs.isEmpty || tokenEntry.mint.isEmpty) continue;
 
       if (tokenEntryMap.containsKey(tokenEntry.mint)) {
@@ -149,6 +149,6 @@ class TokenHelper {
       );
     }).toList();
 
-    return Token(memo: token.memo, token: cleanedTokenEntries);
+    return Token(memo: token.memo, entries: cleanedTokenEntries);
   }
 }

@@ -53,7 +53,7 @@ class Nut0 {
       final mints = obj['mints'];
       if (proofs is List && mints is List) {
         return Token(
-          token: proofs.map((e) => TokenEntry.fromJson(e)).toList(),
+          entries: proofs.map((e) => TokenEntry.fromJson(e)).toList(),
           memo: mints.firstOrNull?['url'] ?? '',
         );
       }
@@ -62,7 +62,7 @@ class Nut0 {
     // check if v1
     if (obj is List) {
       return Token(
-        token: obj.map((e) => TokenEntry.fromJson(e)).toList(),
+        entries: obj.map((e) => TokenEntry.fromJson(e)).toList(),
       );
     }
 
@@ -249,20 +249,20 @@ extension ProofListEx on List<Proof> {
 
 class Token {
   Token({
-    this.token = const [],
+    this.entries = const [],
     this.memo = '',
     this.unit = '',
   });
 
   /// token entries
-  final List<TokenEntry> token;
+  final List<TokenEntry> entries;
 
   /// a message to send along with the token
   final String memo;
 
   final String unit;
 
-  BigInt get sumProofsValue => token.fold(BigInt.zero, (pre, entry) => pre + entry.sumProofsValue);
+  BigInt get sumProofsValue => entries.fold(BigInt.zero, (pre, entry) => pre + entry.sumProofsValue);
 
   factory Token.fromJson(Map json) {
     final tokenJson = json['token'] ?? [];
@@ -276,21 +276,21 @@ class Token {
       }).where((element) => element != null).cast<TokenEntry>().toList();
     }
     return Token(
-      token: token,
+      entries: token,
       memo: json['memo']?.toString() ?? '',
       unit: json['unit']?.toString() ?? 'sat',
     );
   }
 
   Map toJson() => {
-    'token': token.map((e) => e.toJson()).toList(),
+    'token': entries.map((e) => e.toJson()).toList(),
     'memo': memo,
     'unit': unit,
   };
 
   @override
   String toString() {
-    return '${super.toString()}, memo: $memo, unit: $unit, token: $token';
+    return '${super.toString()}, memo: $memo, unit: $unit, token: $entries';
   }
 }
 

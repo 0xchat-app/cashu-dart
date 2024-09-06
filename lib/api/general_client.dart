@@ -1,6 +1,4 @@
 
-import 'dart:convert';
-
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:flutter/foundation.dart';
 
@@ -9,6 +7,8 @@ import '../business/proof/proof_store.dart';
 import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
+import '../core/mint_actions.dart';
+import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
 import '../core/nuts/v1/nut_11.dart';
 import '../model/cashu_token_info.dart';
@@ -66,7 +66,7 @@ class CashuAPIGeneralClient {
 
     final encodedToken = TokenHelper.getEncodedToken(
       Token(
-        token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
+        entries: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
         memo: memo,
         unit: unit,
       ),
@@ -140,7 +140,7 @@ class CashuAPIGeneralClient {
 
       final encodedToken = TokenHelper.getEncodedToken(
         Token(
-          token: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
+          entries: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
           memo: memo,
           unit: unit,
         ),
@@ -218,7 +218,7 @@ class CashuAPIGeneralClient {
     final p2pkProofs = swapResponse.data;
     final encodedToken = TokenHelper.getEncodedToken(
       Token(
-        token: [TokenEntry(mint: mint.mintURL, proofs: p2pkProofs)],
+        entries: [TokenEntry(mint: mint.mintURL, proofs: p2pkProofs)],
         memo: memo,
         unit: unit,
       ),
@@ -253,7 +253,7 @@ class CashuAPIGeneralClient {
     var receiveAmount = 0;
     final mints = <String>{};
 
-    final tokenEntry = token.token;
+    final tokenEntry = token.entries;
 
     return Future<CashuResponse<(String memo, int amount)>>(() async {
       for (var entry in tokenEntry) {
@@ -349,7 +349,7 @@ class CashuAPIGeneralClient {
     return CashuResponse.fromSuccessData(
       TokenHelper.getEncodedToken(
         Token(
-          token: entryList,
+          entries: entryList,
         ),
       ),
     );
@@ -381,11 +381,50 @@ class CashuAPIGeneralClient {
     return (request.amount.toDouble() * 100000000).toInt();
   }
 
+  static Future<String?> tryCreateSpendableEcashToken(String ecashToken) async {
+    final originToken = TokenHelper.getDecodedToken(ecashToken);
+    if (originToken == null) return null;
+
+    final originEntries = originToken.entries;
+    final newEntries = <TokenEntry>[];
+    for (final entry in originEntries) {
+      final mint = await CashuManager.shared.getMint(entry.mint);
+      if (mint == null) continue ;
+
+      final originProofs = [...entry.proofs];
+      final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: originProofs);
+      if (!response.isSuccess || response.data.length != originProofs.length) return null;
+
+      final spendableProofs = <Proof>[];
+      final stateResult = response.data;
+      for (var i = 0; i < stateResult.length; i++) {
+        if (stateResult[i] == TokenState.live) {
+          spendableProofs.add(originProofs[i]);
+        }
+      }
+      if (spendableProofs.isEmpty) continue ;
+
+      newEntries.add(
+        TokenEntry(proofs: spendableProofs, mint: mint.mintURL)
+      );
+    }
+
+    if (newEntries.isEmpty) return null;
+
+    final newToken = Token(
+      entries: newEntries,
+      memo: originToken.memo,
+      unit: originToken.unit,
+    );
+
+    return TokenHelper.getEncodedToken(newToken);
+  }
+
   static CashuTokenInfo? infoOfToken(String ecashToken) {
     final token = TokenHelper.getDecodedToken(ecashToken);
     if (token == null) return null;
 
-    final proofs = token.token.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
+    final proofs = token.entries.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
 
     final firstProofsSecret = proofs.firstOrNull?.secret ?? '';
 
@@ -409,7 +448,7 @@ class CashuAPIGeneralClient {
     final tokenPackage = TokenHelper.getDecodedToken(ecashString);
     if (tokenPackage == null) return null;
 
-    final tokenEntryList = tokenPackage.token;
+    final tokenEntryList = tokenPackage.entries;
     for (var entry in tokenEntryList) {
       for (var proof in entry.proofs) {
         await ProofHelper.addSignatureToProof(
