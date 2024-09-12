@@ -240,7 +240,7 @@ class CashuAPIGeneralClient {
 
   static Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
-    List<String> redeemPrivateKey = const [],
+    List<String> redeemPubkey = const [],
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -265,7 +265,7 @@ class CashuAPIGeneralClient {
         for (var proof in proofs) {
           await ProofHelper.addSignatureToProof(
             proof: proof,
-            privateKeyList: redeemPrivateKey,
+            pubkeyList: redeemPubkey,
           );
         }
 
@@ -443,7 +443,7 @@ class CashuAPIGeneralClient {
 
   static Future<String?> addSignatureToToken({
     required String ecashString,
-    required List<String> privateKeyList,
+    required List<String> pubkeyList,
   }) async {
     final tokenPackage = TokenHelper.getDecodedToken(ecashString);
     if (tokenPackage == null) return null;
@@ -453,7 +453,7 @@ class CashuAPIGeneralClient {
       for (var proof in entry.proofs) {
         await ProofHelper.addSignatureToProof(
           proof: proof,
-          privateKeyList: privateKeyList,
+          pubkeyList: pubkeyList,
         );
       }
     }

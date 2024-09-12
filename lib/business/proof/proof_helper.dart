@@ -78,7 +78,7 @@ class ProofHelper {
         try {
           final responseProofs = proofIndex.map((index) {
             final proof = proofs![index];
-            addSignatureToProof(proof: proof, privateKeyList: []);
+            addSignatureToProof(proof: proof);
             return proof;
           }).toList();
           return CashuResponse.fromSuccessData(responseProofs);
@@ -89,7 +89,7 @@ class ProofHelper {
     for (final proof in proofs) {
       if (amount != null && amountAvailable >= amount) break;
       amountAvailable += proof.amount.asBigInt();
-      addSignatureToProof(proof: proof, privateKeyList: []);
+      addSignatureToProof(proof: proof);
       proofsToSend.add(proof);
     }
 
@@ -323,7 +323,7 @@ class ProofHelper {
 
   static Future addSignatureToProof({
     required Proof proof,
-    required List<String> privateKeyList,
+    List<String> pubkeyList = const [],
   }) async {
 
     final nut10Data = Nut10.dataFromSecretString(proof.secret);
@@ -332,10 +332,10 @@ class ProofHelper {
     final (kind, _, _, _) = nut10Data;
     if (kind != ConditionType.p2pk) return ;
 
-    final defaultKey = CashuManager.shared.defaultSignKey?.call() ?? '';
-    privateKeyList = [
-      ...privateKeyList,
-      if (defaultKey.isNotEmpty && !privateKeyList.contains(defaultKey))
+    final defaultKey = CashuManager.shared.defaultSignPubkey?.call() ?? '';
+    final immutablePubkeyList = [
+      ...pubkeyList,
+      if (defaultKey.isNotEmpty && !pubkeyList.contains(defaultKey))
         defaultKey
     ];
     try {
@@ -349,8 +349,8 @@ class ProofHelper {
         originSign = [];
       }
       final signatures = [...originSign.map((e) => e.toString()).toList().cast<String>()];
-      for (var privkey in privateKeyList) {
-        final sign = await CashuManager.shared.signFn?.call(privkey, proof.secret);
+      for (var pubkey in immutablePubkeyList) {
+        final sign = await CashuManager.shared.signFn?.call(pubkey, proof.secret);
         if (sign != null && sign.isNotEmpty) signatures.add(sign);
       }
 

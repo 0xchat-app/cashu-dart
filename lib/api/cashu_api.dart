@@ -270,10 +270,10 @@ class CashuAPI {
   /// Returns a tuple containing memo and amount if successful.
   Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
-    List<String> redeemPrivateKey = const [],
+    List<String> redeemPubkey = const [],
   }) => CashuAPIGeneralClient.redeemEcash(
     ecashString: ecashString,
-    redeemPrivateKey: redeemPrivateKey,
+    redeemPubkey: redeemPubkey,
   );
 
   Future<bool> redeemEcashFromInvoice({
@@ -366,11 +366,11 @@ class CashuAPI {
 
   Future<String?> addSignatureToToken({
     required String ecashString,
-    required List<String> privateKeyList,
+    required List<String> pukeyList,
   }) =>
       CashuAPIGeneralClient.addSignatureToToken(
         ecashString: ecashString,
-        privateKeyList: privateKeyList,
+        pubkeyList: pukeyList,
       );
 
   void startHighFrequencyDetection() async {

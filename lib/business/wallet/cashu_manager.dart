@@ -21,7 +21,7 @@ import '../proof/proof_helper.dart';
 import 'ecash_manager.dart';
 import 'invoice_handler.dart';
 
-typedef SignWithKeyFunction = Future<String> Function(String key, String message);
+typedef SignWithKeyFunction = Future<String> Function(String pubkey, String message);
 
 class CashuManager {
   static final CashuManager shared = CashuManager._internal();
@@ -39,7 +39,7 @@ class CashuManager {
   static const int dbVersion = 4;
   String dbNameWithIdentify(String identify) => 'cashu-$identify.db';
 
-  String Function()? defaultSignKey;
+  String Function()? defaultSignPubkey;
   SignWithKeyFunction? signFn;
 
   Future<void> setup(String identify, {
@@ -57,8 +57,9 @@ class CashuManager {
       invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
       setupFinish.complete();
       debugPrint('[I][Cashu - setup] Finished');
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('[E][Cashu - setup] $e');
+      debugPrint('[E][Cashu - setup] stack: $stack');
     }
   }
 
