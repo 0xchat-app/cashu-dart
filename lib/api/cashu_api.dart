@@ -292,12 +292,14 @@ class CashuAPI {
     required IMint mint,
     required String pr,
     String paymentKey = '',
+    CashuProgressCallback? processCallback,
   }) {
     if (mint.maxNutsVersion >= 1) {
       return CashuAPIV1Client.payingLightningInvoice(
         mint: mint,
         pr: pr,
         paymentKey: paymentKey,
+        processCallback: processCallback,
       );
     }
     return CashuAPIV0Client.payingLightningInvoice(

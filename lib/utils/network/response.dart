@@ -129,3 +129,4 @@ class CashuResponse<T> {
   }
 }
 
+typedef CashuProgressCallback = Function(String statusText);

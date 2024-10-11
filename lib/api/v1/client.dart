@@ -21,6 +21,7 @@ class CashuAPIV1Client {
     required IMint mint,
     required String pr,
     String paymentKey = '',
+    CashuProgressCallback? processCallback,
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -28,6 +29,7 @@ class CashuAPIV1Client {
     if (pr.isEmpty) return CashuResponse.fromErrorMsg('pr is empty');
 
     // Get quote ID.
+    processCallback?.call('Getting the quoteId...');
     final quoteResponse = await Nut5.requestMeltQuote(
       mintURL: mint.mintURL,
       request: pr,
@@ -36,6 +38,7 @@ class CashuAPIV1Client {
     final quoteID = quoteResponse.data.quote;
 
     // Get fee.
+    processCallback?.call('Getting the quote info...');
     final quoteInfoResponse = await Nut5.checkMintQuoteState(
       mintURL: mint.mintURL,
       quoteID: quoteID,
@@ -47,12 +50,14 @@ class CashuAPIV1Client {
     final req = Bolt11PaymentRequest(pr);
     final amount = (req.amount * Decimal.fromInt(100000000)).toBigInt();
 
+    processCallback?.call('Looking for proof for payment...');
     final response = await ProofHelper.getProofsToUse(
       mint: mint,
       amount: amount + fee,
     );
     if (!response.isSuccess) return response;
 
+    processCallback?.call('Paying...');
     final proofs = response.data;
     final payingResponse = await TransactionHelper.payingTheQuote(
       mint: mint,
