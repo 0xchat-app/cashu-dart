@@ -41,9 +41,13 @@ abstract mixin class Nut10 {
       final kind = ConditionType.fromValue(entry.firstOrNull);
 
       final map = entry[1];
-      final tags = (map['tags'] as List).map(
-        (list) => list.map((e) => e.toString()).cast<String>().toList()
-      ).cast<List<String>>().toList();
+      final tagsRaw = map['tags'] ?? [];
+      List<List<String>> tags = <List<String>>[];
+      if (tagsRaw is List) {
+        tags = tagsRaw.map(
+                (list) => list.map((e) => e.toString()).cast<String>().toList()
+        ).cast<List<String>>().toList();
+      }
       return (kind!, map['nonce'] as String, map['data'] as String, tags);
     } catch (_) {
       return null;
