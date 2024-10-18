@@ -7,6 +7,7 @@ import '../model/mint_model.dart';
 import '../utils/network/response.dart';
 import 'nuts/define.dart';
 import 'nuts/nut_00.dart';
+import 'nuts/token/proof.dart';
 
 typedef RequestKeysAction = Future<CashuResponse<List<MintKeysPayload>>> Function({
   required String mintURL,

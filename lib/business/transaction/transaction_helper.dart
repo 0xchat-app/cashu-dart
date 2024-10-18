@@ -1,9 +1,9 @@
 
 import '../../core/DHKE_helper.dart';
 import '../../core/mint_actions.dart';
-import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
+import '../../core/nuts/token/proof.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/mint_model.dart';
@@ -11,7 +11,6 @@ import '../../utils/network/response.dart';
 import '../mint/mint_helper.dart';
 import '../proof/keyset_helper.dart';
 import '../proof/proof_helper.dart';
-import '../proof/proof_store.dart';
 import '../wallet/cashu_manager.dart';
 import '../wallet/ecash_manager.dart';
 import 'hitstory_store.dart';

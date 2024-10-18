@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/keyset_store.dart';
 import '../../core/nuts/nut_00.dart';
+import '../../core/nuts/token/proof.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
 import '../../model/invoice_listener.dart';

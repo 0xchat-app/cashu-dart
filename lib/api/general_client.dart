@@ -10,6 +10,8 @@ import '../business/wallet/cashu_manager.dart';
 import '../core/mint_actions.dart';
 import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
+import '../core/nuts/token/proof.dart';
+import '../core/nuts/token/token_model.dart';
 import '../core/nuts/v1/nut_11.dart';
 import '../model/cashu_token_info.dart';
 import '../model/history_entry.dart';

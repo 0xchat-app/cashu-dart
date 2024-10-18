@@ -3,6 +3,7 @@ import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
+import '../token/proof.dart';
 
 class Nut8 {
   static Future<CashuResponse<MeltResponse>> payingTheQuote({

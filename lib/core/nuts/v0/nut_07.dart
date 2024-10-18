@@ -3,6 +3,7 @@ import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
+import '../token/proof.dart';
 
 extension TokenStateEx on TokenState {
   static TokenState fromState(bool spendable, bool pending) {

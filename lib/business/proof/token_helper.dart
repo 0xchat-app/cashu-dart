@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
+import '../../core/nuts/token/proof.dart';
+import '../../core/nuts/token/token_model.dart';
 import '../../utils/tools.dart';
 import '../wallet/cashu_manager.dart';
 

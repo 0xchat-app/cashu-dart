@@ -5,7 +5,7 @@ import 'package:pointycastle/export.dart';
 
 import '../../model/unblinding_data.dart';
 import 'define.dart';
-import 'nut_00.dart';
+import 'token/proof.dart';
 
 /*
   Bob (mint)
