@@ -1,71 +1,22 @@
-
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-
-import '../../utils/tools.dart';
+import 'token/converter/converter.dart';
 import 'token/proof.dart';
 import 'token/token_model.dart';
+import '../../utils/tools.dart';
 
 class Nut0 {
-  static const tokenPrefix = 'cashu';
-  static const tokenVersion = 'A';
 
-  // Support version prefixes
-  static const List<String> uriPrefixes = ['web+cashu://', 'cashu://', 'cashu:', 'cashuA'];
+  static List<String> get uriPrefixes => Converter.uriPrefixes;
 
-  static String encodedToken(Token token) {
-    String json = jsonEncode(token.toJson());
-    String base64Encoded = base64.encode(utf8.encode(json));
-    return tokenPrefix + tokenVersion + base64Encoded;
+  static bool isCashuToken(String token) {
+    return Converter.isCashuToken(token);
+  }
+
+  static String encodedToken(Token token, [bool useV4Token = true]) {
+    return Converter.encodedToken(token, useV4Token);
   }
 
   static Token? decodedToken(String token) {
-    bool flag = false;
-    for (var prefix in uriPrefixes) {
-      if (token.startsWith(prefix)) {
-        token = token.substring(prefix.length);
-        flag = true;
-        break;
-      }
-    }
-
-    if (!flag) return null;
-
-    dynamic obj;
-    try {
-      obj = token.encodeBase64ToJson<Map>();
-    } catch(e) {
-      debugPrint('[Error][Nut1 - getDecodedToken] encodeBase64ToJson failed, object: $token');
-      return null;
-    }
-
-    if (obj == null) return null;
-
-    // check if v3
-    if (obj is Map && obj.containsKey('token')) {
-      return Token.fromJson(obj);
-    }
-
-    // if v2 token return v3 format
-    if (obj is Map && obj.containsKey('proofs')) {
-      final proofs = obj['proofs'];
-      final mints = obj['mints'];
-      if (proofs is List && mints is List) {
-        return Token(
-          entries: proofs.map((e) => TokenEntry.fromJson(e)).toList(),
-          memo: mints.firstOrNull?['url'] ?? '',
-        );
-      }
-    }
-
-    // check if v1
-    if (obj is List) {
-      return Token(
-        entries: obj.map((e) => TokenEntry.fromJson(e)).toList(),
-      );
-    }
-
-    return null;
+    return Converter.decodedToken(token);
   }
 }
 

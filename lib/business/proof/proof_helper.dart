@@ -12,6 +12,7 @@ import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/token/proof.dart';
+import '../../core/nuts/v1/nut_02.dart';
 import '../../core/nuts/v1/nut_11.dart';
 import '../../model/mint_model.dart';
 import '../../utils/network/response.dart';
@@ -366,5 +367,48 @@ class ProofHelper {
       debugPrint('[E][Cashu - addSignatureToProof] $e');
       debugPrint('[E][Cashu - addSignatureToProof] $stack');
     }
+  }
+
+  static Future tryParseProofsToNewestVersion() async {
+    final proofs = await ProofStore.getProofs();
+    await _tryParseProofsToHexKeysetId(proofs);
+  }
+
+  static Future _tryParseProofsToHexKeysetId(List<Proof> proofs) async {
+    Map<String, String> keysetIdMap = {};
+
+    List<Proof> oldProofs = [];
+    List<Proof> newProofs = [];
+
+    for (var proof in proofs) {
+      final originId = proof.id;
+      if (Nut2.isHexKeysetId(originId)) continue;
+
+      String? hexKeysetId = keysetIdMap[originId];
+      if (hexKeysetId != null && hexKeysetId.isNotEmpty) {
+        final newProof = proof.copyWith(id: hexKeysetId);
+        if (newProof.id != proof.id || newProof.secret != proof.secret) {
+          oldProofs.add(proof);
+          newProofs.add(newProof);
+        }
+        continue;
+      }
+
+      final keyset = (await KeysetStore.getKeyset(id: originId)).firstOrNull;
+      if (keyset == null) continue;
+
+      hexKeysetId = Nut2.deriveKeySetId(keyset.keyset);
+      if (hexKeysetId.isNotEmpty) {
+        keysetIdMap[originId] = hexKeysetId;
+        final newProof = proof.copyWith(id: hexKeysetId);
+        if (newProof.id != proof.id || newProof.secret != proof.secret) {
+          oldProofs.add(proof);
+          newProofs.add(newProof);
+        }
+      }
+    }
+
+    await ProofStore.addProofs(newProofs);
+    await ProofStore.deleteProofs(oldProofs);
   }
 }

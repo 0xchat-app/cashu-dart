@@ -1,6 +1,7 @@
 
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:cbor/cbor.dart';
 
 class Tools {
 
@@ -63,14 +64,26 @@ extension StringHexEx on String {
     return Uint8List.fromList(bytes);
   }
 
-  T encodeBase64ToJson<T>() {
+  T decodeBase64ToMapByJson<T>() {
+    String normalizedBase64 = base64FromBase64url();
+    final decoded = base64.decode(normalizedBase64);
+    final jsonString = utf8.decode(decoded);
+    return json.decode(jsonString) as T;
+  }
+
+  T decodeBase64ToMapByCBOR<T>() {
+    String normalizedBase64 = base64FromBase64url();
+    final decoded = base64.decode(normalizedBase64);
+    final cborValue = cbor.decode(decoded);
+    return cborValue.toJson() as T;
+  }
+
+  String base64FromBase64url() {
     String normalizedBase64 = replaceAll('-', '+').replaceAll('_', '/');
     while (normalizedBase64.length % 4 != 0) {
       normalizedBase64 += '=';
     }
-    final decoded = base64.decode(normalizedBase64);
-    final jsonString = utf8.decode(decoded);
-    return json.decode(jsonString) as T;
+    return normalizedBase64;
   }
 
   String base64urlFromBase64() {

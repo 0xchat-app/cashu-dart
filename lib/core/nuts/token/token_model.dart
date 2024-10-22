@@ -37,11 +37,37 @@ class Token {
     );
   }
 
+  factory Token.fromV4Json(Map json) {
+    final mintURL = json['m'];
+    final unit = json['u']?.toString() ?? 'sat';
+    final memo = json['d']?.toString() ?? '';
+    final tokenJson = json['t'] ?? [];
+    return Token(
+      entries: [TokenEntry.fromV4Json(mintURL, tokenJson)],
+      memo: memo,
+      unit: unit,
+    );
+  }
+
   Map toJson() => {
     'token': entries.map((e) => e.toJson()).toList(),
     'memo': memo,
     'unit': unit,
   };
+
+  Map toV4Json() {
+    if (entries.length != 1) return {};
+    final entry = entries.first;
+
+    final mintURL = entry.mint;
+    return {
+      'm': mintURL,
+      'u': unit,
+      if (memo.isNotEmpty)
+        'd': memo,
+      't': entry.toV4Json(),
+    };
+  }
 
   @override
   String toString() {
@@ -82,10 +108,50 @@ class TokenEntry {
     );
   }
 
+  factory TokenEntry.fromV4Json(String mintURL, List json) {
+    List<Proof> proofs = [];
+    for (var tokenMap in json) {
+      if (tokenMap is! Map) continue;
+
+      final keysetId = (tokenMap['i']?.toString() ?? '').toLowerCase();
+      final proofsJson = tokenMap['p'] ?? [];
+
+      if (keysetId.isEmpty || proofsJson is! List) continue;
+
+      for (var proofMap in proofsJson) {
+        if (proofMap is! Map) continue;
+
+        final proof = Proof.fromV4Json(keysetId, proofMap);
+        proofs.add(proof);
+      }
+    }
+
+    return TokenEntry(
+      proofs: proofs,
+      mint: mintURL,
+    );
+  }
+
   Map toJson() => {
     'proofs': proofs.map((e) => e.toJson()).toList(),
     'mint': mint,
   };
+
+  List toV4Json() {
+    // key: keysetId, value: proof list
+    Map<String, List<Map>> allProofs = <String, List<Map>>{};
+
+    for (var proof in proofs) {
+      final keysetId = proof.id;
+      final proofMaps = allProofs.putIfAbsent(keysetId, () => <Map>[]);
+      proofMaps.add(proof.toV4Json());
+    }
+
+    return allProofs.entries.map((entry) => {
+      "i": entry.key.hexToBytes(),
+      "p": entry.value,
+    }).toList();
+  }
 
   @override
   String toString() {

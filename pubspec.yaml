@@ -14,6 +14,7 @@ dependencies:
   sqflite_sqlcipher: ^3.1.0+1
   reflectable: ^4.0.5
   http: ^1.0.0
+  cbor: ^6.3.3
   crypto: ^3.0.2
   bolt11_decoder: ^1.0.2
   pointycastle: ^3.3.0

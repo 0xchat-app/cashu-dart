@@ -1,10 +1,7 @@
 
 import 'dart:async';
-import 'package:cashu_dart/core/DHKE_helper.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../core/keyset_store.dart';
-import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/token/proof.dart';
 import '../../model/history_entry.dart';
 import '../../model/invoice.dart';
@@ -53,6 +50,7 @@ class CashuManager {
       await setupDB(dbName: identify, dbPassword: dbPassword);
       await setupMint();
       await setupBalance();
+      await ProofHelper.tryParseProofsToNewestVersion();
       await invoiceHandler.initialize();
       await ProofBlindingManager.shared.initialize();
       invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
@@ -142,10 +140,7 @@ class CashuManager {
   }
 
   Future<void> _setupMintKeyset(IMint mint) async {
-    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, active: true);
-    for (var keyset in keysets) {
-      mint.updateKeysetId(keyset.id, keyset.unit);
-    }
+    await MintHelper.updateMintKeysetFromLocal(mint);
   }
 
   Future<void> setupBalance() async {

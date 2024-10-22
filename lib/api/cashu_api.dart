@@ -360,7 +360,7 @@ class CashuAPI {
 
   /// Checks if a given string is a valid Cashu token.
   bool isCashuToken(String str) {
-    return Nut0.decodedToken(str) != null;
+    return Nut0.isCashuToken(str);
   }
 
   /// Determines if a given string is a valid Lightning Network (LN) invoice.

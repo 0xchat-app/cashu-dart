@@ -1,4 +1,6 @@
 
+import 'package:cashu_dart/core/nuts/v1/nut_02.dart';
+
 import '../../core/keyset_store.dart';
 import '../../core/nuts/define.dart';
 import '../../model/keyset_info.dart';
@@ -14,12 +16,12 @@ class KeysetHelper {
     keysetId ??= mint.keysetId(unit);
     // from local
     final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, id: keysetId, unit: unit);
-    var keysetInfo = keysets.firstOrNull;
+    var keysetInfo = findBetterKeyset(keysets);
 
     if (keysetInfo == null || keysetInfo.keyset.isEmpty) {
       // from remote
       final newKeysets = await MintHelper.fetchKeysetFromRemote(mint, keysetId);
-      keysetInfo = newKeysets.where((element) => element.unit == unit).firstOrNull;
+      keysetInfo = findBetterKeyset(newKeysets.where((element) => element.unit == unit).toList());
     }
     if (keysetInfo == null) return null;
 
@@ -29,6 +31,15 @@ class KeysetHelper {
     }
 
     return keysetInfo;
+  }
+
+  static KeysetInfo? findBetterKeyset(List<KeysetInfo> keysetList) {
+    if (keysetList.isEmpty) return null;
+
+    for (var keyset in keysetList) {
+      if (Nut2.isHexKeysetId(keyset.id)) return keyset;
+    }
+    return keysetList.firstOrNull;
   }
 
   static Future<MintKeys?> keysetFetcher(String mintURL, String unit, String keysetId) async {

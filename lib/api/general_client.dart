@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 
 import '../business/proof/proof_helper.dart';
 import '../business/proof/proof_store.dart';
-import '../business/proof/token_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
 import '../core/mint_actions.dart';
@@ -66,7 +65,7 @@ class CashuAPIGeneralClient {
       proofs = response.data;
     }
 
-    final encodedToken = TokenHelper.getEncodedToken(
+    final encodedToken = Nut0.encodedToken(
       Token(
         entries: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
         memo: memo,
@@ -140,7 +139,7 @@ class CashuAPIGeneralClient {
         proofs = swapResponse.data;
       }
 
-      final encodedToken = TokenHelper.getEncodedToken(
+      final encodedToken = Nut0.encodedToken(
         Token(
           entries: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
           memo: memo,
@@ -218,7 +217,7 @@ class CashuAPIGeneralClient {
     if (!swapResponse.isSuccess) return swapResponse.cast();
 
     final p2pkProofs = swapResponse.data;
-    final encodedToken = TokenHelper.getEncodedToken(
+    final encodedToken = Nut0.encodedToken(
       Token(
         entries: [TokenEntry(mint: mint.mintURL, proofs: p2pkProofs)],
         memo: memo,
@@ -247,7 +246,7 @@ class CashuAPIGeneralClient {
 
     await CashuManager.shared.setupFinish.future;
 
-    final token = TokenHelper.getDecodedToken(ecashString);
+    final token = Nut0.decodedToken(ecashString);
     if (token == null) return CashuResponse.fromErrorMsg('Invalid token');
     if (token.unit.isNotEmpty && token.unit != 'sat') return CashuResponse.fromErrorMsg('Unsupported unit');
 
@@ -349,10 +348,11 @@ class CashuAPIGeneralClient {
       return CashuResponse.fromErrorMsg('There is no valid proof');
     }
     return CashuResponse.fromSuccessData(
-      TokenHelper.getEncodedToken(
+      Nut0.encodedToken(
         Token(
           entries: entryList,
         ),
+        false,
       ),
     );
   }
@@ -384,7 +384,7 @@ class CashuAPIGeneralClient {
   }
 
   static Future<String?> tryCreateSpendableEcashToken(String ecashToken) async {
-    final originToken = TokenHelper.getDecodedToken(ecashToken);
+    final originToken = Nut0.decodedToken(ecashToken);
     if (originToken == null) return null;
 
     final originEntries = originToken.entries;
@@ -419,11 +419,11 @@ class CashuAPIGeneralClient {
       unit: originToken.unit,
     );
 
-    return TokenHelper.getEncodedToken(newToken);
+    return Nut0.encodedToken(newToken);
   }
 
   static CashuTokenInfo? infoOfToken(String ecashToken) {
-    final token = TokenHelper.getDecodedToken(ecashToken);
+    final token = Nut0.decodedToken(ecashToken);
     if (token == null) return null;
 
     final proofs = token.entries.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
@@ -447,7 +447,7 @@ class CashuAPIGeneralClient {
     required String ecashString,
     required List<String> pubkeyList,
   }) async {
-    final tokenPackage = TokenHelper.getDecodedToken(ecashString);
+    final tokenPackage = Nut0.decodedToken(ecashString);
     if (tokenPackage == null) return null;
 
     final tokenEntryList = tokenPackage.entries;
@@ -459,6 +459,6 @@ class CashuAPIGeneralClient {
         );
       }
     }
-    return TokenHelper.getEncodedToken(tokenPackage);
+    return Nut0.encodedToken(tokenPackage);
   }
 }

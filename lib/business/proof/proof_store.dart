@@ -1,7 +1,6 @@
 
 import 'package:cashu_dart/utils/list_extension.dart';
 
-import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/token/proof.dart';
 import '../../utils/database/db.dart';
 

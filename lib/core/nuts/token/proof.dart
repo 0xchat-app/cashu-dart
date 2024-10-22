@@ -49,6 +49,14 @@ class Proof extends DBObject {
       'witness': witness
   };
 
+  Map<String, dynamic> toV4Json() => {
+    'a': int.tryParse(amount) ?? 0,
+    's': secret,
+    'c': C.hexToBytes(),
+    if (witness.isNotEmpty)
+      'w': witness
+  };
+
   static Proof fromServerJson(Map<String, Object?> map) {
     var amount = '0';
     final amountRaw = map['amount'];
@@ -74,6 +82,36 @@ class Proof extends DBObject {
       amount: amount,
       secret: Tools.getValueAs<String>(map, 'secret', ''),
       C: Tools.getValueAs<String>(map, 'C', ''),
+      witness: witness,
+      dleq: dleq,
+    );
+  }
+
+  factory Proof.fromV4Json(String keysetId, Map json) {
+    var amount = '0';
+    final amountRaw = json['a'];
+    if (amountRaw is int) {
+      amount = amountRaw.toString();
+    } else if (amountRaw is String) {
+      amount = amountRaw;
+    }
+
+    var witness = json['w'];
+    if (witness is! String) {
+      witness = '';
+    }
+
+    final dleqRaw = json['d'];
+    Map<String, dynamic>? dleq;
+    if (dleqRaw is Map) {
+      dleq = dleqRaw.map((key, value) => MapEntry(key.toString(), value));
+    }
+
+    return Proof(
+      id: keysetId,
+      amount: amount,
+      secret: Tools.getValueAs<String>(json, 's', ''),
+      C: Tools.getValueAs<String>(json, 'c', ''),
       witness: witness,
       dleq: dleq,
     );
@@ -125,6 +163,18 @@ class Proof extends DBObject {
     return {
       "3": '''alter table ${tableName()} add dleqPlainText TEXT DEFAULT "";'''
     };
+  }
+
+  Proof copyWith({
+    String? id,
+  }) {
+    final originData = toMap();
+    final newData = {
+      ...originData,
+      if (id != null)
+        'id': id,
+    };
+    return Proof.fromMap(newData);
   }
 
   @override

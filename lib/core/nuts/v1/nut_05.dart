@@ -70,14 +70,7 @@ class Nut5 {
       nutURLJoin(mintURL, 'melt/quote/$method'),
       params: {
         'quote': quote,
-        'inputs': inputs.map((e) {
-          return {
-            'id': e.id,
-            'amount': num.tryParse(e.amount) ?? 0,
-            'secret': e.secret,
-            'C': e.C,
-          };
-        }).toList(),
+        'inputs': inputs.map((e) => e.toJson()).toList(),
       },
       modelBuilder: (json) {
         if (json is! Map) return null;

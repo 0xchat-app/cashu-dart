@@ -2,7 +2,7 @@
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:cashu_dart/cashu_dart.dart';
 import 'package:uuid/uuid.dart';
-import '../business/proof/token_helper.dart';
+import '../../core/nuts/nut_00.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
@@ -128,7 +128,7 @@ class IHistoryEntry extends DBObject {
   String? get memo {
     switch (type) {
       case IHistoryType.eCash:
-        return TokenHelper.getDecodedToken(value)?.memo;
+        return Nut0.decodedToken(value)?.memo;
       case IHistoryType.lnInvoice:
         try {
           final req = Bolt11PaymentRequest(value);

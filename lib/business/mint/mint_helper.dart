@@ -1,4 +1,6 @@
 
+import 'package:cashu_dart/business/proof/keyset_helper.dart';
+import 'package:cashu_dart/utils/list_extension.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/keyset_store.dart';
@@ -46,30 +48,34 @@ class MintHelper {
     return true;
   }
 
-  static updateMintKeysetFromRemote(IMint mint) async {
+  static Future updateMintKeysetFromRemote(IMint mint) async {
     final keysets = await fetchKeysetFromRemote(mint);
     if (keysets.isEmpty) return ;
 
     mint.cleanKeysetId();
-    for (var keyset in keysets) {
-      mint.updateKeysetId(keyset.id, keyset.unit);
-    }
-    KeysetStore.addOrReplaceKeysets(keysets);
+    _updateMintKeyset(mint, keysets);
   }
 
-  static Future<KeysetInfo?> tryGetMintKeyset(IMint mint, String keysetId, [String unit = 'sat']) async {
-    // Local
-    final result = await KeysetStore.getKeyset(
-      mintURL: mint.mintURL,
-      id: keysetId,
-      unit: unit,
-    );
-    final keysetInfo = result.lastOrNull;
-    if (keysetInfo != null && keysetInfo.keyset.isNotEmpty) return keysetInfo;
+  static Future updateMintKeysetFromLocal(IMint mint) async {
+    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL);
+    if (keysets.isEmpty) return ;
 
-    // Remote
-    mint.keysetId(unit);
-    return null;
+    _updateMintKeyset(mint, keysets);
+  }
+
+  static void _updateMintKeyset(IMint mint, List<KeysetInfo> keysets) {
+    if (keysets.isEmpty) return ;
+    final newKeysets = keysets
+        .groupBy((item) => item.unit)
+        .entries.map((map) {
+      final target = KeysetHelper.findBetterKeyset(map.value);
+      return MapEntry(map.key, target);
+    })
+        .expand((map) => [map.value])
+        .nonNulls;
+    for (var keyset in newKeysets) {
+      mint.updateKeysetId(keyset.id, keyset.unit);
+    }
   }
 
   static Future<int> getMaxNutsVersion(String mintURL) async {
