@@ -1,4 +1,5 @@
 
+import 'package:cashu_dart/core/mint_actions.dart';
 import 'package:cashu_dart/core/nuts/v1/nut_02.dart';
 
 import '../../core/keyset_store.dart';
@@ -20,7 +21,7 @@ class KeysetHelper {
 
     if (keysetInfo == null || keysetInfo.keyset.isEmpty) {
       // from remote
-      final newKeysets = await MintHelper.fetchKeysetFromRemote(mint, keysetId);
+      final newKeysets = await fetchKeysetFromRemote(mint, keysetId);
       keysetInfo = findBetterKeyset(newKeysets.where((element) => element.unit == unit).toList());
     }
     if (keysetInfo == null) return null;
@@ -31,6 +32,37 @@ class KeysetHelper {
     }
 
     return keysetInfo;
+  }
+
+  static Future<List<KeysetInfo>> fetchKeysetFromRemote(IMint mint, [String? keysetId]) async {
+
+    Map<String, KeysetInfo> cache = {};
+
+    // Fetch keysets keys
+    final keysResponse = await mint.requestKeysAction(mintURL: mint.mintURL, keysetId: keysetId);
+    final keys = keysResponse.isSuccess ? keysResponse.data : <MintKeysPayload>[];
+    final keysets = keys.map((e) {
+      final info = e.asKeysetInfo(mint.mintURL);
+      cache[info.id] = info;
+      return info;
+    }).toList();
+
+    // Fetch keyset state
+    if (mint.maxNutsVersion >= 1) {
+      final stateResponse = await Nut2.requestKeysetsState(mintURL: mint.mintURL);
+      List<KeysetInfo> list = stateResponse.isSuccess ? stateResponse.data : <KeysetInfo>[];
+      for (var keysetInfo in list) {
+        final info = cache[keysetInfo.id];
+        if (info != null) {
+          info.active = keysetInfo.active;
+          info.inputFeePPK = keysetInfo.inputFeePPK;
+        }
+      }
+    }
+
+    await KeysetStore.addOrReplaceKeysets(keysets);
+
+    return keysets;
   }
 
   static KeysetInfo? findBetterKeyset(List<KeysetInfo> keysetList) {

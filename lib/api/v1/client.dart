@@ -44,16 +44,16 @@ class CashuAPIV1Client {
       quoteID: quoteID,
     );
     if (!quoteInfoResponse.isSuccess) return quoteInfoResponse;
-    final fee = BigInt.tryParse(quoteInfoResponse.data.fee) ?? BigInt.zero;
+    final fee = int.tryParse(quoteInfoResponse.data.fee) ?? 0;
 
     // Get proofs for pay.
     final req = Bolt11PaymentRequest(pr);
-    final amount = (req.amount * Decimal.fromInt(100000000)).toBigInt();
+    final amount = (req.amount * Decimal.fromInt(100000000)).toBigInt().toInt();
 
     processCallback?.call('Looking for proof for payment...');
-    final response = await ProofHelper.getProofsToUse(
+    final response = await ProofHelper.getProofsForMelt(
       mint: mint,
-      amount: amount + fee,
+      proofRequest: ProofRequest.amount(amount + fee),
     );
     if (!response.isSuccess) return response;
 
@@ -63,6 +63,7 @@ class CashuAPIV1Client {
       mint: mint,
       paymentId: quoteID,
       historyValue: pr,
+      amount: amount,
       proofs: proofs,
       fee: fee.toInt(),
       meltAction: Nut8.payingTheQuote,

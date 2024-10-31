@@ -4,22 +4,61 @@ import 'dart:convert';
 import 'package:cashu_dart/core/nuts/v1/nut_10.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../business/wallet/ecash_manager.dart';
+import '../../api/nut_P2PK_helper.dart';
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
-import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/token/proof.dart';
 import '../../core/nuts/v1/nut_02.dart';
-import '../../core/nuts/v1/nut_11.dart';
+import '../../model/cashu_token_info.dart';
+import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
 import '../../utils/network/response.dart';
-import '../../utils/tools.dart';
 import '../wallet/cashu_manager.dart';
+import '../wallet/ecash_manager.dart';
 import 'keyset_helper.dart';
 import 'proof_store.dart';
+
+class ProofRequest {
+  final int amount;
+  final List<Proof>? proofs;
+
+  ProofRequest.amount(this.amount)
+      : proofs = null;
+
+  ProofRequest.proofs(this.proofs, this.amount);
+
+  @override
+  String toString() {
+    return '${super.toString()}, amount: $amount, proofs: $proofs';
+  }
+}
+
+class ProofResponse {
+  final bool isSuccess;
+  final int targetAmount;
+  final int inputFee;
+  final List<Proof> proofs;
+
+  int get overAmount => proofs.totalAmount - targetAmount - inputFee;
+  bool get isOverProofs => overAmount > 0;
+
+  // Success constructor
+  ProofResponse.success({
+    required this.targetAmount,
+    required this.inputFee,
+    required this.proofs,
+  }) : isSuccess = true;
+
+  // Failure constructor
+  ProofResponse.failure({
+    required this.targetAmount,
+    this.inputFee = 0,
+  })  : isSuccess = false,
+        proofs = [];
+}
 
 class ProofHelper {
 
@@ -37,90 +76,336 @@ class ProofHelper {
     return usableProofs;
   }
 
-  static Future<CashuResponse<List<Proof>>> getProofsToUse({
+  static Future<ProofResponse> _getProofsWithRequest({
     required IMint mint,
-    BigInt? amount,
-    List<Proof>? proofs,
-    bool orderAsc = false,
-    bool checkState = false,
-    bool isFromSwap = false,
+    required KeysetInfo keysetInfo,
+    required ProofRequest proofRequest,
+    bool canIgnoreInputFee = false,
   }) async {
-    proofs ??= await getProofs(mint.mintURL, orderAsc);
-    // check state
-    if (checkState) {
-      final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: proofs);
-      if (!response.isSuccess) return response.cast();
-      if (response.data.length != proofs.length) {
-        throw Exception('[E][Cashu - checkProofsAvailable] '
-            'The length of states(${response.data.length}) and proofs(${proofs.length}) is not consistent');
-      }
+    List<Proof> result = <Proof>[];
+    final amount = proofRequest.amount;
+    final totalProofs = proofRequest.proofs ?? await getProofs(mint.mintURL, true);
 
-      // get usable proofs
-      final usableProofs = <Proof>[];
-      for (int i = 0; i < proofs.length; i++) {
-        if (response.data[i] == TokenState.live) {
-          usableProofs.add(proofs[i]);
-        }
-      }
-
-      proofs = usableProofs;
-    }
-
-    final List<Proof> proofsToSend = [];
-    BigInt amountAvailable = BigInt.zero;
-
-    if (amount != null && BigInt.from(proofs.totalAmount) < amount) {
-      return CashuResponse.fromErrorMsg('Insufficient proofs');
-    }
-
-    // Try use
-    if (amount != null) {
-      final proofIndex = _findOneSubsetWithSum(proofs.map((p) => p.amountNum).toList(), amount.toInt());
-      if (proofIndex != null && proofIndex.isNotEmpty) {
-        try {
-          final responseProofs = proofIndex.map((index) {
-            final proof = proofs![index];
-            addSignatureToProof(proof: proof);
-            return proof;
-          }).toList();
-          return CashuResponse.fromSuccessData(responseProofs);
-        } catch (_) { }
+    // Try find available proofs can be combined to match the requested amount without considering input fee
+    if (canIgnoreInputFee) {
+      result = _findOneSubsetWithSum(totalProofs, amount, 0) ?? [];
+      if (result.isNotEmpty) {
+        return ProofResponse.success(
+          targetAmount: proofRequest.amount,
+          inputFee: 0,
+          proofs: result,
+        );
       }
     }
 
-    for (final proof in proofs) {
-      if (amount != null && amountAvailable >= amount) break;
-      amountAvailable += proof.amount.asBigInt();
-      addSignatureToProof(proof: proof);
-      proofsToSend.add(proof);
+    // Try find available proofs can be combined to match the requested amount
+    result = _findOneSubsetWithSum(totalProofs, amount, keysetInfo.inputFeePPK) ?? [];
+    if (result.isNotEmpty) {
+      return ProofResponse.success(
+        targetAmount: proofRequest.amount,
+        inputFee: _getInputFee(result, keysetInfo.inputFeePPK),
+        proofs: result,
+      );
     }
 
-    final totalAmount = proofsToSend.totalAmount;
-    if (proofsToSend.length <= _hammingWeight(totalAmount)) {
-      if (amount == null || BigInt.from(totalAmount) == amount) {
-        return CashuResponse.fromSuccessData(proofsToSend);
+    int amountAvailable = 0;
+    for (final proof in totalProofs) {
+      amountAvailable += proof.amountNum;
+      result.add(proof);
+      if (amountAvailable >= amount) {
+        break;
       }
     }
 
-    // Prevent infinite recursion
-    if (isFromSwap) return CashuResponse.fromErrorMsg('Local error');
+    final inputFee = _getInputFee(result, keysetInfo.inputFeePPK);
+    if (amountAvailable >= amount + inputFee) {
+      return ProofResponse.success(
+        targetAmount: proofRequest.amount,
+        inputFee: inputFee,
+        proofs: result,
+      );
+    } else {
+      return ProofResponse.failure(
+        targetAmount: proofRequest.amount,
+      );
+    }
+  }
 
-    final response = await swapProofs(
+  static Future<CashuResponse<List<Proof>>> getProofsForECash({
+    required IMint mint,
+    required ProofRequest proofRequest,
+    CashuTokenP2PKInfo? p2pkOption,
+    String unit = 'sat',
+  }) async {
+    // Keyset info
+    final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
+    final keyset = keysetInfo?.keyset ?? {};
+    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
+
+    final proofResponse = await _getProofsWithRequest(
       mint: mint,
-      proofs: proofsToSend,
-      supportAmount: amount != null ? amount.toInt() : proofsToSend.totalAmount,
+      keysetInfo: keysetInfo,
+      proofRequest: proofRequest,
+      canIgnoreInputFee: p2pkOption == null,
     );
-    if (!response.isSuccess) return response;
+    if (!proofResponse.isSuccess) return CashuResponse.fromErrorMsg('Insufficient proofs');
 
-    final newProofs = response.data;
-    final finalProofs = await getProofsToUse(
-      mint: mint,
-      amount: amount,
-      proofs: newProofs,
-      checkState: false,
-      isFromSwap: true,
+    final proofs = proofResponse.proofs;
+
+    if (proofResponse.inputFee == 0 && p2pkOption == null) return CashuResponse.fromSuccessData(proofs);
+
+    List<BlindedMessage> blindedMessages = [];
+    List<String> secrets = [];
+    List<BigInt> rs = [];
+
+    SecretCreator? secretCreator;
+    if (p2pkOption != null && p2pkOption.receivePubKeys.isNotEmpty) {
+      secretCreator = (_) => NutP2PKHelper.createSecretFromOption(p2pkOption).toSecretString();
+    }
+
+    {
+      final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
+        keysetId: keysetInfo.id,
+        amount: proofResponse.targetAmount,
+        secretCreator: secretCreator,
+      );
+      blindedMessages.addAll($1);
+      secrets.addAll($2);
+      rs.addAll($3);
+    }
+    final targetProofsCount = secrets.length;
+
+    {
+      final overAmount = proofResponse.overAmount;
+      if (overAmount > 0) {
+        final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
+          keysetId: keysetInfo.id,
+          amount: overAmount,
+        );
+        blindedMessages.addAll($1);
+        secrets.addAll($2);
+        rs.addAll($3);
+      }
+    }
+
+    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
+
+    final response = await mint.swapAction(
+      mintURL: mint.mintURL,
+      proofs: proofs,
+      outputs: blindedMessages,
     );
-    return finalProofs;
+    if (!response.isSuccess) {
+      return response.cast();
+    }
+
+    // unblinding
+    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
+      mint,
+      unit,
+      response.data,
+      secrets,
+      rs,
+      [],
+      ProofBlindingAction.multiMintSwap,
+      '',
+    ));
+    if (!unblindingResponse.isSuccess) {
+      return unblindingResponse;
+    }
+
+    await deleteProofs(proofs: proofs, mint: mint);
+
+    return CashuResponse.fromSuccessData(
+      unblindingResponse.data.sublist(0, targetProofsCount),
+    );
+  }
+
+  static Future<CashuResponse<List<Proof>>> getProofsForMelt({
+    required IMint mint,
+    required ProofRequest proofRequest,
+    String unit = 'sat',
+  }) async {
+    // Keyset info
+    final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
+    final keyset = keysetInfo?.keyset ?? {};
+    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
+
+    final proofResponse = await _getProofsWithRequest(
+      mint: mint,
+      keysetInfo: keysetInfo,
+      proofRequest: proofRequest,
+    );
+    if (!proofResponse.isSuccess) return CashuResponse.fromErrorMsg('Insufficient proofs');
+
+    final proofs = proofResponse.proofs;
+
+    return CashuResponse.fromSuccessData(proofs);
+  }
+
+  static Future<CashuResponse<List<List<Proof>>>> getProofsWithAmountList({
+    required IMint mint,
+    required List<int> amounts,
+    CashuTokenP2PKInfo? p2pkOption,
+    String unit = 'sat',
+  }) async {
+    // Keyset info
+    final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
+    final keyset = keysetInfo?.keyset ?? {};
+    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
+
+    final totalAmount = amounts.reduce((a, b) => a + b);
+    final proofResponse = await _getProofsWithRequest(
+      mint: mint,
+      keysetInfo: keysetInfo,
+      proofRequest: ProofRequest.amount(totalAmount),
+    );
+
+    if (!proofResponse.isSuccess) return CashuResponse.fromErrorMsg('Insufficient proofs');
+
+    final proofs = proofResponse.proofs;
+    List<List<BlindedMessage>> blindedMessages = [];
+    List<List<String>> secrets = [];
+    List<List<BigInt>> rs = [];
+    List<List<UnblindingOption>> unblindingOptions = [];
+
+    SecretCreator? secretCreator;
+    if (p2pkOption != null && p2pkOption.receivePubKeys.isNotEmpty) {
+      secretCreator = (_) => NutP2PKHelper.createSecretFromOption(p2pkOption).toSecretString();
+    }
+
+    for (var amount in amounts) {
+      final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
+        keysetId: keysetInfo.id,
+        amount: amount,
+        secretCreator: secretCreator,
+      );
+      blindedMessages.add($1);
+      secrets.add($2);
+      rs.add($3);
+      unblindingOptions.add(
+        List.generate(
+          $1.length,
+          (index) => p2pkOption != null
+            ? const UnblindingOption(isSaveToLocal: false)
+            : const UnblindingOption()
+        ),
+      );
+    }
+
+    {
+      final overAmount = proofResponse.overAmount;
+      if (overAmount > 0) {
+        final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
+          keysetId: keysetInfo.id,
+          amount: overAmount,
+        );
+        blindedMessages.add($1);
+        secrets.add($2);
+        rs.add($3);
+        unblindingOptions.add(
+          List.generate($1.length, (index) => const UnblindingOption()),
+        );
+      }
+    }
+
+    List<BlindedMessage> blindedMessagesSet = blindedMessages.expand((e) => e).toList();
+    List<String> secretsSet = secrets.expand((e) => e).toList();
+    List<BigInt> rsSet = rs.expand((e) => e).toList();
+    List<UnblindingOption> unblindingOptionSet = unblindingOptions.expand((e) => e).toList();
+    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
+
+    final response = await mint.swapAction(
+      mintURL: mint.mintURL,
+      proofs: proofs,
+      outputs: blindedMessagesSet,
+    );
+    if (!response.isSuccess) {
+      return response.cast();
+    }
+
+    // unblinding
+    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
+      mint,
+      unit,
+      response.data,
+      secretsSet,
+      rsSet,
+      unblindingOptionSet,
+      ProofBlindingAction.multiMintSwap,
+      '',
+    ));
+    if (!unblindingResponse.isSuccess) {
+      return unblindingResponse.cast();
+    }
+
+    await deleteProofs(proofs: proofs, mint: mint);
+
+    final newProofs = unblindingResponse.data;
+    final proofPackage = <List<Proof>>[];
+    int start = 0;
+    for (var package in blindedMessages) {
+      final packageSize = package.length;
+      proofPackage.add(newProofs.sublist(start, start + packageSize));
+      start += packageSize;
+    }
+
+    return CashuResponse.fromSuccessData(proofPackage);
+  }
+
+  static Future<CashuResponse<List<Proof>>> swapProofs({
+    required IMint mint,
+    required List<Proof> proofs,
+    String unit = 'sat',
+  }) async {
+    // Keyset info
+    final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
+    final keyset = keysetInfo?.keyset ?? {};
+    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
+
+    final inputFee = _getInputFee(proofs, keysetInfo.inputFeePPK);
+    final outputAmount = proofs.totalAmount - inputFee;
+    List<BlindedMessage> blindedMessages = [];
+    List<String> secrets = [];
+    List<BigInt> rs = [];
+
+    final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
+      keysetId: keysetInfo.id,
+      amount: outputAmount,
+    );
+    blindedMessages.addAll($1);
+    secrets.addAll($2);
+    rs.addAll($3);
+
+    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
+
+    final response = await mint.swapAction(
+      mintURL: mint.mintURL,
+      proofs: proofs,
+      outputs: blindedMessages,
+    );
+    if (!response.isSuccess) {
+      return response.cast();
+    }
+
+    // unblinding
+    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
+      mint,
+      unit,
+      response.data,
+      secrets,
+      rs,
+      [],
+      ProofBlindingAction.multiMintSwap,
+      '',
+    ));
+    if (!unblindingResponse.isSuccess) {
+      return unblindingResponse;
+    }
+
+    await deleteProofs(proofs: proofs, mint: mint);
+
+    return unblindingResponse;
   }
 
   static Future<bool> deleteProofs({
@@ -147,152 +432,6 @@ class ProofHelper {
     return await ProofStore.deleteProofs(burnedProofs);
   }
 
-  static Future<CashuResponse<List<Proof>>> swapProofs({
-    required IMint mint,
-    required List<Proof> proofs,
-    int? supportAmount,
-    String unit = 'sat',
-    bool syncDelete = true,
-  }) async {
-    // get keyset
-    final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
-    final keyset = keysetInfo?.keyset ?? {};
-    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
-
-    final proofsTotalAmount = proofs.totalAmount;
-
-    final amount = supportAmount ?? proofsTotalAmount;
-    List<BlindedMessage> blindedMessages = [];
-    List<String> secrets = [];
-    List<BigInt> rs = [];
-    {
-      final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-        keysetId: keysetInfo.id,
-        amount: amount,
-      );
-      blindedMessages.addAll($1);
-      secrets.addAll($2);
-      rs.addAll($3);
-    }
-    {
-      if (proofsTotalAmount - amount > 0) {
-        final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-          keysetId: keysetInfo.id,
-          amount: proofsTotalAmount - amount,
-        );
-        blindedMessages.addAll($1);
-        secrets.addAll($2);
-        rs.addAll($3);
-      }
-    }
-
-    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
-
-    final response = await mint.swapAction(
-      mintURL: mint.mintURL,
-      proofs: proofs,
-      outputs: blindedMessages,
-    );
-    if (!response.isSuccess) {
-      return response.cast();
-    }
-
-    // unblinding
-    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
-      mint,
-      unit,
-      response.data,
-      secrets,
-      rs,
-      ProofBlindingAction.multiMintSwap,
-      '',
-    ));
-    if (!unblindingResponse.isSuccess) {
-      return unblindingResponse;
-    }
-
-    if (syncDelete) {
-      await deleteProofs(proofs: proofs, mint: mint);
-    } else {
-      deleteProofs(proofs: proofs, mint: mint);
-    }
-    return unblindingResponse;
-  }
-
-  static Future<CashuResponse<List<Proof>>> swapProofsForP2PK({
-    required IMint mint,
-    required List<Proof> proofs,
-    required List<String> publicKeys,
-    List<String>? refundPubKeys,
-    int? locktime,
-    int? signNumRequired,
-    P2PKSecretSigFlag? sigFlag,
-    String unit = 'sat',
-  }) async {
-
-    final p2pkSecretData = publicKeys.removeAt(0);
-    final p2pkSecretTags = [
-      if (publicKeys.isNotEmpty) P2PKSecretTagKey.pubkeys.appendValues(publicKeys),
-      if (refundPubKeys != null && refundPubKeys.isNotEmpty) P2PKSecretTagKey.refund.appendValues(refundPubKeys),
-      if (signNumRequired != null && signNumRequired > 0) P2PKSecretTagKey.nSigs.appendValues(['$signNumRequired']),
-      if (locktime != null) P2PKSecretTagKey.lockTime.appendValues([locktime.toString()]),
-      if (sigFlag != null) P2PKSecretTagKey.sigflag.appendValues([sigFlag.value]),
-    ];
-    final secrets = proofs.map((_) =>
-        P2PKSecret(
-          nonce: DHKE.randomPrivateKey().asBase64String(),
-          data: p2pkSecretData,
-          tags: p2pkSecretTags,
-        ).toSecretString(),
-    ).toList();
-
-    // get keyset
-    final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
-    final keyset = keysetInfo?.keyset ?? {};
-    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
-
-    List<BlindedMessage> blindedMessages = [];
-    List<String> pSecrets = [];
-    List<BigInt> rs = [];
-
-    final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessagesWithSecret(
-      keysetId: keysetInfo.id,
-      amounts: proofs.map((p) => int.parse(p.amount)).toList(),
-      secrets: secrets,
-    );
-    blindedMessages.addAll($1);
-    pSecrets.addAll($2);
-    rs.addAll($3);
-
-    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
-
-    final response = await mint.swapAction(
-      mintURL: mint.mintURL,
-      proofs: proofs,
-      outputs: blindedMessages,
-    );
-    if (!response.isSuccess) {
-      return response.cast();
-    }
-
-    // unblinding
-    final unblindingResponse = await ProofBlindingManager.shared.unblindingBlindedSignature((
-      mint,
-      unit,
-      response.data,
-      secrets,
-      rs,
-      ProofBlindingAction.swapForP2PK,
-      '',
-    ));
-    if (!unblindingResponse.isSuccess) {
-      return unblindingResponse;
-    }
-
-    await deleteProofs(proofs: proofs, mint: mint);
-    return unblindingResponse;
-  }
-
   static int _hammingWeight(int n) {
     int count = 0;
     while (n != 0) {
@@ -302,19 +441,85 @@ class ProofHelper {
     return count;
   }
 
-  static List<int>? _findOneSubsetWithSum(List<int> nums, int target) {
-    List<List<int>?> dp = List.filled(target + 1, null);
-    dp[0] = [];
+  static List<Proof>? _findOneSubsetWithSum(List<Proof> proofs, int target, int inputFeePPK) {
+    int adjustedTarget(int subsetLength) {
+      return target + ((subsetLength * inputFeePPK + 999) ~/ 1000); // ceil(length * inputFee / 1000)
+    }
+
+    // Early exit if the total sum of nums is less than the adjusted target
+    if (proofs.totalAmount < adjustedTarget(proofs.length)) {
+      return null;
+    }
+
+    // Sort nums in descending order to try larger elements first for better efficiency
+    proofs.sort((p1, p2) => p1.amountNum.compareTo(p2.amountNum));
+
+    // Use a map to store possible sums and corresponding subsets
+    Map<int, List<Proof>?> dp = {0: []};
+
+    for (int i = 0; i < proofs.length; i++) {
+      final proof = proofs[i];
+
+      // Create a list of existing keys to avoid modifying the map during iteration
+      List<int> keys = dp.keys.toList().reversed.toList();
+      for (int t in keys) {
+        int newSum = t + proof.amountNum;
+        if (newSum <= adjustedTarget(dp[t]!.length + 1)) {
+          List<Proof> currentSubset = List.from(dp[t]!)..add(proof);
+          int requiredSum = adjustedTarget(currentSubset.length);
+
+          // Early return if the current subset matches the required sum
+          if (currentSubset.totalAmount == requiredSum) {
+            return currentSubset;
+          }
+
+          // Only update dp if it leads to a smaller or new subset for the given sum
+          if (!dp.containsKey(newSum) || (dp[newSum]!.length > currentSubset.length)) {
+            dp[newSum] = currentSubset;
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  List<int>? _findOneSubsetWithNums(List<int> nums, int target, int inputFee) {
+    int adjustedTarget(int subsetLength) {
+      return target + ((subsetLength * inputFee + 999) ~/ 1000); // ceil(length * inputFee / 1000)
+    }
+
+    // Early exit if the total sum of nums is less than the adjusted target
+    int totalSum = nums.fold(0, (sum, value) => sum + value);
+    if (totalSum < adjustedTarget(nums.length)) {
+      return null;
+    }
+
+    // Sort nums in descending order to try larger elements first for better efficiency
+    nums.sort((a, b) => a.compareTo(b));
+
+    // Use a map to store possible sums and corresponding subsets
+    Map<int, List<int>?> dp = {0: []};
 
     for (int i = 0; i < nums.length; i++) {
       int num = nums[i];
 
-      for (int t = target; t >= num; t--) {
-        if (dp[t - num] != null) {
-          dp[t] = List.from(dp[t - num]!)..add(i);
+      // Create a list of existing keys to avoid modifying the map during iteration
+      List<int> keys = dp.keys.toList().reversed.toList();
+      for (int t in keys) {
+        int newSum = t + num;
+        if (newSum <= adjustedTarget(dp[t]!.length + 1)) {
+          List<int> currentSubset = List.from(dp[t]!)..add(num);
+          int requiredSum = adjustedTarget(currentSubset.length);
 
-          if (t == target) {
-            return dp[target];
+          // Early return if the current subset matches the required sum
+          if (currentSubset.fold<int>(0, (sum, value) => sum + value) == requiredSum) {
+            return currentSubset;
+          }
+
+          // Only update dp if it leads to a smaller or new subset for the given sum
+          if (!dp.containsKey(newSum) || (dp[newSum]!.length > currentSubset.length)) {
+            dp[newSum] = currentSubset;
           }
         }
       }
@@ -410,5 +615,9 @@ class ProofHelper {
 
     await ProofStore.addProofs(newProofs);
     await ProofStore.deleteProofs(oldProofs);
+  }
+
+  static int _getInputFee(List<Proof> proofs, int inputFeePPK) {
+    return (proofs.length * inputFeePPK + 999) ~/ 1000;
   }
 }

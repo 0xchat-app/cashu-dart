@@ -33,9 +33,9 @@ class CashuAPIV0Client {
     final req = Bolt11PaymentRequest(pr);
     final amount = (req.amount.toDouble() * 100000000).toInt();
 
-    final proofsResponse = await ProofHelper.getProofsToUse(
+    final proofsResponse = await ProofHelper.getProofsForMelt(
       mint: mint,
-      amount: BigInt.from(amount + fee),
+      proofRequest: ProofRequest.amount(amount + fee),
     );
     if (!proofsResponse.isSuccess) return proofsResponse;
 
@@ -44,6 +44,7 @@ class CashuAPIV0Client {
       mint: mint,
       paymentId: pr,
       historyValue: pr,
+      amount: amount,
       proofs: proofs,
       fee: fee,
       meltAction: Nut8.payingTheInvoice,

@@ -13,6 +13,7 @@ class KeysetInfo extends DBObject {
     required this.unit,
     required this.active,
     Map<String, String>? keyset,
+    this.inputFeePPK = 0,
   }) : keyset = keyset ?? {};
 
   String id;
@@ -20,22 +21,18 @@ class KeysetInfo extends DBObject {
   String unit;
   bool active;
   Map<String, String> keyset = {};
+  int inputFeePPK;
 
   // for db column
   String keysetRaw = '';
 
   factory KeysetInfo.fromServerMap(Map jsonMap, String mintURL) {
-    Map<String, String>? keyset;
-    try {
-      final keysetRaw = Tools.getValueAs<String>(jsonMap, 'keysetRaw', '');
-      keyset = json.decode(keysetRaw);
-    } catch(_) {}
     return KeysetInfo(
       id: Tools.getValueAs<String>(jsonMap, 'id', ''),
       mintURL: mintURL,
       unit: Tools.getValueAs<String>(jsonMap, 'unit', ''),
-      active: Tools.getValueAs<bool>(jsonMap, 'active', false),
-      keyset: keyset,
+      active: Tools.getValueAs(jsonMap, 'active', false),
+      inputFeePPK: Tools.getValueAs(jsonMap, 'input_fee_ppk', 0),
     );
   }
 
@@ -51,6 +48,7 @@ class KeysetInfo extends DBObject {
     'unit': unit,
     'active': active,
     'keysetRaw': json.encode(keyset),
+    'inputFeePPK': inputFeePPK,
   };
 
   static KeysetInfo fromMap(Map<String, Object?> map) {
@@ -66,6 +64,7 @@ class KeysetInfo extends DBObject {
       unit: Tools.getValueAs(map, 'unit', ''),
       active: Tools.getValueAs(map, 'active', 0) == 1,
       keyset: keyset,
+      inputFeePPK: Tools.getValueAs(map, 'inputFeePPK', 0),
     );
   }
 
@@ -79,5 +78,11 @@ class KeysetInfo extends DBObject {
 
   static List<String?> ignoreKey() {
     return ['keyset'];
+  }
+
+  static Map<String, String?> updateTable() {
+    return {
+      "5": '''alter table ${tableName()} add inputFeePPK INT DEFAULT 0;'''
+    };
   }
 }

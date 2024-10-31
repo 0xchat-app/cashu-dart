@@ -11,15 +11,15 @@ import 'nuts/DHKE.dart';
 import 'nuts/define.dart';
 import 'nuts/nut_00.dart';
 
+typedef SecretCreator = String Function(int amount);
+
 class DHKEHelper {
 
   static BlindedMessageData _createBlindedMessages({
     required String keysetId,
     required List<int> amounts,
-    List<String>? secrets,
+    SecretCreator? secretCreator,
   }) {
-
-    if (secrets != null && secrets.length != amounts.length) return ([],[],[],[]);
 
     List<BlindedMessage> blindedMessages = [];
     List<String> pSecrets = [];
@@ -27,7 +27,7 @@ class DHKEHelper {
 
     for (var i = 0; i < amounts.length; i++) {
       final amount = amounts[i];
-      final secret = secrets != null ? secrets[i] : DHKE.randomPrivateKey().asBase64String();
+      final secret = secretCreator?.call(amount) ?? DHKE.randomPrivateKey().asBase64String();
       final (B_, r) = DHKE.blindMessage(secret.asBytes());
       if (B_.isEmpty) continue;
 
@@ -52,23 +52,13 @@ class DHKEHelper {
   static BlindedMessageData createBlindedMessages({
     required String keysetId,
     required int amount,
+    SecretCreator? secretCreator,
   }) {
     List<int> amounts = splitAmount(amount);
     return _createBlindedMessages(
       keysetId: keysetId,
       amounts: amounts,
-    );
-  }
-
-  static BlindedMessageData createBlindedMessagesWithSecret({
-    required String keysetId,
-    required List<int> amounts,
-    required List<String> secrets,
-  }) {
-    return _createBlindedMessages(
-      keysetId: keysetId,
-      amounts: amounts,
-      secrets: secrets,
+      secretCreator: secretCreator,
     );
   }
 

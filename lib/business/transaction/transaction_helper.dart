@@ -90,6 +90,7 @@ class TransactionHelper {
       response.data,
       secrets,
       rs,
+      [],
       ProofBlindingAction.minting,
       invoice,
     ));
@@ -104,6 +105,7 @@ class TransactionHelper {
     required IMint mint,
     String paymentId = '',
     required String historyValue,
+    required int amount,
     required List<Proof> proofs,
     String unit = 'sat',
     required int fee,
@@ -127,7 +129,7 @@ class TransactionHelper {
     final ( blindedMessages, secrets, rs, _ ) =
     DHKEHelper.createBlankOutputs(
       keysetId: keysetInfo.id,
-      amount: fee,
+      amount: proofs.totalAmount - amount,
     );
 
     // melt token
@@ -149,6 +151,7 @@ class TransactionHelper {
       change,
       secrets,
       rs,
+      [],
       ProofBlindingAction.melt,
       historyValue,
     ));
@@ -159,9 +162,9 @@ class TransactionHelper {
 
     await ProofHelper.deleteProofs(proofs: proofs, mint: mint);
 
-    final amount = newProofs.totalAmount - proofs.totalAmount;
+    final consumedAmount = newProofs.totalAmount - proofs.totalAmount;
     await HistoryStore.addToHistory(
-      amount: amount,
+      amount: consumedAmount,
       type: IHistoryType.lnInvoice,
       value: historyValue,
       mints: [mint.mintURL],

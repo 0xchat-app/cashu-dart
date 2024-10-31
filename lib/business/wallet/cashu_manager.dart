@@ -34,7 +34,7 @@ class CashuManager {
 
   Completer setupFinish = Completer();
 
-  static const int dbVersion = 4;
+  static const int dbVersion = 5;
   String dbNameWithIdentify(String identify) => 'cashu-$identify.db';
 
   String Function()? defaultSignPubkey;

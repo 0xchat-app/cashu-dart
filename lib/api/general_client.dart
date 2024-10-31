@@ -44,30 +44,16 @@ class CashuAPIGeneralClient {
     await CashuManager.shared.setupFinish.future;
 
     // get proofs
-    if (proofs == null) {
-      final response = await ProofHelper.getProofsToUse(
-        mint: mint,
-        amount: BigInt.from(amount),
-      );
-      if (!response.isSuccess) return response.cast();
+    final response = await ProofHelper.getProofsForECash(
+      mint: mint,
+      proofRequest: ProofRequest.proofs(proofs, amount),
+    );
+    if (!response.isSuccess) return response.cast();
 
-      proofs = response.data;
-    }
-
-    if (proofs.totalAmount != amount) {
-      final response = await ProofHelper.getProofsToUse(
-        mint: mint,
-        amount: BigInt.from(amount),
-        proofs: proofs,
-      );
-      if (!response.isSuccess) return response.cast();
-
-      proofs = response.data;
-    }
-
+    final sendProofs = response.data;
     final encodedToken = Nut0.encodedToken(
       Token(
-        entries: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
+        entries: [TokenEntry(mint: mint.mintURL, proofs: sendProofs)],
         memo: memo,
         unit: unit,
       ),
@@ -80,7 +66,7 @@ class CashuAPIGeneralClient {
       mints: [mint.mintURL],
     );
 
-    await ProofHelper.deleteProofs(proofs: proofs);
+    await ProofHelper.deleteProofs(proofs: sendProofs);
     await CashuManager.shared.updateMintBalance(mint);
 
     debugPrint('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
@@ -90,55 +76,25 @@ class CashuAPIGeneralClient {
   static Future<CashuResponse<List<String>>> sendEcashList({
     required IMint mint,
     required List<int> amountList,
-    List<String> publicKeys = const [],
-    List<String>? refundPubKeys,
-    int? locktime,
-    int? signNumRequired,
+    CashuTokenP2PKInfo? p2pkOption,
     String memo = '',
     String unit = 'sat',
   }) async {
 
     await CashuManager.shared.setupFinish.future;
 
-    final deletedProofs = <Proof>[];
+    final response = await ProofHelper.getProofsWithAmountList(
+      mint: mint,
+      amounts: amountList,
+      p2pkOption: p2pkOption,
+    );
+    if (!response.isSuccess) return response.cast();
+
+    final proofPackage = response.data;
     final tokenList = <String>[];
-    final deletedHistoryIds = <String>[];
 
-    for (var i = 0; i < amountList.length; i++) {
-      final amount = amountList[i];
-
-      // get proofs
-      final response = await ProofHelper.getProofsToUse(
-        mint: mint,
-        amount: BigInt.from(amount),
-        checkState: i == 0,
-      );
-      if (!response.isSuccess) {
-        // add the deleted proof
-        await ProofStore.addProofs(deletedProofs);
-        await HistoryStore.deleteHistory(deletedHistoryIds);
-        return response.cast();
-      }
-
-      var proofs = response.data;
-      if (publicKeys.isNotEmpty) {
-        final swapResponse = await ProofHelper.swapProofsForP2PK(
-          mint: mint,
-          proofs: proofs,
-          publicKeys: [...publicKeys],
-          refundPubKeys: refundPubKeys,
-          locktime: locktime,
-          signNumRequired: signNumRequired,
-        );
-        if (!swapResponse.isSuccess) {
-          // add the deleted proof
-          await ProofStore.addProofs(deletedProofs);
-          await HistoryStore.deleteHistory(deletedHistoryIds);
-          return response.cast();
-        }
-        proofs = swapResponse.data;
-      }
-
+    for (var proofs in proofPackage) {
+      final amount = proofs.totalAmount;
       final encodedToken = Nut0.encodedToken(
         Token(
           entries: [TokenEntry(mint: mint.mintURL, proofs: proofs)],
@@ -148,14 +104,12 @@ class CashuAPIGeneralClient {
       );
 
       tokenList.add(encodedToken);
-      deletedProofs.addAll(proofs);
-      final history = await HistoryStore.addToHistory(
+      await HistoryStore.addToHistory(
         amount: -amount,
         type: IHistoryType.eCash,
         value: encodedToken,
         mints: [mint.mintURL],
       );
-      deletedHistoryIds.add(history.id);
       await ProofHelper.deleteProofs(proofs: proofs);
     }
 
@@ -169,7 +123,7 @@ class CashuAPIGeneralClient {
     required int amount,
     required List<String> publicKeys,
     List<String>? refundPubKeys,
-    int? locktime,
+    DateTime? locktime,
     int? signNumRequired,
     P2PKSecretSigFlag? sigFlag,
     String memo = '',
@@ -184,39 +138,20 @@ class CashuAPIGeneralClient {
     }
 
     // get proofs
-    if (proofs == null) {
-      final response = await ProofHelper.getProofsToUse(
-        mint: mint,
-        amount: BigInt.from(amount),
-      );
-      if (!response.isSuccess) return response.cast();
-
-      proofs = response.data;
-    }
-
-    if (proofs.totalAmount != amount) {
-      final response = await ProofHelper.getProofsToUse(
-        mint: mint,
-        amount: BigInt.from(amount),
-        proofs: proofs,
-      );
-      if (!response.isSuccess) return response.cast();
-
-      proofs = response.data;
-    }
-
-    final swapResponse = await ProofHelper.swapProofsForP2PK(
+    final response = await ProofHelper.getProofsForECash(
       mint: mint,
-      proofs: proofs,
-      publicKeys: publicKeys,
-      refundPubKeys: refundPubKeys,
-      locktime: locktime,
-      signNumRequired: signNumRequired,
-      sigFlag: sigFlag,
+      proofRequest: ProofRequest.proofs(proofs, amount),
+      p2pkOption: CashuTokenP2PKInfo(
+        receivePubKeys: publicKeys,
+        refundPubKeys: refundPubKeys,
+        lockTime: locktime,
+        signNumRequired: signNumRequired,
+        sigFlag: sigFlag,
+      ),
     );
-    if (!swapResponse.isSuccess) return swapResponse.cast();
+    if (!response.isSuccess) return response.cast();
 
-    final p2pkProofs = swapResponse.data;
+    final p2pkProofs = response.data;
     final encodedToken = Nut0.encodedToken(
       Token(
         entries: [TokenEntry(mint: mint.mintURL, proofs: p2pkProofs)],
@@ -273,7 +208,6 @@ class CashuAPIGeneralClient {
         final response = await ProofHelper.swapProofs(
           mint: mint,
           proofs: proofs,
-          syncDelete: false,
         );
         if (!response.isSuccess) return response.cast();
 
@@ -331,10 +265,7 @@ class CashuAPIGeneralClient {
   static Future<CashuResponse<String>> getBackUpToken(List<IMint> mints) async {
     List<TokenEntry> entryList = [];
     for (final mint in mints) {
-      final response = await ProofHelper.getProofsToUse(mint: mint);
-      if (!response.isSuccess) return response.cast();
-
-      final proofs = response.data;
+      final proofs = await ProofHelper.getProofs(mint.mintURL);
       if (proofs.isNotEmpty) {
         entryList.add(
           TokenEntry(

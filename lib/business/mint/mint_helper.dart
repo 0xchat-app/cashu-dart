@@ -27,14 +27,6 @@ class MintHelper {
     return url;
   }
 
-  static Future<List<KeysetInfo>> fetchKeysetFromRemote(IMint mint, [String? keysetId]) async {
-    final response = await mint.requestKeysAction(mintURL: mint.mintURL, keysetId: keysetId);
-    final keys = response.isSuccess ? response.data : <MintKeysPayload>[];
-    final keysets = keys.map((e) => e.asKeysetInfo(mint.mintURL)).toList();
-    KeysetStore.addOrReplaceKeysets(keysets);
-    return keysets;
-  }
-
   static Future<bool> updateMintInfoFromRemote(IMint mint) async {
     final response = await mint.requestMintInfoAction(mintURL: mint.mintURL);
     if (!response.isSuccess) return false;
@@ -49,7 +41,7 @@ class MintHelper {
   }
 
   static Future updateMintKeysetFromRemote(IMint mint) async {
-    final keysets = await fetchKeysetFromRemote(mint);
+    final keysets = await KeysetHelper.fetchKeysetFromRemote(mint);
     if (keysets.isEmpty) return ;
 
     mint.cleanKeysetId();

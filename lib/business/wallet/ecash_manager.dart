@@ -16,12 +16,20 @@ import '../transaction/hitstory_store.dart';
 
 export '../../model/unblinding_data.dart';
 
+class UnblindingOption {
+  const UnblindingOption({
+    this.isSaveToLocal = true,
+  });
+  final bool isSaveToLocal;
+}
+
 typedef UnblindingDataPayload = (
   IMint mint,
   String unit,
   List<BlindedSignature> signatures,
   List<String> secrets,
   List<BigInt> rs,
+  List<UnblindingOption> options,
   ProofBlindingAction action,
   String actionValue,
 );
@@ -46,13 +54,17 @@ class ProofBlindingManager {
     UnblindingDataPayload payload,
   ) async {
 
-    final (mint, unit, signatures, secrets, rs, action, actionValue) = payload;
+    final (mint, unit, signatures, secrets, rs, options, action, actionValue) = payload;
 
     if (signatures.isEmpty) return CashuResponse.fromSuccessData([]);
 
     List<UnblindingData> unblindingDataList = [];
+    List<UnblindingData> savedUnblindingDataList = [];
     for (var i = 0; i < signatures.length; i++) {
       final signature = signatures[i];
+      final option = options.length > i
+          ? options[i]
+          : const UnblindingOption();
       BigInt? r;
       if (rs.length > i) {
         r = rs[i];
@@ -72,9 +84,13 @@ class ProofBlindingManager {
         secret: secret,
       );
       unblindingDataList.add(unblindingData);
+
+      if (option.isSaveToLocal) {
+        savedUnblindingDataList.add(unblindingData);
+      }
     }
 
-    await UnblindingDataStore.add(unblindingDataList);
+    await UnblindingDataStore.add(savedUnblindingDataList);
 
     final proofs = await DHKE.constructProofs(
       data: unblindingDataList,
@@ -88,7 +104,7 @@ class ProofBlindingManager {
     final isAddProofSuccess = await ProofStore.addProofs(proofs);
     if (!isAddProofSuccess) return CashuResponse.fromErrorMsg('Unblinding: add proof error.');
 
-    await UnblindingDataStore.delete(unblindingDataList);
+    await UnblindingDataStore.delete(savedUnblindingDataList);
 
     return CashuResponse.fromSuccessData(proofs);
   }
