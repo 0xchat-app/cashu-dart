@@ -49,7 +49,7 @@ class MintHelper {
   }
 
   static Future updateMintKeysetFromLocal(IMint mint) async {
-    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL);
+    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, active: true);
     if (keysets.isEmpty) return ;
 
     _updateMintKeyset(mint, keysets);

@@ -75,7 +75,7 @@ class TransactionHelper {
       blindedMessages: blindedMessages,
     );
     if (!response.isSuccess) {
-      if (response.errorMsg.contains('keyset id unknown')) {
+      if (response.errorMsg.contains('keyset id unknown') || response.errorMsg.contains('keyset id inactive')) {
         MintHelper.updateMintKeysetFromRemote(mint);
       } else if (response.errorMsg.contains('quote already issued')) {
         return CashuResponse.fromSuccessData([]);

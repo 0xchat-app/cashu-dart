@@ -16,7 +16,7 @@ class KeysetHelper {
   static Future<KeysetInfo?> tryGetMintKeysetInfo(IMint mint, String unit, [String? keysetId]) async {
     keysetId ??= mint.keysetId(unit);
     // from local
-    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, id: keysetId, unit: unit);
+    final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, id: keysetId, unit: unit, active: true);
     var keysetInfo = findBetterKeyset(keysets);
 
     if (keysetInfo == null || keysetInfo.keyset.isEmpty) {
@@ -62,7 +62,7 @@ class KeysetHelper {
 
     await KeysetStore.addOrReplaceKeysets(keysets);
 
-    return keysets;
+    return keysets.where((keysetInfo) => keysetInfo.active).toList();
   }
 
   static KeysetInfo? findBetterKeyset(List<KeysetInfo> keysetList) {
