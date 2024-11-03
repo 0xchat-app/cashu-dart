@@ -131,6 +131,15 @@ class ProofHelper {
     }
   }
 
+  static CashuResponse<List<Proof>> _parseResponseByECashCheck(
+    ProofRequest request,
+    CashuResponse<List<Proof>> response,
+  ) {
+    if (!response.isSuccess) return response;
+    if (response.data.totalAmount != request.amount) return CashuResponse.fromErrorMsg('Invalid amount proofs.');
+    return response;
+  }
+
   static Future<CashuResponse<List<Proof>>> getProofsForECash({
     required IMint mint,
     required ProofRequest proofRequest,
@@ -140,7 +149,12 @@ class ProofHelper {
     // Keyset info
     final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, unit);
     final keyset = keysetInfo?.keyset ?? {};
-    if (keysetInfo == null || keyset.isEmpty) return CashuResponse.fromErrorMsg('Keyset not found.');
+    if (keysetInfo == null || keyset.isEmpty) {
+      return _parseResponseByECashCheck(
+        proofRequest,
+        CashuResponse.fromErrorMsg('Keyset not found.'),
+      );
+    }
 
     final proofResponse = await _getProofsWithRequest(
       mint: mint,
@@ -148,12 +162,23 @@ class ProofHelper {
       proofRequest: proofRequest,
       canIgnoreInputFee: p2pkOption == null,
     );
-    if (!proofResponse.isSuccess) return CashuResponse.fromErrorMsg('Insufficient proofs');
-
+    if (!proofResponse.isSuccess) {
+      return _parseResponseByECashCheck(
+        proofRequest,
+        CashuResponse.fromErrorMsg('Insufficient proofs'),
+      );
+    }
     final proofs = proofResponse.proofs;
 
-    if (proofResponse.inputFee == 0 && p2pkOption == null) return CashuResponse.fromSuccessData(proofs);
-
+    // Can use directly
+    if (p2pkOption == null) {
+      if (proofResponse.targetAmount == proofResponse.proofs.totalAmount) {
+        return _parseResponseByECashCheck(
+          proofRequest,
+          CashuResponse.fromSuccessData(proofs),
+        );
+      }
+    }
     List<BlindedMessage> blindedMessages = [];
     List<String> secrets = [];
     List<BigInt> rs = [];
@@ -188,7 +213,12 @@ class ProofHelper {
       }
     }
 
-    if (blindedMessages.isEmpty) return CashuResponse.fromErrorMsg('blindedMessages is empty.');
+    if (blindedMessages.isEmpty) {
+      return _parseResponseByECashCheck(
+        proofRequest,
+        CashuResponse.fromErrorMsg('blindedMessages is empty.'),
+      );
+    }
 
     final response = await mint.swapAction(
       mintURL: mint.mintURL,
@@ -216,8 +246,11 @@ class ProofHelper {
 
     await deleteProofs(proofs: proofs, mint: mint);
 
-    return CashuResponse.fromSuccessData(
-      unblindingResponse.data.sublist(0, targetProofsCount),
+    return _parseResponseByECashCheck(
+      proofRequest,
+      CashuResponse.fromSuccessData(
+        unblindingResponse.data.sublist(0, targetProofsCount),
+      ),
     );
   }
 

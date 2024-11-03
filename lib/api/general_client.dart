@@ -60,7 +60,7 @@ class CashuAPIGeneralClient {
     );
 
     await HistoryStore.addToHistory(
-      amount: -amount,
+      amount: -(sendProofs.totalAmount),
       type: IHistoryType.eCash,
       value: encodedToken,
       mints: [mint.mintURL],
@@ -161,7 +161,7 @@ class CashuAPIGeneralClient {
     );
 
     await HistoryStore.addToHistory(
-      amount: -amount,
+      amount: -(p2pkProofs.totalAmount),
       type: IHistoryType.eCash,
       value: encodedToken,
       mints: [mint.mintURL],
