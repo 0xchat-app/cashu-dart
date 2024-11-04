@@ -46,8 +46,13 @@ class KeysetHelper {
       cache[info.id] = info;
       return info;
     }).toList();
+    await KeysetStore.addOrReplaceKeysets(keysets);
 
-    // Fetch keyset state
+    // Update local data
+    final localKeysets = (await KeysetStore.getKeyset(mintURL: mint.mintURL)).map((info) {
+      cache[info.id] = info;
+      return info;
+    }).toList();
     if (mint.maxNutsVersion >= 1) {
       final stateResponse = await Nut2.requestKeysetsState(mintURL: mint.mintURL);
       List<KeysetInfo> list = stateResponse.isSuccess ? stateResponse.data : <KeysetInfo>[];
@@ -60,7 +65,7 @@ class KeysetHelper {
       }
     }
 
-    await KeysetStore.addOrReplaceKeysets(keysets);
+    await KeysetStore.addOrReplaceKeysets(localKeysets);
 
     return keysets.where((keysetInfo) => keysetInfo.active).toList();
   }

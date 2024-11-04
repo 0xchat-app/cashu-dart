@@ -43,6 +43,7 @@ class TransactionHelper {
     required int amount,
     String invoice = '',
     String unit = 'sat',
+    bool tryUpdateKeysetsIfNeeded = true,
   }) async {
     // // check quote state
     // final quoteInfo = await Nut4.checkMintQuoteState(
@@ -75,8 +76,16 @@ class TransactionHelper {
       blindedMessages: blindedMessages,
     );
     if (!response.isSuccess) {
-      if (response.errorMsg.contains('keyset id unknown') || response.errorMsg.contains('keyset id inactive')) {
-        MintHelper.updateMintKeysetFromRemote(mint);
+      if (tryUpdateKeysetsIfNeeded && response.errorMsg.contains('keyset id unknown') || response.errorMsg.contains('keyset id inactive')) {
+        await MintHelper.updateMintKeysetFromRemote(mint);
+        return requestTokensFromMint(
+          mint: mint,
+          quoteID: quoteID,
+          amount: amount,
+          invoice: invoice,
+          unit: unit,
+          tryUpdateKeysetsIfNeeded: false,
+        );
       } else if (response.errorMsg.contains('quote already issued')) {
         return CashuResponse.fromSuccessData([]);
       }
