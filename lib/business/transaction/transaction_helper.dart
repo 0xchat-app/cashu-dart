@@ -177,7 +177,7 @@ class TransactionHelper {
       type: IHistoryType.lnInvoice,
       value: historyValue,
       mints: [mint.mintURL],
-      fee: fee,
+      fee: consumedAmount - amount,
     );
 
     if (paymentKey.isNotEmpty) {
