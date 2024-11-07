@@ -18,7 +18,8 @@ class ConverterA extends ConverterFactory {
     List<String> uriPrefixes = _uriPrefixes;
     for (var prefix in uriPrefixes) {
       if (token.startsWith(prefix)) {
-        return token.substring(prefix.length);
+        final result = token.substring(prefix.length);
+        if (result.isNotEmpty) return result;
       }
     }
     return null;

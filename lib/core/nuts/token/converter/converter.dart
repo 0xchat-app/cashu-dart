@@ -32,6 +32,8 @@ class Converter {
   }
 
   static Token? decodedToken(String token) {
+    if (token.isEmpty) return null;
+    
     final converters = [..._converters];
 
     ConverterFactory? converter;

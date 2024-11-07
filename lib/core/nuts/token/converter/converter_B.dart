@@ -16,7 +16,8 @@ class ConverterB extends ConverterFactory {
   String? tryParseTokenJsonStrWithRaw(String token) {
     final versionPrefix = this.versionPrefix;
     if (token.startsWith(versionPrefix)) {
-      return token.substring(versionPrefix.length);
+      final result = token.substring(versionPrefix.length);
+      if (result.isNotEmpty) return result;
     }
     return null;
   }
