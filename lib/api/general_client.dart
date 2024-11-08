@@ -183,6 +183,7 @@ class CashuAPIGeneralClient {
 
     final token = Nut0.decodedToken(ecashString);
     if (token == null) return CashuResponse.fromErrorMsg('Invalid token');
+    if (token.entries.isEmpty) return CashuResponse.fromErrorMsg('Token entries is empty.');
     if (token.unit.isNotEmpty && token.unit != 'sat') return CashuResponse.fromErrorMsg('Unsupported unit');
 
     final memo = token.memo;
@@ -192,35 +193,39 @@ class CashuAPIGeneralClient {
     final tokenEntry = token.entries;
 
     return Future<CashuResponse<(String memo, int amount)>>(() async {
-      for (var entry in tokenEntry) {
-        final mint = await CashuManager.shared.getMint(entry.mint);
-        if (mint == null) continue ;
+      try {
+        for (var entry in tokenEntry) {
+          final mint = await CashuManager.shared.getMint(entry.mint);
+          if (mint == null) continue;
 
-        final proofs = [...entry.proofs];
+          final proofs = [...entry.proofs];
 
-        for (var proof in proofs) {
-          await ProofHelper.addSignatureToProof(
-            proof: proof,
-            pubkeyList: redeemPubkey,
+          for (var proof in proofs) {
+            await ProofHelper.addSignatureToProof(
+              proof: proof,
+              pubkeyList: redeemPubkey,
+            );
+          }
+
+          final response = await ProofHelper.swapProofs(
+            mint: mint,
+            proofs: proofs,
           );
+          if (!response.isSuccess) return response.cast();
+
+          final newProofs = response.data;
+          receiveAmount += newProofs.totalAmount;
+          mints.add(mint.mintURL);
+          await CashuManager.shared.updateMintBalance(mint);
         }
 
-        final response = await ProofHelper.swapProofs(
-          mint: mint,
-          proofs: proofs,
-        );
-        if (!response.isSuccess) return response.cast();
-
-        final newProofs = response.data;
-        receiveAmount += newProofs.totalAmount;
-        mints.add(mint.mintURL);
-        await CashuManager.shared.updateMintBalance(mint);
-      }
-
-      if (receiveAmount > 0) {
-        return CashuResponse.fromSuccessData((memo, receiveAmount));
-      } else {
-        return CashuResponse.fromErrorMsg('No funds available proofs for redemption.');
+        if (receiveAmount > 0) {
+          return CashuResponse.fromSuccessData((memo, receiveAmount));
+        } else {
+          return CashuResponse.fromErrorMsg('No funds available proofs for redemption.');
+        }
+      } catch (e, stack) {
+        return CashuResponse.fromErrorMsg('Error: $e. Details: $stack');
       }
     }).whenComplete(() async {
       if (receiveAmount > 0) {

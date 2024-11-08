@@ -67,7 +67,7 @@ class HTTPClient {
       );
     } catch(e, stackTrace) {
       debugPrint('[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
-      return CashuResponse.generalError();
+      return CashuResponse.fromErrorMsg(e.toString());
     }
   }
 
@@ -86,13 +86,18 @@ class HTTPClient {
       params: params,
     );
 
-    final response = await request(requestData, timeOut: timeOut);
+    try {
+      final response = await request(requestData, timeOut: timeOut);
 
-    return handleWithResponse(
-      requestData: requestData,
-      response: response,
-      modelBuilder: modelBuilder,
-    );
+      return handleWithResponse(
+        requestData: requestData,
+        response: response,
+        modelBuilder: modelBuilder,
+      );
+    } catch(e, stackTrace) {
+      debugPrint('[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
+      return CashuResponse.fromErrorMsg(e.toString());
+    }
   }
 
   Future<RequestData> createRequestData({
