@@ -38,6 +38,8 @@ class CashuDB {
         await deleteDatabase(dbPath);
       }
     }
+
+    ({int newVersion, int oldVersion})? downgrade = null;
     _db = await openDatabase(dbPath, version: version, password: password,
         onCreate: (db, version) async {
       var batch = db.batch();
@@ -95,7 +97,17 @@ class CashuDB {
         }
         await batch.commit();
       }
+    }, onDowngrade: (db, oldVersion, newVersion) async {
+      downgrade = (newVersion: newVersion, oldVersion: oldVersion);
     });
+
+    if (downgrade != null) {
+      final currentVersion = await db.getVersion();
+      if (currentVersion == downgrade!.newVersion) {
+        await db.setVersion(downgrade!.oldVersion);
+      }
+    }
+
     List<Map<String, dynamic>> tables =
         await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
     allTablenames = tables.map((item) => item["name"].toString()).toList();
