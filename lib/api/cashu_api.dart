@@ -343,6 +343,12 @@ class CashuAPI {
 
   Future<CashuResponse<String>> getBackUpToken(List<IMint> mints) =>
       CashuAPIGeneralClient.getBackUpToken(mints);
+  
+  Future<CashuResponse> importCashuToken(String token) =>
+      CashuAPIGeneralClient.redeemEcash(
+        ecashString: token,
+        isUseSwap: false,
+      );
 
   /**************************** Tools ****************************/
   /// Converts the amount in a Lightning Network payment request to satoshis.

@@ -177,6 +177,7 @@ class CashuAPIGeneralClient {
   static Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
     List<String> redeemPubkey = const [],
+    bool isUseSwap = true,
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -195,29 +196,35 @@ class CashuAPIGeneralClient {
     return Future<CashuResponse<(String memo, int amount)>>(() async {
       try {
         for (var entry in tokenEntry) {
-          final mint = await CashuManager.shared.getMint(entry.mint);
-          if (mint == null) continue;
+          var proofs = [...entry.proofs];
 
-          final proofs = [...entry.proofs];
+          if (isUseSwap) {
+            for (var proof in proofs) {
+              await ProofHelper.addSignatureToProof(
+                proof: proof,
+                pubkeyList: redeemPubkey,
+              );
+            }
 
-          for (var proof in proofs) {
-            await ProofHelper.addSignatureToProof(
-              proof: proof,
-              pubkeyList: redeemPubkey,
+            final mint = await CashuManager.shared.getMint(entry.mint);
+            if (mint == null) continue;
+            mints.add(mint.mintURL);
+
+            final response = await ProofHelper.swapProofs(
+              mint: mint,
+              proofs: proofs,
             );
+            if (!response.isSuccess) return response.cast();
+
+            proofs = response.data;
+          } else {
+            ProofStore.addProofs(proofs);
           }
 
-          final response = await ProofHelper.swapProofs(
-            mint: mint,
-            proofs: proofs,
-          );
-          if (!response.isSuccess) return response.cast();
-
-          final newProofs = response.data;
-          receiveAmount += newProofs.totalAmount;
-          mints.add(mint.mintURL);
-          await CashuManager.shared.updateMintBalance(mint);
+          receiveAmount += proofs.totalAmount;
         }
+
+        await CashuManager.shared.updateMintBalance();
 
         if (receiveAmount > 0) {
           return CashuResponse.fromSuccessData((memo, receiveAmount));
