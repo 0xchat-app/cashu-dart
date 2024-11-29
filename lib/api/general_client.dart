@@ -198,6 +198,9 @@ class CashuAPIGeneralClient {
         for (var entry in tokenEntry) {
           var proofs = [...entry.proofs];
 
+          final mint = await CashuManager.shared.getMint(entry.mint);
+          if (mint == null) continue;
+
           if (isUseSwap) {
             for (var proof in proofs) {
               await ProofHelper.addSignatureToProof(
@@ -206,8 +209,6 @@ class CashuAPIGeneralClient {
               );
             }
 
-            final mint = await CashuManager.shared.getMint(entry.mint);
-            if (mint == null) continue;
             mints.add(mint.mintURL);
 
             final response = await ProofHelper.swapProofs(

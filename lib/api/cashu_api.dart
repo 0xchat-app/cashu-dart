@@ -341,9 +341,30 @@ class CashuAPI {
     CashuManager.shared.removeListener(listener);
   }
 
+  /// Generates a backup token for the specified mints.
+  ///
+  /// This method retrieves the local proofs for the given mints and generates a backup token.
+  /// The process does not involve any checks or validations on the state of the proofs;
+  /// it simply gathers the local proofs as they are and constructs a token.
+  ///
+  /// Note:
+  /// - This method does not validate the status or usability of the proofs.
+  ///   It purely retrieves the existing local proofs and generates a token for backup purposes.
+  ///
   Future<CashuResponse<String>> getBackUpToken(List<IMint> mints) =>
       CashuAPIGeneralClient.getBackUpToken(mints);
-  
+
+  /// Imports a Cashu token.
+  ///
+  /// This method is used to import a Cashu token by redeeming e-cash from the token string.
+  /// The token contains information about the mint, which needs to ensure a successful network
+  /// connection to proceed. If the mint is unreachable or there are connectivity issues,
+  /// the associated proofs cannot be added.
+  ///
+  /// Note:
+  /// - The `proofs` included in the token are not processed or utilized in any way by this method.
+  ///   They are directly stored locally as-is for future use.
+  ///
   Future<CashuResponse> importCashuToken(String token) =>
       CashuAPIGeneralClient.redeemEcash(
         ecashString: token,
