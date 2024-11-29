@@ -1,11 +1,9 @@
 
-import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cashu_dart/utils/tools.dart';
 import 'package:crypto/crypto.dart';
-import 'package:pointycastle/export.dart';
 
 import 'nuts/DHKE.dart';
 import 'nuts/define.dart';

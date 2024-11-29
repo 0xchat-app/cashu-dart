@@ -1,8 +1,9 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import '../log_util.dart';
 import 'network_interceptor.dart';
 import 'request_data.dart';
 import 'response.dart';
@@ -59,6 +60,8 @@ class HTTPClient {
     );
 
     try {
+      final logPrefix = '[http - ${requestData.method.text}] uri: ${requestData.uri}';
+      LogUtils.e(() => '$logPrefix, request: ${requestData.body}');
       final response = await request(requestData, timeOut: timeOut);
       return handleWithResponse(
         requestData: requestData,
@@ -66,7 +69,7 @@ class HTTPClient {
         modelBuilder: modelBuilder,
       );
     } catch(e, stackTrace) {
-      debugPrint('[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
+      LogUtils.e(() => '[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
       return CashuResponse.fromErrorMsg(e.toString());
     }
   }
@@ -87,15 +90,16 @@ class HTTPClient {
     );
 
     try {
+      final logPrefix = '[http - ${requestData.method.text}] uri: ${requestData.uri}';
+      LogUtils.e(() => '$logPrefix, request: ${requestData.body}');
       final response = await request(requestData, timeOut: timeOut);
-
       return handleWithResponse(
         requestData: requestData,
         response: response,
         modelBuilder: modelBuilder,
       );
     } catch(e, stackTrace) {
-      debugPrint('[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
+      LogUtils.e(() => '[http - error] uri: ${requestData.uri}, e: $e, $stackTrace');
       return CashuResponse.fromErrorMsg(e.toString());
     }
   }
@@ -157,10 +161,9 @@ class HTTPClient {
     T? Function(dynamic json)? modelBuilder,
   }) async {
     final logPrefix = '[http - ${requestData.method.text}] uri: ${requestData.uri}';
-    debugPrint('$logPrefix, request: ${requestData.body}');
-    debugPrint('$logPrefix, response: ${response.body}, status: ${response.statusCode}');
+    LogUtils.e(() => '$logPrefix, response: ${response.body}, status: ${response.statusCode}');
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == HttpStatus.ok) {
       final bodyJson = jsonDecode(response.body);
       final data = modelBuilder?.call(bodyJson);
       if (data != null) {
@@ -169,7 +172,7 @@ class HTTPClient {
           data: data,
         );
       }
-    } else if (response.statusCode == 400) {
+    } else if (response.statusCode == HttpStatus.badRequest) {
       final bodyJson = jsonDecode(response.body);
       if (bodyJson is Map) {
         final code = bodyJson['code'];

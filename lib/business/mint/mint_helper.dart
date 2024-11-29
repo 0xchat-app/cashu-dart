@@ -1,7 +1,6 @@
 
 import 'package:cashu_dart/business/proof/keyset_helper.dart';
 import 'package:cashu_dart/utils/list_extension.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
@@ -9,6 +8,7 @@ import '../../core/nuts/define.dart';
 import '../../core/nuts/v1/nut.dart' as v1;
 import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
+import '../../utils/log_util.dart';
 import 'mint_info_store.dart';
 import 'mint_store.dart';
 
@@ -17,7 +17,7 @@ class MintHelper {
   static String getMintURL(String url) {
     url = url.trim();
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      debugPrint('[E][Cashu - getMintURL] mintURL must starts with https');
+      LogUtils.e(() => '[E][Cashu - getMintURL] mintURL must starts with https');
       url = 'https://$url';
     }
 

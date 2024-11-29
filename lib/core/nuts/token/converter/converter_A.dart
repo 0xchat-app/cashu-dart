@@ -1,9 +1,9 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:cashu_dart/utils/tools.dart';
 
+import '../../../../utils/log_util.dart';
 import '../token_model.dart';
 import 'converter_factory.dart';
 
@@ -38,7 +38,7 @@ class ConverterA extends ConverterFactory {
     try {
       obj = token.decodeBase64ToMapByJson<Map>();
     } catch (e) {
-      debugPrint('[Cashu - handleTokens] $e');
+      LogUtils.e(() => '[Cashu - handleTokens] $e');
     }
 
     if (obj == null) return null;

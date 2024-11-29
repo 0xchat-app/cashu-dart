@@ -1,6 +1,5 @@
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 
 import '../../core/nuts/token/proof.dart';
 import '../../model/history_entry.dart';
@@ -10,8 +9,8 @@ import '../../model/keyset_info.dart';
 import '../../model/lightning_invoice.dart';
 import '../../model/mint_info.dart';
 import '../../model/mint_model.dart';
-import '../../model/unblinding_data.dart';
 import '../../utils/database/db.dart';
+import '../../utils/log_util.dart';
 import '../mint/mint_helper.dart';
 import '../mint/mint_info_store.dart';
 import '../mint/mint_store.dart';
@@ -55,10 +54,10 @@ class CashuManager {
       await ProofBlindingManager.shared.initialize();
       invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
       setupFinish.complete();
-      debugPrint('[I][Cashu - setup] Finished');
+      LogUtils.e(() => '[I][Cashu - setup] Finished');
     } catch (e, stack) {
-      debugPrint('[E][Cashu - setup] $e');
-      debugPrint('[E][Cashu - setup] stack: $stack');
+      LogUtils.e(() => '[E][Cashu - setup] $e');
+      LogUtils.e(() => '[E][Cashu - setup] stack: $stack');
     }
   }
 
@@ -109,7 +108,7 @@ class CashuManager {
       }
       await _initializeMints(dbMints);
     } catch (e) {
-      debugPrint('[E][Cashu - setupMint] $e');
+      LogUtils.e(() => '[E][Cashu - setupMint] $e');
     }
   }
 

@@ -1,6 +1,5 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
-import 'package:flutter/foundation.dart';
 
 import '../business/proof/proof_helper.dart';
 import '../business/proof/proof_store.dart';
@@ -16,6 +15,7 @@ import '../model/cashu_token_info.dart';
 import '../model/history_entry.dart';
 import '../model/lightning_invoice.dart';
 import '../model/mint_model.dart';
+import '../utils/log_util.dart';
 import '../utils/network/response.dart';
 import 'nut_P2PK_helper.dart';
 
@@ -69,7 +69,7 @@ class CashuAPIGeneralClient {
     await ProofHelper.deleteProofs(proofs: sendProofs);
     await CashuManager.shared.updateMintBalance(mint);
 
-    debugPrint('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
+    LogUtils.e(() => '[I][Cashu - sendEcash] Create Ecash: $encodedToken');
     return CashuResponse.fromSuccessData(encodedToken);
   }
 
@@ -170,7 +170,7 @@ class CashuAPIGeneralClient {
     await ProofHelper.deleteProofs(proofs: p2pkProofs);
     await CashuManager.shared.updateMintBalance(mint);
 
-    debugPrint('[I][Cashu - sendEcash] Create Ecash: $encodedToken');
+    LogUtils.e(() => '[I][Cashu - sendEcash] Create Ecash: $encodedToken');
     return CashuResponse.fromSuccessData(encodedToken);
   }
 
@@ -260,7 +260,7 @@ class CashuAPIGeneralClient {
 
     final req = Bolt11PaymentRequest(pr);
     for (var tag in req.tags) {
-      debugPrint('[I][Cashu - invoice decode]${tag.type}: ${tag.data}');
+      LogUtils.e(() => '[I][Cashu - invoice decode]${tag.type}: ${tag.data}');
     }
     final hash = req.tags.where((e) => e.type == 'payment_hash').firstOrNull?.data;
     if (hash == null) return false;
@@ -312,7 +312,7 @@ class CashuAPIGeneralClient {
     try {
       final req = Bolt11PaymentRequest(pr);
       for (var tag in req.tags) {
-        debugPrint('[Cashu - invoice decode]${tag.type}: ${tag.data}');
+        LogUtils.e(() => '[Cashu - invoice decode]${tag.type}: ${tag.data}');
       }
       return req;
     } catch (_) {

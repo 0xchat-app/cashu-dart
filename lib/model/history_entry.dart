@@ -2,7 +2,6 @@
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:cashu_dart/cashu_dart.dart';
 import 'package:uuid/uuid.dart';
-import '../../core/nuts/nut_00.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';

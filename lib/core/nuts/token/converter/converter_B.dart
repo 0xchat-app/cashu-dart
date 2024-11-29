@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:cashu_dart/utils/tools.dart';
 import 'package:cbor/cbor.dart';
-import 'package:flutter/foundation.dart';
 
+import '../../../../utils/log_util.dart';
 import '../token_model.dart';
 import 'converter_factory.dart';
 
@@ -37,7 +37,7 @@ class ConverterB extends ConverterFactory {
     try {
       obj = token.decodeBase64ToMapByCBOR<Map>();
     } catch (e) {
-      debugPrint('[Cashu - handleTokens] $e');
+      LogUtils.e(() => '[Cashu - handleTokens] $e');
     }
 
     if (obj == null) return null;

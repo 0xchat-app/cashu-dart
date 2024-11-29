@@ -2,7 +2,6 @@
 import 'dart:convert';
 
 import 'package:cashu_dart/core/nuts/v1/nut_10.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../api/nut_P2PK_helper.dart';
 import '../../core/DHKE_helper.dart';
@@ -15,6 +14,7 @@ import '../../core/nuts/v1/nut_02.dart';
 import '../../model/cashu_token_info.dart';
 import '../../model/keyset_info.dart';
 import '../../model/mint_model.dart';
+import '../../utils/log_util.dart';
 import '../../utils/network/response.dart';
 import '../wallet/cashu_manager.dart';
 import '../wallet/ecash_manager.dart';
@@ -602,8 +602,8 @@ class ProofHelper {
         proof.witness = jsonEncode(witness);
       }
     } catch (e, stack) {
-      debugPrint('[E][Cashu - addSignatureToProof] $e');
-      debugPrint('[E][Cashu - addSignatureToProof] $stack');
+      LogUtils.e(() => '[E][Cashu - addSignatureToProof] $e');
+      LogUtils.e(() => '[E][Cashu - addSignatureToProof] $stack');
     }
   }
 

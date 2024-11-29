@@ -1,8 +1,8 @@
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:reflectable/reflectable.dart';
+import '../log_util.dart';
 import 'db_helper.dart';
 import 'db_object.dart';
 
@@ -34,12 +34,12 @@ class CashuDB {
     if (deleteDBIfNeedMirgration) {
       bool exists = await databaseExists(dbPath);
       if (exists) {
-        debugPrint("delete Table");
+        LogUtils.e(() => "delete Table");
         await deleteDatabase(dbPath);
       }
     }
 
-    ({int newVersion, int oldVersion})? downgrade = null;
+    ({int newVersion, int oldVersion})? downgrade;
     _db = await openDatabase(dbPath, version: version, password: password,
         onCreate: (db, version) async {
       var batch = db.batch();
@@ -50,7 +50,7 @@ class CashuDB {
           try {
             batch.execute(sql);
           } catch (_) {
-            debugPrint("create ${objectMirror.simpleName} failure");
+            LogUtils.e(() => "create ${objectMirror.simpleName} failure");
           }
         }
       }
@@ -89,7 +89,7 @@ class CashuDB {
                   }
                 }
               } catch (_) {
-                debugPrint(
+                LogUtils.e(() => 
                     "update ${objectMirror.simpleName} failure ==> ${updateSql.toString()}");
               }
             }

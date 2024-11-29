@@ -1,7 +1,7 @@
 import 'dart:core';
-import 'package:flutter/foundation.dart';
 import 'package:reflectable/mirrors.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
+import '../log_util.dart';
 import 'db.dart';
 import 'db_object.dart';
 
@@ -151,13 +151,12 @@ class DBHelper {
       return false;
     }
     String sql = DBHelper.generatorTableSql(type);
-    debugPrint("sql");
     if (sql.isNotEmpty) {
       try {
         await db.execute(sql);
         return true;
       } catch (_) {
-        debugPrint("create ${objectMirror.simpleName} failure");
+        LogUtils.e(() => "create ${objectMirror.simpleName} failure");
         return false;
       }
     }
