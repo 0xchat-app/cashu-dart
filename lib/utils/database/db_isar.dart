@@ -66,57 +66,7 @@ class CashuIsarDB {
     return query;
   }
 
-  /// Query multiple records
-  ///
-  /// **Implementation:**
-  /// 1. Execute the provided [filter] function to build the base query
-  /// 2. Optionally apply [limit] and [offset] for pagination
-  ///
-  /// **Note:**
-  /// This method is for simple queries. For more complex queries (like multiple filters, advanced sorting),
-  /// please use Isar's query builder directly for custom queries.
-  ///
-  /// Example usage:
-  /// ```dart
-  /// final result = await query<MyModel>((q) => q.nameEqualTo('Alice'), limit: 10, offset: 0);
-  /// ```
-  /// - [T]: Type of query result
-  /// - [filter]: Function using [QueryBuilder] to build the query
-  /// - [limit]: Optional limit on number of results
-  /// - [offset]: Optional pagination offset
-  Future<List<T>> query<T>(
-    QueryBuilder<T, T, QWhere> Function(QueryBuilder<T, T, QWhere>) filter, {
-    int? limit,
-    int? offset,
-  }) async {
-    final query = _buildBaseQuery(filter, limit: limit, offset: offset);
-    return query.findAll();
-  }
-
-  /// Query single record
-  ///
-  /// Similar to [query] method, but only returns the first matching record
-  ///
-  /// **Implementation:**
-  /// 1. Execute the provided [filter] function to build the base query
-  /// 2. Return the first matching record, or null if no match is found
-  ///
-  /// Example usage:
-  /// ```dart
-  /// final result = await queryFirst<MyModel>((q) => q.nameEqualTo('Alice'));
-  /// ```
-  Future<T?> queryFirst<T>(
-    QueryBuilder<T, T, QWhere> Function(QueryBuilder<T, T, QWhere>) filter,
-  ) async {
-    final query = _buildBaseQuery(filter);
-    return query.findFirst();
-  }
-
-  Future<void> delete<T>(Id id) async {
-    await isar.writeTxn(() async {
-      await isar.collection<T>().delete(id);
-    });
-  }
+  static QueryBuilder<T, T, QWhere> query<T>() => shared.isar.collection<T>().where();
 
   Future<void> deleteWhere<T>(
       QueryBuilder<T, T, QWhere> Function(QueryBuilder<T, T, QWhere>) filter,

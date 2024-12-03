@@ -9,12 +9,9 @@ class DBConfigHelper {
   static const String _migrationKey = 'dbMigrationCompleted';
 
   static Future<bool> isSqliteToIsarFinish() async {
-    final config = await CashuIsarDB.shared.queryFirst<DBConfigIsar>(
-      (query) {
-        query.filter().keyEqualTo(_migrationKey);
-        return query;
-      },
-    );
+    final config = await CashuIsarDB.query<DBConfigIsar>()
+        .keyEqualTo(_migrationKey)
+        .findFirst();
     return config != null && config.value.isNotEmpty;
   }
 
