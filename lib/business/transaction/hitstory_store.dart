@@ -2,7 +2,8 @@
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 
 import '../../model/history_entry.dart';
-import '../../model/invoice.dart';
+import '../../model/history_entry_isar.dart';
+import '../../model/invoice_isar.dart';
 import '../../utils/database/db.dart';
 
 class HistoryStore {

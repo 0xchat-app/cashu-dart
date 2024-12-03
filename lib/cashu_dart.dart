@@ -8,10 +8,13 @@ export 'core/nuts/nut_00.dart';
 export 'core/nuts/v1/nut_11.dart';
 
 export 'model/history_entry.dart';
+export 'model/history_entry_isar.dart';
 export 'model/invoice.dart';
+export 'model/invoice_isar.dart';
 export 'model/invoice_listener.dart';
 export 'model/mint_model.dart';
 export 'model/mint_info.dart';
+export 'model/mint_info_isar.dart';
 
 export 'utils/network/request_data.dart';
 export 'utils/network/response.dart';

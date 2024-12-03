@@ -4,7 +4,7 @@ import 'package:cashu_dart/utils/list_extension.dart';
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/token/proof.dart';
-import '../../model/history_entry.dart';
+import '../../model/history_entry_isar.dart';
 import '../../model/mint_model.dart';
 import '../../model/unblinding_data.dart';
 import '../../utils/network/response.dart';

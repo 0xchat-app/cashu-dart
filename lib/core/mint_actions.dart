@@ -1,7 +1,7 @@
 
 import '../../core/nuts/v0/nut.dart' as v0;
 import '../../core/nuts/v1/nut.dart' as v1;
-import '../model/invoice.dart';
+import '../model/invoice_isar.dart';
 import '../model/mint_info.dart';
 import '../model/mint_model.dart';
 import '../utils/network/response.dart';

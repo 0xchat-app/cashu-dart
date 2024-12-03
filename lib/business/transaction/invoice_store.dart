@@ -2,6 +2,7 @@
 import 'package:cashu_dart/utils/list_extension.dart';
 
 import '../../model/invoice.dart';
+import '../../model/invoice_isar.dart';
 import '../../model/lightning_invoice.dart';
 import '../../utils/database/db.dart';
 

@@ -2,14 +2,24 @@
 import 'dart:async';
 
 import '../../core/nuts/token/proof.dart';
+import '../../core/nuts/token/proof_isar.dart';
+import '../../model/db_config_isar.dart';
 import '../../model/history_entry.dart';
+import '../../model/history_entry_isar.dart';
 import '../../model/invoice.dart';
+import '../../model/invoice_isar.dart';
 import '../../model/invoice_listener.dart';
 import '../../model/keyset_info.dart';
+import '../../model/keyset_info_isar.dart';
 import '../../model/lightning_invoice.dart';
+import '../../model/lightning_invoice_isar.dart';
 import '../../model/mint_info.dart';
+import '../../model/mint_info_isar.dart';
 import '../../model/mint_model.dart';
+import '../../model/mint_model_isar.dart';
 import '../../utils/database/db.dart';
+import '../../utils/database/db_isar.dart';
+import '../../utils/database/db_migrate_helper.dart';
 import '../../utils/log_util.dart';
 import '../mint/mint_helper.dart';
 import '../mint/mint_info_store.dart';
@@ -54,10 +64,10 @@ class CashuManager {
       await ProofBlindingManager.shared.initialize();
       invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
       setupFinish.complete();
-      LogUtils.e(() => '[I][Cashu - setup] Finished');
+      LogUtils.i(() => '[Cashu - setup] Finished');
     } catch (e, stack) {
-      LogUtils.e(() => '[E][Cashu - setup] $e');
-      LogUtils.e(() => '[E][Cashu - setup] stack: $stack');
+      LogUtils.e(() => '[Cashu - setup] $e');
+      LogUtils.e(() => '[Cashu - setup] stack: $stack');
     }
   }
 
@@ -83,6 +93,22 @@ class CashuManager {
     String dbName = 'default',
     String? dbPassword,
   }) async {
+    await Future.wait([
+      _openSQLiteDB(
+        dbName: dbName,
+        dbPassword: dbPassword,
+      ),
+      _openIsarDB(
+        dbName: dbName,
+      ),
+    ]);
+    await DBMigrateHelper.trySqliteToIsar();
+  }
+
+  Future<void> _openSQLiteDB({
+    String dbName = 'default',
+    String? dbPassword,
+  }) async {
     CashuDB.sharedInstance.schemes = [
       KeysetInfo,
       Proof,
@@ -98,6 +124,22 @@ class CashuManager {
       version: dbVersion,
       password: dbPassword,
     );
+  }
+
+  Future<void> _openIsarDB({
+    String dbName = 'default',
+  }) async {
+    CashuIsarDB.shared.schemas = [
+      ProofIsarSchema,
+      IHistoryEntryIsarSchema,
+      IInvoiceIsarSchema,
+      KeysetInfoIsarSchema,
+      LightningInvoiceIsarSchema,
+      MintInfoIsarSchema,
+      IMintIsarSchema,
+      DBConfigIsarSchema,
+    ];
+    await CashuIsarDB.shared.open('cashu-$dbName');
   }
 
   Future<void> setupMint() async {

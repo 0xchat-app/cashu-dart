@@ -12,7 +12,7 @@ import '../core/nuts/token/proof.dart';
 import '../core/nuts/token/token_model.dart';
 import '../core/nuts/v1/nut_11.dart';
 import '../model/cashu_token_info.dart';
-import '../model/history_entry.dart';
+import '../model/history_entry_isar.dart';
 import '../model/lightning_invoice.dart';
 import '../model/mint_model.dart';
 import '../utils/log_util.dart';

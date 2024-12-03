@@ -1,5 +1,5 @@
 
-import 'invoice.dart';
+import 'invoice_isar.dart';
 import 'mint_model.dart';
 
 abstract mixin class CashuListener {

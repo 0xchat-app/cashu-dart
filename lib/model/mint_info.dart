@@ -5,52 +5,7 @@ import '../business/mint/mint_helper.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
-
-class NutsSupportInfo {
-  NutsSupportInfo({
-    required this.nutNum,
-    this.methods = const [],
-    this.supported = true,
-    this.disabled = false,
-  });
-
-  static Set<int> get mandatoryNut => {0, 1, 2, 3, 4, 5, 6};
-
-  final int nutNum;
-  final List<List<String>> methods;
-  final bool supported;
-  final bool disabled;
-
-  factory NutsSupportInfo.fromServerJson(String nutNum, Map json) {
-    final methods = <List<String>>[];
-    final methodsRaw = json['methods'];
-    if (methodsRaw is List) {
-      final methodList = [...methodsRaw];
-      for (var method in methodList) {
-        if (method is List) {
-          final list = [...method];
-          final target = list.map((e) => e.toString()).toList();
-          methods.add(target);
-        }
-      }
-    }
-
-    final supported = Tools.getValueAs(json, 'supported', true);
-    final disabled = Tools.getValueAs(json, 'disabled', false);
-
-    return NutsSupportInfo(
-      nutNum: int.tryParse(nutNum) ?? 0,
-      methods: methods,
-      supported: supported,
-      disabled: disabled,
-    );
-  }
-
-  @override
-  String toString() {
-    return '${super.toString()}, nutNum: $nutNum, methods: $methods, supported: $supported, disabled: $disabled';
-  }
-}
+import 'mint_info_isar.dart';
 
 @reflector
 class MintInfo extends DBObject {
@@ -126,7 +81,6 @@ class MintInfo extends DBObject {
       nutsRaw: nuts,
     );
   }
-
 
   @override
   String toString() {

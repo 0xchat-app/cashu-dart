@@ -1,12 +1,29 @@
 
-import '../utils/database/db.dart';
-import '../utils/database/db_object.dart';
-import '../utils/tools.dart';
-import 'invoice_isar.dart';
+import 'package:cashu_dart/utils/tools.dart';
+import 'package:isar/isar.dart';
 
-@reflector
-class IInvoice extends DBObject implements Receipt {
-  IInvoice({
+part 'invoice_isar.g.dart';
+
+abstract class Receipt {
+  String get mintURL;
+
+  String get amount;
+
+  String get paymentKey;
+
+  String get redemptionKey;
+
+  String get request;
+
+  /// Expiry timestamp in seconds, 0 means never expires
+  int get expiry;
+
+  bool get isExpired;
+}
+
+@Collection(ignore: {'paymentKey', 'redemptionKey', 'isExpired'})
+class IInvoiceIsar implements Receipt {
+  IInvoiceIsar({
     required this.quote,
     required this.request,
     required this.paid,
@@ -15,6 +32,9 @@ class IInvoice extends DBObject implements Receipt {
     required this.mintURL
   });
 
+  Id id = Isar.autoIncrement;
+
+  @Index(composite: [CompositeIndex('mintURL')], unique: true)
   final String quote;
 
   @override
@@ -34,7 +54,7 @@ class IInvoice extends DBObject implements Receipt {
 
   static int get expiryMax => DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch ~/ 1000;
 
-  static IInvoice? fromServerMap(Map json, String mintURL, String amount) {
+  static IInvoiceIsar? fromServerMap(Map json, String mintURL, String amount) {
     final quote = Tools.getValueAs<String>(json, 'quote', '');
     final request = Tools.getValueAs<String>(json, 'request', '');
     final paid = Tools.getValueAs<bool>(json, 'paid', false);
@@ -48,7 +68,7 @@ class IInvoice extends DBObject implements Receipt {
       expiry = now + expiryInterval;
     }
     if (quote.isEmpty || request.isEmpty) return null;
-    return IInvoice(
+    return IInvoiceIsar(
       quote: quote,
       request: request,
       paid: paid,
@@ -61,41 +81,6 @@ class IInvoice extends DBObject implements Receipt {
   @override
   String toString() {
     return '${super.toString()}, quote: $quote, request: $request, paid: $paid, expiry: $expiry';
-  }
-
-
-  @override
-  Map<String, Object?> toMap() => {
-    'quote': quote,
-    'request': request,
-    'paid': paid,
-    'amount': amount,
-    'expiry': expiry,
-    'mintURL': mintURL,
-  };
-
-  static IInvoice fromMap(Map<String, Object?> map) {
-    return IInvoice(
-      quote: Tools.getValueAs(map, 'quote', ''),
-      request: Tools.getValueAs(map, 'request', ''),
-      paid: Tools.getValueAs(map, 'paid', false),
-      amount: Tools.getValueAs(map, 'amount', ''),
-      expiry: Tools.getValueAs(map, 'expiry', 0),
-      mintURL: Tools.getValueAs(map, 'mintURL', ''),
-    );
-  }
-
-  static String? tableName() {
-    return "IInvoice";
-  }
-
-  //primaryKey
-  static List<String?> primaryKey() {
-    return ['mintURL', 'quote'];
-  }
-
-  static List<String?> ignoreKey() {
-    return [];
   }
 
   @override

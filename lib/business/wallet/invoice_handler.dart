@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 import 'package:cashu_dart/cashu_dart.dart';
 
+import '../../model/history_entry_isar.dart';
+import '../../model/invoice_isar.dart';
 import '../../utils/task_scheduler.dart';
 import '../transaction/hitstory_store.dart';
 import '../transaction/invoice_store.dart';

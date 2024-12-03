@@ -1,21 +1,26 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
+import 'package:cashu_dart/utils/tools.dart';
+import 'package:isar/isar.dart';
 
-import '../utils/database/db.dart';
-import '../utils/database/db_object.dart';
-import '../utils/tools.dart';
 import 'invoice_isar.dart';
 
-@reflector
-class LightningInvoice extends DBObject implements Receipt {
-  LightningInvoice({
+part 'lightning_invoice_isar.g.dart';
+
+@Collection(ignore: {'paymentKey', 'redemptionKey', 'isExpired', 'request', 'expiry'})
+class LightningInvoiceIsar implements Receipt {
+  LightningInvoiceIsar({
     required this.pr,
     required this.hash,
     required this.amount,
     required this.mintURL
   });
 
+  Id id = Isar.autoIncrement;
+
   final String pr;
+
+  @Index(composite: [CompositeIndex('mintURL')], unique: true)
   final String hash;
 
   @override
@@ -24,11 +29,11 @@ class LightningInvoice extends DBObject implements Receipt {
   @override
   final String mintURL;
 
-  static LightningInvoice? fromServerMap(Map json, String mintURL, String amount) {
+  static LightningInvoiceIsar? fromServerMap(Map json, String mintURL, String amount) {
     final pr = Tools.getValueAs<String>(json, 'pr', '');
     final hash = Tools.getValueAs<String>(json, 'hash', '');
     if (pr.isEmpty || hash.isEmpty) return null;
-    return LightningInvoice(
+    return LightningInvoiceIsar(
       pr: pr,
       hash: hash,
       amount: amount,
@@ -39,36 +44,6 @@ class LightningInvoice extends DBObject implements Receipt {
   @override
   String toString() {
     return '${super.toString()}, pr: $pr, hash: $hash, mintURL: $mintURL';
-  }
-
-  @override
-  Map<String, Object?> toMap() => {
-    'pr': pr,
-    'hash': hash,
-    'amount': amount,
-    'mintURL': mintURL,
-  };
-
-  static LightningInvoice fromMap(Map<String, Object?> map) {
-    return LightningInvoice(
-      pr: Tools.getValueAs(map, 'pr', ''),
-      hash: Tools.getValueAs(map, 'hash', ''),
-      amount: Tools.getValueAs(map, 'amount', ''),
-      mintURL: Tools.getValueAs(map, 'mintURL', ''),
-    );
-  }
-
-  static String? tableName() {
-    return "LightningInvoice";
-  }
-
-  //primaryKey
-  static List<String?> primaryKey() {
-    return ['mintURL', 'hash'];
-  }
-
-  static List<String?> ignoreKey() {
-    return [];
   }
 
   @override

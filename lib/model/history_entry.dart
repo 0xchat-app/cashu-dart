@@ -5,23 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
-
-enum IHistoryType {
-  unknown(0),
-  eCash(1),
-  lnInvoice(2),
-  multiMintSwap(3),
-  swapForP2PK(4);
-
-  final int value;
-
-  const IHistoryType(this.value);
-
-  static IHistoryType fromValue(dynamic value) =>
-      IHistoryType.values.where(
-        (element) => element.value == value,
-      ).firstOrNull ?? IHistoryType.unknown;
-}
+import 'history_entry_isar.dart';
 
 @reflector
 class IHistoryEntry extends DBObject {
@@ -102,7 +86,7 @@ class IHistoryEntry extends DBObject {
       type: type,
       timestamp: timestamp,
       value: value,
-      mints: mintsRaw.split(','),
+      mints: mintsRaw.isEmpty ? <String>[] : mintsRaw.split(','),
       sender: sender,
       recipient: recipient,
       preImage: preImage,
