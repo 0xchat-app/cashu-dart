@@ -3,7 +3,7 @@ import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
-import '../token/proof.dart';
+import '../token/proof_isar.dart';
 
 class MeltQuotePayload {
   MeltQuotePayload(this.quote, this.amount, this.fee, this.paid, this.expiry);
@@ -62,7 +62,7 @@ class Nut5 {
   static Future<CashuResponse<(bool paid, String paymentPreimage)>> meltToken({
     required String mintURL,
     required String quote,
-    required List<Proof> inputs,
+    required List<ProofIsar> inputs,
     required List<BlindedMessage> outputs,
     String method = 'bolt11',
   }) async {

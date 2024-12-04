@@ -2,7 +2,7 @@
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../nut_00.dart';
-import '../token/proof.dart';
+import '../token/proof_isar.dart';
 
 class Nut6 {
   /// Ask mint to perform a split operation
@@ -10,7 +10,7 @@ class Nut6 {
   /// Returns split tokens
   static Future<CashuResponse<List<BlindedSignature>>> split({
     required String mintURL,
-    required List<Proof> proofs,
+    required List<ProofIsar> proofs,
     required List<BlindedMessage> outputs,
   }) async {
     return HTTPClient.post(
@@ -18,7 +18,7 @@ class Nut6 {
       params: {
         'proofs': proofs.map((e) {
           return {
-            'id': e.id,
+            'id': e.keysetId,
             'amount': num.tryParse(e.amount) ?? 0,
             'secret': e.secret,
             'C': e.C,

@@ -1,12 +1,12 @@
 
-import '../../../model/invoice.dart';
+import '../../../model/invoice_isar.dart';
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
 
 class Nut4 {
-  static Future<CashuResponse<IInvoice>> requestMintQuote({
+  static Future<CashuResponse<IInvoiceIsar>> requestMintQuote({
     required String mintURL,
     required int amount,
     String method = 'bolt11',
@@ -20,7 +20,7 @@ class Nut4 {
       },
       modelBuilder: (json) {
         if (json is! Map) return null;
-        return IInvoice.fromServerMap(json, mintURL, amount.toString());
+        return IInvoiceIsar.fromServerMap(json, mintURL, amount.toString());
       },
     );
   }

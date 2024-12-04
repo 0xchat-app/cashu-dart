@@ -1,37 +1,12 @@
 
 import 'dart:convert';
 
+import 'package:cashu_dart/model/unblinding_data_isar.dart';
+
 import '../core/nuts/nut_00.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
-
-enum ProofBlindingAction {
-  unknown(0),
-  minting(1),
-  melt(2),
-  multiMintSwap(3),
-  swapForP2PK(4);
-
-  final int value;
-
-  const ProofBlindingAction(this.value);
-
-  static ProofBlindingAction fromValue(dynamic value) =>
-      ProofBlindingAction.values.where(
-            (element) => element.value == value,
-      ).firstOrNull ?? ProofBlindingAction.unknown;
-
-  String get text {
-    switch (this) {
-      case ProofBlindingAction.unknown: return 'unknown';
-      case ProofBlindingAction.minting: return 'Minting';
-      case ProofBlindingAction.melt: return 'Melt';
-      case ProofBlindingAction.multiMintSwap: return 'Swap';
-      case ProofBlindingAction.swapForP2PK: return 'SwapForP2PK';
-    }
-  }
-}
 
 @reflector
 class UnblindingData extends DBObject {

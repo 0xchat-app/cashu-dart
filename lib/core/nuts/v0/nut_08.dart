@@ -3,7 +3,7 @@ import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
-import '../token/proof.dart';
+import '../token/proof_isar.dart';
 
 class Nut8 {
   /// Ask mint to perform a melt operation.
@@ -11,7 +11,7 @@ class Nut8 {
   static Future<CashuResponse<MeltResponse>> payingTheInvoice({
     required String mintURL,
     required String quote,
-    required List<Proof> inputs,
+    required List<ProofIsar> inputs,
     required List<BlindedMessage> outputs,
   }) async {
     return HTTPClient.post(
@@ -19,7 +19,7 @@ class Nut8 {
       params: {
         'proofs': inputs.map((e) {
           return {
-            'id': e.id,
+            'id': e.keysetId,
             'amount': num.tryParse(e.amount) ?? 0,
             'secret': e.secret,
             'C': e.C,

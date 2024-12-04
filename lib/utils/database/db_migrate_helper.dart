@@ -14,6 +14,8 @@ import '../../model/mint_info.dart';
 import '../../model/mint_info_isar.dart';
 import '../../model/mint_model.dart';
 import '../../model/mint_model_isar.dart';
+import '../../model/unblinding_data.dart';
+import '../../model/unblinding_data_isar.dart';
 import 'db.dart';
 import 'db_config_helper.dart';
 import 'db_isar.dart';
@@ -31,6 +33,7 @@ class DBMigrateHelper {
       _mintInfoMigrateToIsar,
       _keysetInfoMigrateToIsar,
       _lightningInvoiceMigrateToIsar,
+      _unblindingDataMigrateToIsar,
     ];
 
     for (var method in migrationMethods) {
@@ -51,7 +54,7 @@ class DBMigrateHelper {
       C: proof.C,
       dleq: proof.dleq,
     )).toList();
-    await CashuIsarDB.shared.putAll<ProofIsar>(proofsISAR);
+    await CashuIsarDB.putAll<ProofIsar>(proofsISAR);
   }
 
   static Future<void> _historyMigrateToIsar() async {
@@ -65,7 +68,7 @@ class DBMigrateHelper {
       fee: history.fee?.toInt(),
       isSpent: history.isSpent,
     )).toList();
-    await CashuIsarDB.shared.putAll<IHistoryEntryIsar>(historyISAR);
+    await CashuIsarDB.putAll<IHistoryEntryIsar>(historyISAR);
   }
 
   static Future<void> _invoiceMigrateToIsar() async {
@@ -78,7 +81,7 @@ class DBMigrateHelper {
       amount: invoice.amount,
       mintURL: invoice.mintURL,
     )).toList();
-    await CashuIsarDB.shared.putAll<IInvoiceIsar>(invoicesISAR);
+    await CashuIsarDB.putAll<IInvoiceIsar>(invoicesISAR);
   }
 
   static Future<void> _keysetInfoMigrateToIsar() async {
@@ -96,7 +99,7 @@ class DBMigrateHelper {
         keysetRaw: keysetRaw,
       );
     }).toList();
-    await CashuIsarDB.shared.putAll<KeysetInfoIsar>(keysetsISAR);
+    await CashuIsarDB.putAll<KeysetInfoIsar>(keysetsISAR);
   }
 
   static Future<void> _lightningInvoiceMigrateToIsar() async {
@@ -107,7 +110,7 @@ class DBMigrateHelper {
       amount: invoice.amount,
       mintURL: invoice.mintURL,
     )).toList();
-    await CashuIsarDB.shared.putAll<LightningInvoiceIsar>(invoicesISAR);
+    await CashuIsarDB.putAll<LightningInvoiceIsar>(invoicesISAR);
   }
 
   static Future<void> _mintMigrateToIsar() async {
@@ -118,7 +121,7 @@ class DBMigrateHelper {
       name: mint.name,
       balance: mint.balance,
     )).toList();
-    await CashuIsarDB.shared.putAll<IMintIsar>(mintsISAR);
+    await CashuIsarDB.putAll<IMintIsar>(mintsISAR);
   }
 
   static Future<void> _mintInfoMigrateToIsar() async {
@@ -142,6 +145,29 @@ class DBMigrateHelper {
         motd: info.motd,
       );
     }).toList();
-    await CashuIsarDB.shared.putAll<MintInfoIsar>(mintInfosISAR);
+    await CashuIsarDB.putAll<MintInfoIsar>(mintInfosISAR);
+  }
+
+  static Future<void> _unblindingDataMigrateToIsar() async {
+    List<UnblindingData> unblindingData = await CashuDB.sharedInstance.objects<UnblindingData>();
+    List<UnblindingDataIsar> unblindingDataISAR = unblindingData.map((data) {
+      var dleqPlainText = '';
+      try {
+        dleqPlainText = json.encode(data.dleq);
+      } catch (_) {}
+      return UnblindingDataIsar(
+        mintURL: data.mintURL,
+        unit: data.unit,
+        actionTypeRaw: data.actionTypeRaw,
+        actionValue: data.actionValue,
+        keysetId: data.id,
+        amount: data.amount,
+        C_: data.C_,
+        dleqPlainText: dleqPlainText,
+        r: data.r,
+        secret: data.secret,
+      );
+    }).toList();
+    await CashuIsarDB.putAll<UnblindingDataIsar>(unblindingDataISAR);
   }
 }

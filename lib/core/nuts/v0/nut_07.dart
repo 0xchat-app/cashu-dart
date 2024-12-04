@@ -2,7 +2,7 @@
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
-import '../token/proof.dart';
+import '../token/proof_isar.dart';
 
 extension TokenStateEx on TokenState {
   static TokenState fromState(bool spendable, bool pending) {
@@ -18,7 +18,7 @@ extension TokenStateEx on TokenState {
 class Nut7 {
   static Future<CashuResponse<List<TokenState>>> requestTokenState({
     required String mintURL,
-    required List<Proof> proofs,
+    required List<ProofIsar> proofs,
   }) async {
     return HTTPClient.post(
       nutURLJoin(mintURL, 'check', version: ''),

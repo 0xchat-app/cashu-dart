@@ -3,18 +3,17 @@ import '../../core/DHKE_helper.dart';
 import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/token/proof.dart';
-import '../../model/history_entry.dart';
+import '../../core/nuts/token/proof_isar.dart';
 import '../../model/history_entry_isar.dart';
-import '../../model/invoice.dart';
 import '../../model/invoice_isar.dart';
-import '../../model/mint_model.dart';
+import '../../model/mint_model_isar.dart';
+import '../../model/unblinding_data_isar.dart';
 import '../../utils/network/response.dart';
 import '../mint/mint_helper.dart';
 import '../proof/keyset_helper.dart';
 import '../proof/proof_helper.dart';
 import '../wallet/cashu_manager.dart';
-import '../wallet/ecash_manager.dart';
+import '../wallet/proof_blinding_manager.dart';
 import 'hitstory_store.dart';
 import 'invoice_store.dart';
 
@@ -26,7 +25,7 @@ typedef PayingTheInvoiceResponse = (
 class TransactionHelper {
 
   static Future<Receipt?> requestCreateInvoice({
-    required IMint mint,
+    required IMintIsar mint,
     required int amount,
   }) async {
     final response = await mint.createQuoteAction(
@@ -39,8 +38,8 @@ class TransactionHelper {
     return response.data;
   }
 
-  static Future<CashuResponse<List<Proof>>> requestTokensFromMint({
-    required IMint mint,
+  static Future<CashuResponse<List<ProofIsar>>> requestTokensFromMint({
+    required IMintIsar mint,
     required String quoteID,
     required int amount,
     String invoice = '',
@@ -67,7 +66,7 @@ class TransactionHelper {
     // create blinded messages
     final ( blindedMessages, secrets, rs, _ ) =
     DHKEHelper.createBlindedMessages(
-      keysetId: keysetInfo.id,
+      keysetId: keysetInfo.keysetId,
       amount: amount,
     );
 
@@ -113,17 +112,17 @@ class TransactionHelper {
   }
 
   static Future<CashuResponse<MeltResponse>> payingTheQuote({
-    required IMint mint,
+    required IMintIsar mint,
     String paymentId = '',
     required String historyValue,
     required int amount,
-    required List<Proof> proofs,
+    required List<ProofIsar> proofs,
     String unit = 'sat',
     required int fee,
     required Future<CashuResponse<MeltResponse>> Function({
       required String mintURL,
       required String quote,
-      required List<Proof> inputs,
+      required List<ProofIsar> inputs,
       required List<BlindedMessage> outputs,
     }) meltAction,
     String paymentKey = '',
@@ -139,7 +138,7 @@ class TransactionHelper {
     // create outputs
     final ( blindedMessages, secrets, rs, _ ) =
     DHKEHelper.createBlankOutputs(
-      keysetId: keysetInfo.id,
+      keysetId: keysetInfo.keysetId,
       amount: proofs.totalAmount - amount,
     );
 

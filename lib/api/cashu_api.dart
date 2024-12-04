@@ -11,14 +11,13 @@ import '../business/wallet/cashu_manager.dart';
 import '../core/mint_actions.dart';
 import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
-import '../core/nuts/token/proof.dart';
+import '../core/nuts/token/proof_isar.dart';
 import '../core/nuts/v1/nut_11.dart';
 import '../model/cashu_token_info.dart';
-import '../model/history_entry.dart';
 import '../model/history_entry_isar.dart';
 import '../model/invoice_isar.dart';
 import '../model/invoice_listener.dart';
-import '../model/mint_model.dart';
+import '../model/mint_model_isar.dart';
 import '../utils/network/response.dart';
 import 'general_client.dart';
 import 'v0/client.dart';
@@ -27,7 +26,6 @@ import 'v1/client.dart';
 final CashuAPI Cashu = CashuAPI();
 
 class CashuAPI {
-
   /**************************** Financial ****************************/
   /// Calculate the total balance across all mints.
   int totalBalance() {
@@ -39,15 +37,15 @@ class CashuAPI {
   ///
   /// [size]: Number of entries to return.
   /// [lastHistoryId]: The ID of the last history entry from the previous fetch.
-  Future<List<IHistoryEntry>> getHistoryList({
+  Future<List<IHistoryEntryIsar>> getHistoryList({
     int size = 10,
-    String lastHistoryId = '',
+    int? lastHistoryId,
   }) async {
     await CashuManager.shared.setupFinish.future;
     final allHistory = await HistoryStore.getHistory();
 
     var startIndex = 0;
-    if (lastHistoryId.isNotEmpty) {
+    if (lastHistoryId != null) {
       final index = allHistory.indexWhere((element) => element.id == lastHistoryId);
       if (index >= 0) {
         startIndex = index + 1;
@@ -57,16 +55,16 @@ class CashuAPI {
     return allHistory.sublist(startIndex, end);
   }
 
-  Future<List<IHistoryEntry>> getHistory({
+  Future<List<IHistoryEntryIsar>> getHistory({
     List<String> value = const [],
   }) async {
     await CashuManager.shared.setupFinish.future;
-    return await HistoryStore.getHistory(value: value);
+    return await HistoryStore.getHistory(values: value);
   }
 
   /// Check the availability of proofs for a given mint.
   /// Returns the amount of invalid proof, or null if the request fails.
-  Future<int?> checkProofsAvailable(IMint mint) async {
+  Future<int?> checkProofsAvailable(IMintIsar mint) async {
 
     await CashuManager.shared.setupFinish.future;
 
@@ -80,7 +78,7 @@ class CashuAPI {
 
     var validAmount = 0;
     var burnedAmount = 0;
-    final burnedProofs = <Proof>[];
+    final burnedProofs = <ProofIsar>[];
 
     for (int i = 0; i < response.data.length; i++) {
       final proof = proofs[i];
@@ -105,7 +103,7 @@ class CashuAPI {
   }
 
   /// Retrieves all 'used' proofs for a given mint.
-  Future<List<Proof>> getAllUseProofs(IMint mint) {
+  Future<List<ProofIsar>> getAllUseProofs(IMintIsar mint) {
     return ProofHelper.getProofs(mint.mintURL);
   }
 
@@ -113,7 +111,7 @@ class CashuAPI {
   ///
   /// Extracts the eCash token from [entry] and checks if it is spendable.
   /// Returns `true` if the token is spendable, `false` if not, or `null` if the status is indeterminable.
-  Future<bool?> isEcashTokenSpendableFromHistory(IHistoryEntry entry) async {
+  Future<bool?> isEcashTokenSpendableFromHistory(IHistoryEntryIsar entry) async {
     if (entry.type != IHistoryType.eCash) return null;
 
     final spendable = await isEcashTokenSpendableFromToken(entry.value);
@@ -155,7 +153,7 @@ class CashuAPI {
 
   /**************************** Mint ****************************/
   /// Returns a list of all mints.
-  Future<List<IMint>> mintList() async {
+  Future<List<IMintIsar>> mintList() async {
     await CashuManager.shared.setupFinish.future;
     return CashuManager.shared.mints;
   }
@@ -163,20 +161,20 @@ class CashuAPI {
   /// Adds a new mint with the given URL.
   /// Throws an exception if the URL does not start with 'https://'.
   /// Returns the newly added mint, or null if the operation fails.
-  Future<IMint?> addMint(String mintURL) async {
+  Future<IMintIsar?> addMint(String mintURL) async {
     await CashuManager.shared.setupFinish.future;
     return await CashuManager.shared.addMint(mintURL);
   }
 
   /// Deletes the specified mint.
   /// Returns true if the deletion is successful.
-  Future<bool> deleteMint(IMint mint) async {
+  Future<bool> deleteMint(IMintIsar mint) async {
     await CashuManager.shared.setupFinish.future;
     return CashuManager.shared.deleteMint(mint);
   }
 
   /// Edits the name of the specified mint.
-  Future editMintName(IMint mint, String name) async {
+  Future editMintName(IMintIsar mint, String name) async {
     await CashuManager.shared.setupFinish.future;
     if (mint.name == name) return ;
     mint.name = name;
@@ -184,7 +182,7 @@ class CashuAPI {
   }
 
   /// Retrieves mint information from the specified mint.
-  Future<bool> fetchMintInfo(IMint mint) async {
+  Future<bool> fetchMintInfo(IMintIsar mint) async {
     return MintHelper.updateMintInfoFromRemote(mint);
   }
 
@@ -197,11 +195,11 @@ class CashuAPI {
   ///
   /// Returns the encoded token if successful, otherwise null.
   Future<CashuResponse<String>> sendEcash({
-    required IMint mint,
+    required IMintIsar mint,
     required int amount,
     String memo = '',
     String unit = 'sat',
-    List<Proof>? proofs,
+    List<ProofIsar>? proofs,
   }) => CashuAPIGeneralClient.sendEcash(
     mint: mint,
     amount: amount,
@@ -212,7 +210,7 @@ class CashuAPI {
 
   /// Sends a list of e-cash amounts using the provided mint.
   Future<CashuResponse<List<String>>> sendEcashList({
-    required IMint mint,
+    required IMintIsar mint,
     required List<int> amountList,
     List<String> publicKeys = const [],
     List<String>? refundPubKeys,
@@ -246,7 +244,7 @@ class CashuAPI {
   ///
   /// Returns the encoded token if successful, otherwise null.
   Future<CashuResponse<String>> sendEcashToPublicKeys({
-    required IMint mint,
+    required IMintIsar mint,
     required int amount,
     required List<String> publicKeys,
     List<String>? refundPubKeys,
@@ -255,7 +253,7 @@ class CashuAPI {
     P2PKSecretSigFlag? sigFlag,
     String memo = '',
     String unit = 'sat',
-    List<Proof>? proofs,
+    List<ProofIsar>? proofs,
   }) => CashuAPIGeneralClient.sendEcashToPublicKeys(
     mint: mint,
     amount: amount,
@@ -281,7 +279,7 @@ class CashuAPI {
   );
 
   Future<bool> redeemEcashFromInvoice({
-    required IMint mint,
+    required IMintIsar mint,
     required String pr,
   }) => CashuAPIGeneralClient.redeemEcashFromInvoice(mint: mint, pr: pr);
 
@@ -293,7 +291,7 @@ class CashuAPI {
   ///
   /// Returns true if payment is successful.
   Future<CashuResponse> payingLightningInvoice({
-    required IMint mint,
+    required IMintIsar mint,
     required String pr,
     String paymentKey = '',
     CashuProgressCallback? processCallback,
@@ -320,7 +318,7 @@ class CashuAPI {
   ///
   /// Returns the created invoice object if successful, otherwise null.
   Future<Receipt?> createLightningInvoice({
-    required IMint mint,
+    required IMintIsar mint,
     required int amount,
   }) {
     return TransactionHelper.requestCreateInvoice(
@@ -352,7 +350,7 @@ class CashuAPI {
   /// - This method does not validate the status or usability of the proofs.
   ///   It purely retrieves the existing local proofs and generates a token for backup purposes.
   ///
-  Future<CashuResponse<String>> getBackUpToken(List<IMint> mints) =>
+  Future<CashuResponse<String>> getBackUpToken(List<IMintIsar> mints) =>
       CashuAPIGeneralClient.getBackUpToken(mints);
 
   /// Imports a Cashu token.

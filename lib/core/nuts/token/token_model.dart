@@ -1,6 +1,6 @@
 import 'package:cashu_dart/utils/tools.dart';
 
-import 'proof.dart';
+import 'proof_isar.dart';
 
 class Token {
   Token({
@@ -82,7 +82,7 @@ class TokenEntry {
   });
 
   /// list of proofs
-  final List<Proof> proofs;
+  final List<ProofIsar> proofs;
 
   /// the mints URL
   final String mint;
@@ -93,14 +93,14 @@ class TokenEntry {
 
   factory TokenEntry.fromJson(Map json) {
     final proofsJson = json['proofs'] ?? [];
-    List<Proof> proofs = [];
+    List<ProofIsar> proofs = [];
     if (proofsJson is List) {
       proofs = proofsJson.map((e) {
         if (e is Map<String, Object?>) {
-          return Proof.fromServerJson(e);
+          return ProofIsar.fromServerJson(e);
         }
         return null;
-      }).where((element) => element != null).cast<Proof>().toList();
+      }).where((element) => element != null).cast<ProofIsar>().toList();
     }
     return TokenEntry(
       proofs: proofs,
@@ -109,7 +109,7 @@ class TokenEntry {
   }
 
   factory TokenEntry.fromV4Json(String mintURL, List json) {
-    List<Proof> proofs = [];
+    List<ProofIsar> proofs = [];
     for (var tokenMap in json) {
       if (tokenMap is! Map) continue;
 
@@ -121,7 +121,7 @@ class TokenEntry {
       for (var proofMap in proofsJson) {
         if (proofMap is! Map) continue;
 
-        final proof = Proof.fromV4Json(keysetId, proofMap);
+        final proof = ProofIsar.fromV4Json(keysetId, proofMap);
         proofs.add(proof);
       }
     }
@@ -142,7 +142,7 @@ class TokenEntry {
     Map<String, List<Map>> allProofs = <String, List<Map>>{};
 
     for (var proof in proofs) {
-      final keysetId = proof.id;
+      final keysetId = proof.keysetId;
       final proofMaps = allProofs.putIfAbsent(keysetId, () => <Map>[]);
       proofMaps.add(proof.toV4Json());
     }

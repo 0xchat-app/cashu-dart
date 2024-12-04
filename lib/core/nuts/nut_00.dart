@@ -1,5 +1,5 @@
 import 'token/converter/converter.dart';
-import 'token/proof.dart';
+import 'token/proof_isar.dart';
 import 'token/token_model.dart';
 import '../../utils/tools.dart';
 
@@ -66,6 +66,6 @@ class BlindedSignature {
   }
 }
 
-extension ProofListEx on List<Proof> {
+extension ProofListEx on List<ProofIsar> {
   int get totalAmount => fold(0, (pre, proof) => pre + proof.amountNum);
 }

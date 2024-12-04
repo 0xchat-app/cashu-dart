@@ -1,27 +1,26 @@
 
-import '../../model/mint_info.dart';
-import '../../utils/database/db.dart';
+import '../../model/mint_info_isar.dart';
+import '../../utils/database/db_isar.dart';
 
 class MintInfoStore {
 
-  static Future<MintInfo?> getMintInfo(String mintURL) async {
-    final mintInfo = await CashuDB.sharedInstance.objects<MintInfo>(
-      where: 'mintURL = ?',
-      whereArgs: [mintURL],
-    );
-    return mintInfo.firstOrNull;
+  static Future<MintInfoIsar?> getMintInfo(String mintURL) async {
+    return CashuIsarDB.query<MintInfoIsar>()
+        .mintURLEqualTo(mintURL)
+        .findFirst();
   }
 
-  static Future<bool> addMintInfo(MintInfo info) async {
-    var rowsAffected = await CashuDB.sharedInstance.insert<MintInfo>(info);
-    return rowsAffected == 1;
+  static Future<bool> addMintInfo(MintInfoIsar info) async {
+    await CashuIsarDB.put(info);
+    return true;
   }
 
   static Future<bool> deleteMint(String mintURL) async {
-    var rowsAffected = await CashuDB.sharedInstance.delete<MintInfo>(
-      where: 'mintURL = ?',
-      whereArgs: [mintURL],
+    final deleted = await CashuIsarDB.delete<MintInfoIsar>((collection) =>
+        collection.where()
+            .mintURLEqualTo(mintURL)
+            .deleteAll()
     );
-    return rowsAffected == 1;
+    return deleted > 0;
   }
 }

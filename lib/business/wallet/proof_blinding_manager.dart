@@ -3,18 +3,18 @@ import 'package:cashu_dart/utils/list_extension.dart';
 
 import '../../core/nuts/DHKE.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/token/proof.dart';
+import '../../core/nuts/token/proof_isar.dart';
 import '../../model/history_entry_isar.dart';
-import '../../model/mint_model.dart';
-import '../../model/unblinding_data.dart';
+import '../../model/mint_model_isar.dart';
+import '../../model/unblinding_data_isar.dart';
 import '../../utils/network/response.dart';
 import '../../utils/task_scheduler.dart';
 import '../proof/keyset_helper.dart';
 import '../proof/proof_store.dart';
 import '../proof/unblinding_data_store.dart';
 import '../transaction/hitstory_store.dart';
+import 'cashu_manager.dart';
 
-export '../../model/unblinding_data.dart';
 
 class UnblindingOption {
   const UnblindingOption({
@@ -24,7 +24,7 @@ class UnblindingOption {
 }
 
 typedef UnblindingDataPayload = (
-  IMint mint,
+  IMintIsar mint,
   String unit,
   List<BlindedSignature> signatures,
   List<String> secrets,
@@ -50,7 +50,7 @@ class ProofBlindingManager {
     unblindingDataChecker?.dispose();
   }
 
-  Future<CashuResponse<List<Proof>>> unblindingBlindedSignature(
+  Future<CashuResponse<List<ProofIsar>>> unblindingBlindedSignature(
     UnblindingDataPayload payload,
   ) async {
 
@@ -58,8 +58,8 @@ class ProofBlindingManager {
 
     if (signatures.isEmpty) return CashuResponse.fromSuccessData([]);
 
-    List<UnblindingData> unblindingDataList = [];
-    List<UnblindingData> savedUnblindingDataList = [];
+    List<UnblindingDataIsar> unblindingDataList = [];
+    List<UnblindingDataIsar> savedUnblindingDataList = [];
     for (var i = 0; i < signatures.length; i++) {
       final signature = signatures[i];
       final option = options.length > i
@@ -74,7 +74,7 @@ class ProofBlindingManager {
         secret = secrets[i];
       }
 
-      final unblindingData = UnblindingData.fromSignature(
+      final unblindingData = UnblindingDataIsar.fromSignature(
         signature: signature,
         mintURL: mint.mintURL,
         action: action,
@@ -111,6 +111,7 @@ class ProofBlindingManager {
 
   Future _unblindingDataCheck() async {
     final unblindingDataList = await UnblindingDataStore.getData();
+    if (unblindingDataList.isEmpty) return ;
 
     final unblindingDataMap = unblindingDataList.groupBy((e) => e.actionValue);
     final actionValues = unblindingDataMap.keys;
@@ -136,6 +137,8 @@ class ProofBlindingManager {
         mints: data.map((e) => e.mintURL).toSet().toList(),
       );
       await UnblindingDataStore.delete(unblindingDataList);
+
+      CashuManager.shared.updateMintBalance();
     }
   }
 }

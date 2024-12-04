@@ -9,21 +9,22 @@ import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
-import '../../core/nuts/token/proof.dart';
+import '../../core/nuts/token/proof_isar.dart';
 import '../../core/nuts/v1/nut_02.dart';
 import '../../model/cashu_token_info.dart';
-import '../../model/keyset_info.dart';
-import '../../model/mint_model.dart';
+import '../../model/keyset_info_isar.dart';
+import '../../model/mint_model_isar.dart';
+import '../../model/unblinding_data_isar.dart';
 import '../../utils/log_util.dart';
 import '../../utils/network/response.dart';
 import '../wallet/cashu_manager.dart';
-import '../wallet/ecash_manager.dart';
+import '../wallet/proof_blinding_manager.dart';
 import 'keyset_helper.dart';
 import 'proof_store.dart';
 
 class ProofRequest {
   final int amount;
-  final List<Proof>? proofs;
+  final List<ProofIsar>? proofs;
 
   ProofRequest.amount(this.amount)
       : proofs = null;
@@ -40,7 +41,7 @@ class ProofResponse {
   final bool isSuccess;
   final int targetAmount;
   final int inputFee;
-  final List<Proof> proofs;
+  final List<ProofIsar> proofs;
 
   int get overAmount => proofs.totalAmount - targetAmount - inputFee;
   bool get isOverProofs => overAmount > 0;
@@ -62,12 +63,12 @@ class ProofResponse {
 
 class ProofHelper {
 
-  static Future<List<Proof>> getProofs(
+  static Future<List<ProofIsar>> getProofs(
     String mintURL,
     [bool orderAsc = false]
   ) async {
     final keysets = await KeysetStore.getKeyset(mintURL: mintURL);
-    final usableProofs = await ProofStore.getProofs(ids: keysets.map((e) => e.id).toList());
+    final usableProofs = await ProofStore.getProofs(ids: keysets.map((e) => e.keysetId).toList());
     if (orderAsc) {
       usableProofs.sort((a, b) => a.amount.compareTo(b.amount));
     } else {
@@ -77,12 +78,12 @@ class ProofHelper {
   }
 
   static Future<ProofResponse> _getProofsWithRequest({
-    required IMint mint,
-    required KeysetInfo keysetInfo,
+    required IMintIsar mint,
+    required KeysetInfoIsar keysetInfo,
     required ProofRequest proofRequest,
     bool canIgnoreInputFee = false,
   }) async {
-    List<Proof> result = <Proof>[];
+    List<ProofIsar> result = <ProofIsar>[];
     final amount = proofRequest.amount;
     final totalProofs = proofRequest.proofs ?? await getProofs(mint.mintURL, true);
 
@@ -131,17 +132,17 @@ class ProofHelper {
     }
   }
 
-  static CashuResponse<List<Proof>> _parseResponseByECashCheck(
+  static CashuResponse<List<ProofIsar>> _parseResponseByECashCheck(
     ProofRequest request,
-    CashuResponse<List<Proof>> response,
+    CashuResponse<List<ProofIsar>> response,
   ) {
     if (!response.isSuccess) return response;
     if (response.data.totalAmount != request.amount) return CashuResponse.fromErrorMsg('Invalid amount proofs.');
     return response;
   }
 
-  static Future<CashuResponse<List<Proof>>> getProofsForECash({
-    required IMint mint,
+  static Future<CashuResponse<List<ProofIsar>>> getProofsForECash({
+    required IMintIsar mint,
     required ProofRequest proofRequest,
     CashuTokenP2PKInfo? p2pkOption,
     String unit = 'sat',
@@ -190,7 +191,7 @@ class ProofHelper {
 
     {
       final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-        keysetId: keysetInfo.id,
+        keysetId: keysetInfo.keysetId,
         amount: proofResponse.targetAmount,
         secretCreator: secretCreator,
       );
@@ -204,7 +205,7 @@ class ProofHelper {
       final overAmount = proofResponse.overAmount;
       if (overAmount > 0) {
         final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-          keysetId: keysetInfo.id,
+          keysetId: keysetInfo.keysetId,
           amount: overAmount,
         );
         blindedMessages.addAll($1);
@@ -254,8 +255,8 @@ class ProofHelper {
     );
   }
 
-  static Future<CashuResponse<List<Proof>>> getProofsForMelt({
-    required IMint mint,
+  static Future<CashuResponse<List<ProofIsar>>> getProofsForMelt({
+    required IMintIsar mint,
     required ProofRequest proofRequest,
     String unit = 'sat',
   }) async {
@@ -276,8 +277,8 @@ class ProofHelper {
     return CashuResponse.fromSuccessData(proofs);
   }
 
-  static Future<CashuResponse<List<List<Proof>>>> getProofsWithAmountList({
-    required IMint mint,
+  static Future<CashuResponse<List<List<ProofIsar>>>> getProofsWithAmountList({
+    required IMintIsar mint,
     required List<int> amounts,
     CashuTokenP2PKInfo? p2pkOption,
     String unit = 'sat',
@@ -309,7 +310,7 @@ class ProofHelper {
 
     for (var amount in amounts) {
       final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-        keysetId: keysetInfo.id,
+        keysetId: keysetInfo.keysetId,
         amount: amount,
         secretCreator: secretCreator,
       );
@@ -330,7 +331,7 @@ class ProofHelper {
       final overAmount = proofResponse.overAmount;
       if (overAmount > 0) {
         final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-          keysetId: keysetInfo.id,
+          keysetId: keysetInfo.keysetId,
           amount: overAmount,
         );
         blindedMessages.add($1);
@@ -375,7 +376,7 @@ class ProofHelper {
     await deleteProofs(proofs: proofs, mint: mint);
 
     final newProofs = unblindingResponse.data;
-    final proofPackage = <List<Proof>>[];
+    final proofPackage = <List<ProofIsar>>[];
     int start = 0;
     for (var package in blindedMessages) {
       final packageSize = package.length;
@@ -386,9 +387,9 @@ class ProofHelper {
     return CashuResponse.fromSuccessData(proofPackage);
   }
 
-  static Future<CashuResponse<List<Proof>>> swapProofs({
-    required IMint mint,
-    required List<Proof> proofs,
+  static Future<CashuResponse<List<ProofIsar>>> swapProofs({
+    required IMintIsar mint,
+    required List<ProofIsar> proofs,
     String unit = 'sat',
   }) async {
     // Keyset info
@@ -403,7 +404,7 @@ class ProofHelper {
     List<BigInt> rs = [];
 
     final ( $1, $2, $3, _ ) = DHKEHelper.createBlindedMessages(
-      keysetId: keysetInfo.id,
+      keysetId: keysetInfo.keysetId,
       amount: outputAmount,
     );
     blindedMessages.addAll($1);
@@ -442,10 +443,10 @@ class ProofHelper {
   }
 
   static Future<bool> deleteProofs({
-    required List<Proof> proofs,
-    IMint? mint,
+    required List<ProofIsar> proofs,
+    IMintIsar? mint,
   }) async {
-    final burnedProofs = <Proof>[];
+    final burnedProofs = <ProofIsar>[];
     if (mint != null) {
       final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: proofs);
       if (!response.isSuccess) return false;
@@ -474,7 +475,7 @@ class ProofHelper {
     return count;
   }
 
-  static List<Proof>? _findOneSubsetWithSum(List<Proof> proofs, int target, int inputFeePPK) {
+  static List<ProofIsar>? _findOneSubsetWithSum(List<ProofIsar> proofs, int target, int inputFeePPK) {
     int adjustedTarget(int subsetLength) {
       return target + ((subsetLength * inputFeePPK + 999) ~/ 1000); // ceil(length * inputFee / 1000)
     }
@@ -488,7 +489,7 @@ class ProofHelper {
     proofs.sort((p1, p2) => p1.amountNum.compareTo(p2.amountNum));
 
     // Use a map to store possible sums and corresponding subsets
-    Map<int, List<Proof>?> dp = {0: []};
+    Map<int, List<ProofIsar>?> dp = {0: []};
 
     for (int i = 0; i < proofs.length; i++) {
       final proof = proofs[i];
@@ -498,7 +499,7 @@ class ProofHelper {
       for (int t in keys) {
         int newSum = t + proof.amountNum;
         if (newSum <= adjustedTarget(dp[t]!.length + 1)) {
-          List<Proof> currentSubset = List.from(dp[t]!)..add(proof);
+          List<ProofIsar> currentSubset = List.from(dp[t]!)..add(proof);
           int requiredSum = adjustedTarget(currentSubset.length);
 
           // Early return if the current subset matches the required sum
@@ -562,7 +563,7 @@ class ProofHelper {
   }
 
   static Future addSignatureToProof({
-    required Proof proof,
+    required ProofIsar proof,
     List<String> pubkeyList = const [],
   }) async {
 
@@ -612,20 +613,20 @@ class ProofHelper {
     await _tryParseProofsToHexKeysetId(proofs);
   }
 
-  static Future _tryParseProofsToHexKeysetId(List<Proof> proofs) async {
+  static Future _tryParseProofsToHexKeysetId(List<ProofIsar> proofs) async {
     Map<String, String> keysetIdMap = {};
 
-    List<Proof> oldProofs = [];
-    List<Proof> newProofs = [];
+    List<ProofIsar> oldProofs = [];
+    List<ProofIsar> newProofs = [];
 
     for (var proof in proofs) {
-      final originId = proof.id;
+      final originId = proof.keysetId;
       if (Nut2.isHexKeysetId(originId)) continue;
 
       String? hexKeysetId = keysetIdMap[originId];
       if (hexKeysetId != null && hexKeysetId.isNotEmpty) {
         final newProof = proof.copyWith(id: hexKeysetId);
-        if (newProof.id != proof.id || newProof.secret != proof.secret) {
+        if (newProof.keysetId != proof.keysetId || newProof.secret != proof.secret) {
           oldProofs.add(proof);
           newProofs.add(newProof);
         }
@@ -639,7 +640,7 @@ class ProofHelper {
       if (hexKeysetId.isNotEmpty) {
         keysetIdMap[originId] = hexKeysetId;
         final newProof = proof.copyWith(id: hexKeysetId);
-        if (newProof.id != proof.id || newProof.secret != proof.secret) {
+        if (newProof.keysetId != proof.keysetId || newProof.secret != proof.secret) {
           oldProofs.add(proof);
           newProofs.add(newProof);
         }
@@ -650,7 +651,7 @@ class ProofHelper {
     await ProofStore.deleteProofs(oldProofs);
   }
 
-  static int _getInputFee(List<Proof> proofs, int inputFeePPK) {
+  static int _getInputFee(List<ProofIsar> proofs, int inputFeePPK) {
     return (proofs.length * inputFeePPK + 999) ~/ 1000;
   }
 }

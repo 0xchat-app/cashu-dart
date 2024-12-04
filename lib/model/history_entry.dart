@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 import '../utils/database/db.dart';
 import '../utils/database/db_object.dart';
 import '../utils/tools.dart';
-import 'history_entry_isar.dart';
 
 @reflector
 class IHistoryEntry extends DBObject {

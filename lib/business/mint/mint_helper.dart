@@ -1,4 +1,6 @@
 
+import 'dart:convert';
+
 import 'package:cashu_dart/business/proof/keyset_helper.dart';
 import 'package:cashu_dart/utils/list_extension.dart';
 
@@ -6,8 +8,8 @@ import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/v1/nut.dart' as v1;
-import '../../model/keyset_info.dart';
-import '../../model/mint_model.dart';
+import '../../model/keyset_info_isar.dart';
+import '../../model/mint_model_isar.dart';
 import '../../utils/log_util.dart';
 import 'mint_info_store.dart';
 import 'mint_store.dart';
@@ -27,7 +29,7 @@ class MintHelper {
     return url;
   }
 
-  static Future<bool> updateMintInfoFromRemote(IMint mint) async {
+  static Future<bool> updateMintInfoFromRemote(IMintIsar mint) async {
     final response = await mint.requestMintInfoAction(mintURL: mint.mintURL);
     if (!response.isSuccess) return false;
     final info = response.data;
@@ -40,7 +42,7 @@ class MintHelper {
     return true;
   }
 
-  static Future updateMintKeysetFromRemote(IMint mint) async {
+  static Future updateMintKeysetFromRemote(IMintIsar mint) async {
     final keysets = await KeysetHelper.fetchKeysetFromRemote(mint);
     if (keysets.isEmpty) return ;
 
@@ -48,14 +50,14 @@ class MintHelper {
     _updateMintKeyset(mint, keysets);
   }
 
-  static Future updateMintKeysetFromLocal(IMint mint) async {
+  static Future updateMintKeysetFromLocal(IMintIsar mint) async {
     final keysets = await KeysetStore.getKeyset(mintURL: mint.mintURL, active: true);
     if (keysets.isEmpty) return ;
 
     _updateMintKeyset(mint, keysets);
   }
 
-  static void _updateMintKeyset(IMint mint, List<KeysetInfo> keysets) {
+  static void _updateMintKeyset(IMintIsar mint, List<KeysetInfoIsar> keysets) {
     if (keysets.isEmpty) return ;
     final newKeysets = keysets
         .groupBy((item) => item.unit)
@@ -66,7 +68,7 @@ class MintHelper {
         .expand((map) => [map.value])
         .nonNulls;
     for (var keyset in newKeysets) {
-      mint.updateKeysetId(keyset.id, keyset.unit);
+      mint.updateKeysetId(keyset.keysetId, keyset.unit);
     }
   }
 
@@ -78,12 +80,17 @@ class MintHelper {
 }
 
 extension MintKeysPayloadEx on MintKeysPayload {
-  KeysetInfo asKeysetInfo(String mintURL) =>
-      KeysetInfo(
-        id: id,
-        mintURL: mintURL,
-        unit: unit,
-        active: true,
-        keyset: keys,
-      );
+  KeysetInfoIsar asKeysetInfo(String mintURL) {
+    var keysetRaw = '';
+    try {
+      keysetRaw = json.encode(keys);
+    } catch (_) {}
+    return KeysetInfoIsar(
+      keysetId: id,
+      mintURL: mintURL,
+      unit: unit,
+      active: true,
+      keysetRaw: keysetRaw,
+    );
+  }
 }

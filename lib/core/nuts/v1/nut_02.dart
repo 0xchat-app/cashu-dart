@@ -4,19 +4,19 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
-import '../../../model/keyset_info.dart';
+import '../../../model/keyset_info_isar.dart';
 import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 
 class Nut2 {
-  static Future<CashuResponse<List<KeysetInfo>>> requestKeysetsState({required String mintURL}) async {
+  static Future<CashuResponse<List<KeysetInfoIsar>>> requestKeysetsState({required String mintURL}) async {
     return HTTPClient.get(
       nutURLJoin(mintURL, 'keysets'),
       modelBuilder: (json) {
         if (json is! Map) return null;
         final keysets = Tools.getValueAs(json, 'keysets', []);
-        return keysets.map((e) => KeysetInfo.fromServerMap(e, mintURL)).toList();
+        return keysets.map((e) => KeysetInfoIsar.fromServerMap(e, mintURL)).toList();
       },
     );
   }

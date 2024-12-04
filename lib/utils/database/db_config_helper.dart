@@ -1,5 +1,4 @@
 
-import 'package:isar/isar.dart';
 
 import '../../model/db_config_isar.dart';
 import 'db_isar.dart';
@@ -20,6 +19,6 @@ class DBConfigHelper {
       _migrationKey,
       '1',
     );
-    await CashuIsarDB.shared.put<DBConfigIsar>(config);
+    await CashuIsarDB.put<DBConfigIsar>(config);
   }
 }

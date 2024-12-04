@@ -8,13 +8,13 @@ import '../business/wallet/cashu_manager.dart';
 import '../core/mint_actions.dart';
 import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
-import '../core/nuts/token/proof.dart';
+import '../core/nuts/token/proof_isar.dart';
 import '../core/nuts/token/token_model.dart';
 import '../core/nuts/v1/nut_11.dart';
 import '../model/cashu_token_info.dart';
 import '../model/history_entry_isar.dart';
-import '../model/lightning_invoice.dart';
-import '../model/mint_model.dart';
+import '../model/lightning_invoice_isar.dart';
+import '../model/mint_model_isar.dart';
 import '../utils/log_util.dart';
 import '../utils/network/response.dart';
 import 'nut_P2PK_helper.dart';
@@ -34,11 +34,11 @@ class CashuAPIGeneralClient {
   ];
 
   static Future<CashuResponse<String>> sendEcash({
-    required IMint mint,
+    required IMintIsar mint,
     required int amount,
     String memo = '',
     String unit = 'sat',
-    List<Proof>? proofs,
+    List<ProofIsar>? proofs,
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -74,7 +74,7 @@ class CashuAPIGeneralClient {
   }
 
   static Future<CashuResponse<List<String>>> sendEcashList({
-    required IMint mint,
+    required IMintIsar mint,
     required List<int> amountList,
     CashuTokenP2PKInfo? p2pkOption,
     String memo = '',
@@ -119,7 +119,7 @@ class CashuAPIGeneralClient {
   }
 
   static Future<CashuResponse<String>> sendEcashToPublicKeys({
-    required IMint mint,
+    required IMintIsar mint,
     required int amount,
     required List<String> publicKeys,
     List<String>? refundPubKeys,
@@ -128,7 +128,7 @@ class CashuAPIGeneralClient {
     P2PKSecretSigFlag? sigFlag,
     String memo = '',
     String unit = 'sat',
-    List<Proof>? proofs,
+    List<ProofIsar>? proofs,
   }) async {
 
     await CashuManager.shared.setupFinish.future;
@@ -244,7 +244,7 @@ class CashuAPIGeneralClient {
           mints: mints.toList(),
         );
         // If it is a self-issued token, set its status to "Spent."
-        (await HistoryStore.getHistory(value: [ecashString]))
+        (await HistoryStore.getHistory(values: [ecashString]))
             .where((history) => history.amount < 0)
             .forEach((history) {
           history.isSpent = true;
@@ -255,7 +255,7 @@ class CashuAPIGeneralClient {
   }
 
   static Future<bool> redeemEcashFromInvoice({
-    required IMint mint,
+    required IMintIsar mint,
     required String pr,
   }) async {
 
@@ -266,7 +266,7 @@ class CashuAPIGeneralClient {
     final hash = req.tags.where((e) => e.type == 'payment_hash').firstOrNull?.data;
     if (hash == null) return false;
 
-    final invoice = LightningInvoice(
+    final invoice = LightningInvoiceIsar(
       pr: pr,
       hash: hash,
       amount: (req.amount.toDouble() * 100000000).toInt().toString(),
@@ -275,7 +275,7 @@ class CashuAPIGeneralClient {
     return CashuManager.shared.invoiceHandler.checkInvoice(invoice, true);
   }
 
-  static Future<CashuResponse<String>> getBackUpToken(List<IMint> mints) async {
+  static Future<CashuResponse<String>> getBackUpToken(List<IMintIsar> mints) async {
     List<TokenEntry> entryList = [];
     for (final mint in mints) {
       final proofs = await ProofHelper.getProofs(mint.mintURL);
@@ -341,7 +341,7 @@ class CashuAPIGeneralClient {
       final response = await mint.tokenCheckAction(mintURL: mint.mintURL, proofs: originProofs);
       if (!response.isSuccess || response.data.length != originProofs.length) return null;
 
-      final spendableProofs = <Proof>[];
+      final spendableProofs = <ProofIsar>[];
       final stateResult = response.data;
       for (var i = 0; i < stateResult.length; i++) {
         if (stateResult[i] == TokenState.live) {
@@ -370,7 +370,7 @@ class CashuAPIGeneralClient {
     final token = Nut0.decodedToken(ecashToken);
     if (token == null) return null;
 
-    final proofs = token.entries.fold(<Proof>[], (pre, e) => pre..addAll(e.proofs));
+    final proofs = token.entries.fold(<ProofIsar>[], (pre, e) => pre..addAll(e.proofs));
 
     final firstProofsSecret = proofs.firstOrNull?.secret ?? '';
 

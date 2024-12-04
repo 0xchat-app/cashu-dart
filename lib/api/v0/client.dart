@@ -6,7 +6,7 @@ import '../../business/transaction/transaction_helper.dart';
 import '../../business/wallet/cashu_manager.dart';
 import '../../core/nuts/v0/nut_05.dart';
 import '../../core/nuts/v0/nut_08.dart';
-import '../../model/mint_model.dart';
+import '../../model/mint_model_isar.dart';
 import '../../utils/network/response.dart';
 
 class CashuAPIV0Client {
@@ -17,7 +17,7 @@ class CashuAPIV0Client {
   /// [amount]: The amount to pay.
   /// Returns true if payment is successful.
   static Future<CashuResponse> payingLightningInvoice({
-    required IMint mint,
+    required IMintIsar mint,
     required String pr,
     String paymentKey = '',
   }) async {

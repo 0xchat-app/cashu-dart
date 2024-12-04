@@ -3,12 +3,12 @@ import '../../../utils/network/http_client.dart';
 import '../../../utils/tools.dart';
 import '../define.dart';
 import '../nut_00.dart';
-import '../token/proof.dart';
+import '../token/proof_isar.dart';
 
 class Nut3 {
   static Future<CashuResponse<List<BlindedSignature>>> swap({
     required String mintURL,
-    required List<Proof> proofs,
+    required List<ProofIsar> proofs,
     required List<BlindedMessage> outputs,
   }) async {
     return HTTPClient.post(

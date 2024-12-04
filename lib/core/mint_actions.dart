@@ -2,30 +2,30 @@
 import '../../core/nuts/v0/nut.dart' as v0;
 import '../../core/nuts/v1/nut.dart' as v1;
 import '../model/invoice_isar.dart';
-import '../model/mint_info.dart';
-import '../model/mint_model.dart';
+import '../model/mint_info_isar.dart';
+import '../model/mint_model_isar.dart';
 import '../utils/network/response.dart';
 import 'nuts/define.dart';
 import 'nuts/nut_00.dart';
-import 'nuts/token/proof.dart';
+import 'nuts/token/proof_isar.dart';
 
 typedef RequestKeysAction = Future<CashuResponse<List<MintKeysPayload>>> Function({
   required String mintURL,
   String? keysetId,
 });
 
-typedef RequestMintInfoAction = Future<CashuResponse<MintInfo>> Function({
+typedef RequestMintInfoAction = Future<CashuResponse<MintInfoIsar>> Function({
   required String mintURL,
 });
 
 typedef TokenCheckAction = Future<CashuResponse<List<TokenState>>> Function({
   required String mintURL,
-  required List<Proof> proofs,
+  required List<ProofIsar> proofs,
 });
 
 typedef TokenSwapAction = Future<CashuResponse<List<BlindedSignature>>> Function({
   required String mintURL,
-  required List<Proof> proofs,
+  required List<ProofIsar> proofs,
   required List<BlindedMessage> outputs,
 });
 
@@ -40,7 +40,7 @@ typedef RequestTokensAction = Future<CashuResponse<List<BlindedSignature>>> Func
   required List<BlindedMessage> blindedMessages,
 });
 
-extension ActionEx on IMint {
+extension ActionEx on IMintIsar {
 
   RequestKeysAction get requestKeysAction => maxNutsVersion >= 1
       ? v1.Nut1.requestKeys
@@ -60,7 +60,7 @@ extension ActionEx on IMint {
 
   CreateQuoteAction get createQuoteAction => (maxNutsVersion >= 1
       ? v1.Nut4.requestMintQuote
-      : v0.Nut3.requestMintInvoice) as CreateQuoteAction;
+      : v0.Nut3.requestMintInvoice);
 
   RequestTokensAction get requestTokensAction => maxNutsVersion >= 1
       ? v1.Nut4.requestTokensFromMint

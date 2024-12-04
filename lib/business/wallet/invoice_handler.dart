@@ -4,8 +4,6 @@ import 'dart:async';
 import 'package:cashu_dart/business/wallet/cashu_manager.dart';
 import 'package:cashu_dart/cashu_dart.dart';
 
-import '../../model/history_entry_isar.dart';
-import '../../model/invoice_isar.dart';
 import '../../utils/task_scheduler.dart';
 import '../transaction/hitstory_store.dart';
 import '../transaction/invoice_store.dart';
@@ -103,7 +101,7 @@ class InvoiceHandler {
     return false;
   }
 
-  Future<CashuResponse<List<Proof>>> _exchangeCash(Receipt invoice) async {
+  Future<CashuResponse<List<ProofIsar>>> _exchangeCash(Receipt invoice) async {
     final amount = int.tryParse(invoice.amount);
     if (amount == null) return CashuResponse.fromErrorMsg('Amount is null.');
 

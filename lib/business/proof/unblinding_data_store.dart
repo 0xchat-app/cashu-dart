@@ -1,34 +1,29 @@
 
-import 'package:cashu_dart/utils/list_extension.dart';
+import 'package:cashu_dart/utils/database/db_isar.dart';
 
-import '../../model/unblinding_data.dart';
-import '../../utils/database/db.dart';
+import '../../model/unblinding_data_isar.dart';
 
 class UnblindingDataStore {
-  static Future add(List<UnblindingData> list) async {
-    await CashuDB.sharedInstance.insertObjects<UnblindingData>(list);
+  static Future add(List<UnblindingDataIsar> list) async {
+    await CashuIsarDB.putAll(list);
   }
 
-  static Future<List<UnblindingData>> getData() async {
-    return CashuDB.sharedInstance.objects<UnblindingData>();
+  static Future<List<UnblindingDataIsar>> getData() async {
+    return CashuIsarDB.query<UnblindingDataIsar>().findAll();
   }
 
-  static Future<bool> delete(List<UnblindingData> delData) async {
+  static Future<bool> delete(List<UnblindingDataIsar> delData) async {
     if (delData.isEmpty) return true;
 
-    var rowsAffected = 0;
-
-    final map = delData.groupBy((e) => e.id);
-    await Future.forEach(map.keys, (id) async {
-      final unblindingDataList = map[id] ?? [];
-      final placeholders = unblindingDataList.map((_) => '?').toList().join(',');
-      final secrets = unblindingDataList.map((e) => e.secret).toList();
-      rowsAffected += await CashuDB.sharedInstance.delete<UnblindingData>(
-        where: ' id = ? and secret in ($placeholders)',
-        whereArgs: [id, ...secrets],
-      );
-    });
-
-    return rowsAffected == delData.length;
+    final deleted = await CashuIsarDB.delete<UnblindingDataIsar>((collection) =>
+        collection.filter()
+            .anyOf(delData,
+                (q, delProof) => q
+                    .secretEqualTo(delProof.secret)
+                    .and()
+                    .keysetIdEqualTo(delProof.keysetId))
+            .deleteAll()
+    );
+    return deleted > 0;
   }
 }

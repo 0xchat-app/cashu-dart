@@ -50,7 +50,7 @@ class ProofIsar {
   String get Y => DHKEHelper.hashToCurve(secret);
 
   Map<String, dynamic> toJson() => {
-    'id': id,
+    'id': keysetId,
     'amount': int.tryParse(amount) ?? 0,
     'secret': secret,
     'C': C,

@@ -1,56 +1,46 @@
 
-import 'package:cashu_dart/utils/list_extension.dart';
+import 'package:cashu_dart/model/lightning_invoice_isar.dart';
+import 'package:cashu_dart/utils/database/db_isar.dart';
 
-import '../../model/invoice.dart';
 import '../../model/invoice_isar.dart';
-import '../../model/lightning_invoice.dart';
-import '../../utils/database/db.dart';
 
 class InvoiceStore {
   static Future<bool> addInvoice(Receipt invoice) async {
-    int rowsAffected = 0;
-    if (invoice is IInvoice) {
-      rowsAffected = await CashuDB.sharedInstance.insert<IInvoice>(invoice);
-    } else if (invoice is LightningInvoice) {
-      rowsAffected = await CashuDB.sharedInstance.insert<LightningInvoice>(invoice);
+    if (invoice is IInvoiceIsar) {
+      await CashuIsarDB.put(invoice);
+    } else if (invoice is LightningInvoiceIsar) {
+      await CashuIsarDB.put(invoice);
     }
-    return rowsAffected == 1;
+    return true;
   }
 
   static Future<List<Receipt>> getAllInvoice() async {
     return [
-      ... await CashuDB.sharedInstance.objects<IInvoice>(),
-      ... await CashuDB.sharedInstance.objects<LightningInvoice>(),
+      ... await CashuIsarDB.getAll<IInvoiceIsar>(),
+      ... await CashuIsarDB.getAll<LightningInvoiceIsar>()
     ];
   }
 
   static Future<bool> deleteInvoice(List<Receipt> delInvoices) async {
     if (delInvoices.isEmpty) return true;
 
-    var rowsAffected = 0;
-
-    final map = delInvoices.groupBy((e) => e.mintURL);
-    await Future.forEach(map.keys, (mintURL) async {
-      final invoices = map[mintURL] ?? [];
-      if (invoices.every((e) => e is IInvoice)) {
-        final list = invoices.cast<IInvoice>();
-        final placeholders = list.map((_) => '?').toList().join(',');
-        final quotes = list.map((e) => e.quote).toList();
-        rowsAffected += await CashuDB.sharedInstance.delete<IInvoice>(
-          where: ' mintURL = ? and quote in ($placeholders)',
-          whereArgs: [mintURL, ...quotes],
-        );
-      } else if (invoices.every((e) => e is LightningInvoice)) {
-        final list = invoices.cast<LightningInvoice>();
-        final placeholders = list.map((_) => '?').toList().join(',');
-        final hash = list.map((e) => e.hash).toList();
-        rowsAffected += await CashuDB.sharedInstance.delete<LightningInvoice>(
-          where: ' mintURL = ? and hash in ($placeholders)',
-          whereArgs: [mintURL, ...hash],
-        );
+    final invoiceIds = <int>[];
+    final lightningInvoiceIds = <int>[];
+    for (var invoice in delInvoices) {
+      if (invoice is IInvoiceIsar) {
+        invoiceIds.add(invoice.id);
+      } else if (invoice is LightningInvoiceIsar) {
+        lightningInvoiceIds.add(invoice.id);
       }
-    });
+    }
 
-    return rowsAffected == delInvoices.length;
+    int deleted = 0;
+
+    deleted += await CashuIsarDB.delete<IInvoiceIsar>((collection) =>
+        collection.deleteAll(invoiceIds));
+    deleted += await CashuIsarDB.delete<LightningInvoiceIsar>((collection) =>
+        collection.deleteAll(lightningInvoiceIds));
+
+    return deleted == delInvoices.length;
   }
 }

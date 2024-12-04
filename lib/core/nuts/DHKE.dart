@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:cashu_dart/utils/tools.dart';
 import 'package:pointycastle/export.dart';
 
-import '../../model/unblinding_data.dart';
+import '../../model/unblinding_data_isar.dart';
 import 'define.dart';
-import 'token/proof.dart';
+import 'token/proof_isar.dart';
 
 /*
   Bob (mint)
@@ -90,11 +90,11 @@ class DHKE {
     return C_ - rK;
   }
 
-  static Future<List<Proof>?> constructProofs({
-    required List<UnblindingData> data,
+  static Future<List<ProofIsar>?> constructProofs({
+    required List<UnblindingDataIsar> data,
     required Future<MintKeys?> Function(String mintURL, String unit, String keysetId,) keysFetcher,
   }) async {
-    final List<Proof> proofs = [];
+    final List<ProofIsar> proofs = [];
     for (int i = 0; i < data.length; i++) {
       final unblindingData = data[i];
       final promise = unblindingData.signature;
@@ -116,8 +116,8 @@ class DHKE {
 
       final C = unblindingSignature(promise.C_, r, K);
       if (C == null) return null;
-      final unblindingProof = Proof(
-        id: promise.id,
+      final unblindingProof = ProofIsar(
+        keysetId: promise.id,
         amount: promise.amount,
         secret: secret,
         C: ecPointToHex(C),

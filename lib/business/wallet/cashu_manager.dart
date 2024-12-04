@@ -1,6 +1,8 @@
 
 import 'dart:async';
 
+import 'package:cashu_dart/model/unblinding_data_isar.dart';
+
 import '../../core/nuts/token/proof.dart';
 import '../../core/nuts/token/proof_isar.dart';
 import '../../model/db_config_isar.dart';
@@ -17,6 +19,7 @@ import '../../model/mint_info.dart';
 import '../../model/mint_info_isar.dart';
 import '../../model/mint_model.dart';
 import '../../model/mint_model_isar.dart';
+import '../../model/unblinding_data.dart';
 import '../../utils/database/db.dart';
 import '../../utils/database/db_isar.dart';
 import '../../utils/database/db_migrate_helper.dart';
@@ -25,7 +28,7 @@ import '../mint/mint_helper.dart';
 import '../mint/mint_info_store.dart';
 import '../mint/mint_store.dart';
 import '../proof/proof_helper.dart';
-import 'ecash_manager.dart';
+import 'proof_blinding_manager.dart';
 import 'invoice_handler.dart';
 
 typedef SignWithKeyFunction = Future<String> Function(String pubkey, String message);
@@ -36,7 +39,7 @@ class CashuManager {
 
   List<String>? defaultMint;
 
-  final List<IMint> mints = [];
+  final List<IMintIsar> mints = [];
   final Set<String> mintURLQueue = {};
   InvoiceHandler invoiceHandler = InvoiceHandler();
   final List<CashuListener> _listeners = [];
@@ -103,6 +106,7 @@ class CashuManager {
       ),
     ]);
     await DBMigrateHelper.trySqliteToIsar();
+    await CashuDB.sharedInstance.db.close();
   }
 
   Future<void> _openSQLiteDB({
@@ -137,6 +141,7 @@ class CashuManager {
       LightningInvoiceIsarSchema,
       MintInfoIsarSchema,
       IMintIsarSchema,
+      UnblindingDataIsarSchema,
       DBConfigIsarSchema,
     ];
     await CashuIsarDB.shared.open('cashu-$dbName');
@@ -144,7 +149,7 @@ class CashuManager {
 
   Future<void> setupMint() async {
     try {
-      List<IMint> dbMints = await MintStore.getMints();
+      List<IMintIsar> dbMints = await MintStore.getMints();
       if (dbMints.isEmpty) {
         dbMints = await _addDefaultMint();
       }
@@ -154,45 +159,45 @@ class CashuManager {
     }
   }
 
-  Future<List<IMint>> _addDefaultMint() async {
+  Future<List<IMintIsar>> _addDefaultMint() async {
     defaultMint ??= ['https://testnut.cashu.space'];
-    final result = <IMint>[];
+    final result = <IMintIsar>[];
     for (final mintURL in defaultMint!) {
-      final mint = IMint(mintURL: mintURL, maxNutsVersion: 1);
+      final mint = IMintIsar(mintURL: mintURL, maxNutsVersion: 1);
       await MintStore.addMints([mint]);
       result.add(mint);
     }
     return result;
   }
 
-  Future<void> _initializeMints(List<IMint> dbMints) async {
-    for (IMint mint in dbMints) {
+  Future<void> _initializeMints(List<IMintIsar> dbMints) async {
+    for (IMintIsar mint in dbMints) {
       await _setupMintInfo(mint);
       await _setupMintKeyset(mint);
       mints.add(mint);
     }
   }
 
-  Future<void> _setupMintInfo(IMint mint) async {
+  Future<void> _setupMintInfo(IMintIsar mint) async {
     final info = await MintInfoStore.getMintInfo(mint.mintURL);
     if (info != null) {
       mint.info = info;
     }
   }
 
-  Future<void> _setupMintKeyset(IMint mint) async {
+  Future<void> _setupMintKeyset(IMintIsar mint) async {
     await MintHelper.updateMintKeysetFromLocal(mint);
   }
 
   Future<void> setupBalance() async {
-    for (IMint mint in mints) {
+    for (IMintIsar mint in mints) {
       await updateMintBalance(mint);
     }
   }
 
-  Future<IMint?> getMint(String mintURL) async {
+  Future<IMintIsar?> getMint(String mintURL) async {
     final url = MintHelper.getMintURL(mintURL);
-    for (IMint mint in mints) {
+    for (IMintIsar mint in mints) {
       if (mint.mintURL == url) {
         return mint;
       }
@@ -204,7 +209,7 @@ class CashuManager {
     }
   }
 
-  Future<IMint?> addMint(String mintURL) async {
+  Future<IMintIsar?> addMint(String mintURL) async {
 
     final url = MintHelper.getMintURL(mintURL);
 
@@ -216,7 +221,7 @@ class CashuManager {
 
     final maxNutsVersion = await MintHelper.getMaxNutsVersion(url);
 
-    final mint = IMint(mintURL: url, maxNutsVersion: maxNutsVersion);
+    final mint = IMintIsar(mintURL: url, maxNutsVersion: maxNutsVersion);
 
     final fetchSuccess = await MintHelper.updateMintInfoFromRemote(mint);
     if (!fetchSuccess) {
@@ -232,7 +237,7 @@ class CashuManager {
     return mint;
   }
 
-  Future<bool> updateMintName(IMint mint) async {
+  Future<bool> updateMintName(IMintIsar mint) async {
     final index = mints.indexWhere((element) => element.mintURL == mint.mintURL);
     if (index < 0) {
       return false;
@@ -241,7 +246,7 @@ class CashuManager {
     return await MintStore.updateMint(mint);
   }
 
-  Future updateMintBalance([IMint? mint]) async {
+  Future updateMintBalance([IMintIsar? mint]) async {
     final mints = this.mints.where((element) => mint == null || element.mintURL == mint.mintURL);
     if (mints.isEmpty) {
       return false;
@@ -260,7 +265,7 @@ class CashuManager {
     }
   }
 
-  Future<bool> deleteMint(IMint mint) async {
+  Future<bool> deleteMint(IMintIsar mint) async {
     try {
       final target = mints.firstWhere((element) => element.mintURL == mint.mintURL);
       mints.remove(target);
@@ -284,7 +289,7 @@ class CashuManager {
     }
   }
 
-  void notifyListenerForBalanceChanged(IMint mint) {
+  void notifyListenerForBalanceChanged(IMintIsar mint) {
     for (var e in _listeners) {
       e.handleBalanceChanged(mint);
     }
