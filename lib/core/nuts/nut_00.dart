@@ -31,6 +31,14 @@ class BlindedMessage {
   final num amount;
   final String B_;
 
+  factory BlindedMessage.fromServerMap(Map json) {
+    return BlindedMessage(
+      id: Tools.getValueAs(json, 'id', ''),
+      amount: Tools.getValueAs(json, 'amount', 0),
+      B_: Tools.getValueAs(json, 'B_', ''),
+    );
+  }
+
   @override
   String toString() {
     return '${super.toString()}, id: $id, amount: $amount, B_: $B_';

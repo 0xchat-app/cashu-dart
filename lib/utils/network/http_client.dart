@@ -61,7 +61,7 @@ class HTTPClient {
 
     try {
       final logPrefix = '[http - ${requestData.method.text}] uri: ${requestData.uri}';
-      LogUtils.e(() => '$logPrefix, request: ${requestData.body}');
+      LogUtils.i(() => '$logPrefix, request: ${requestData.body}');
       final response = await request(requestData, timeOut: timeOut);
       return handleWithResponse(
         requestData: requestData,
@@ -91,7 +91,7 @@ class HTTPClient {
 
     try {
       final logPrefix = '[http - ${requestData.method.text}] uri: ${requestData.uri}';
-      LogUtils.e(() => '$logPrefix, request: ${requestData.body}');
+      LogUtils.i(() => '$logPrefix, request: ${requestData.body}');
       final response = await request(requestData, timeOut: timeOut);
       return handleWithResponse(
         requestData: requestData,
@@ -161,7 +161,7 @@ class HTTPClient {
     T? Function(dynamic json)? modelBuilder,
   }) async {
     final logPrefix = '[http - ${requestData.method.text}] uri: ${requestData.uri}';
-    LogUtils.e(() => '$logPrefix, response: ${response.body}, status: ${response.statusCode}');
+    LogUtils.i(() => '$logPrefix, response: ${response.body}, status: ${response.statusCode}');
 
     if (response.statusCode == HttpStatus.ok) {
       final bodyJson = jsonDecode(response.body);
