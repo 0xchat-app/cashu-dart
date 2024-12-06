@@ -21,10 +21,10 @@ class CashuIsarDB {
     Directory directory;
     if (Platform.isAndroid) {
       directory = await getApplicationDocumentsDirectory();
-    } else if (Platform.isIOS) {
+    } else if (Platform.isIOS || Platform.isMacOS) {
       directory = await getApplicationSupportDirectory();
     } else {
-      throw Exception('Unsupported platform');
+      directory = await getLibraryDirectory();
     }
     final dbPath = directory.path;
     isar = Isar.getInstance(dbName) ?? await Isar.open(
