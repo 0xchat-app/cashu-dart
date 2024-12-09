@@ -1,5 +1,6 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
+import 'package:cashu_dart/utils/third_party_extensions.dart';
 import 'package:decimal/decimal.dart';
 
 import '../../business/proof/proof_helper.dart';
@@ -47,8 +48,7 @@ class CashuAPIV1Client {
     final fee = int.tryParse(quoteInfoResponse.data.fee) ?? 0;
 
     // Get proofs for pay.
-    final req = Bolt11PaymentRequest(pr);
-    final amount = (req.amount * Decimal.fromInt(100000000)).toBigInt().toInt();
+    final amount = Bolt11PaymentRequest(pr).satsAmount;
 
     processCallback?.call('Looking for proof for payment...');
     final response = await ProofHelper.getProofsForMelt(

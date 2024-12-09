@@ -17,6 +17,7 @@ import '../model/lightning_invoice_isar.dart';
 import '../model/mint_model_isar.dart';
 import '../utils/log_util.dart';
 import '../utils/network/response.dart';
+import '../utils/third_party_extensions.dart';
 import 'nut_P2PK_helper.dart';
 
 class CashuAPIGeneralClient {
@@ -261,7 +262,7 @@ class CashuAPIGeneralClient {
 
     final req = Bolt11PaymentRequest(pr);
     for (var tag in req.tags) {
-      LogUtils.e(() => '[I][Cashu - invoice decode]${tag.type}: ${tag.data}');
+      LogUtils.i(() => '[Cashu - invoice decode]${tag.type}: ${tag.data}');
     }
     final hash = req.tags.where((e) => e.type == 'payment_hash').firstOrNull?.data;
     if (hash == null) return false;
@@ -269,7 +270,7 @@ class CashuAPIGeneralClient {
     final invoice = LightningInvoiceIsar(
       pr: pr,
       hash: hash,
-      amount: (req.amount.toDouble() * 100000000).toInt().toString(),
+      amount: req.satsAmount.toString(),
       mintURL: mint.mintURL,
     );
     return CashuManager.shared.invoiceHandler.checkInvoice(invoice, true);
@@ -313,7 +314,7 @@ class CashuAPIGeneralClient {
     try {
       final req = Bolt11PaymentRequest(pr);
       for (var tag in req.tags) {
-        LogUtils.e(() => '[Cashu - invoice decode]${tag.type}: ${tag.data}');
+        LogUtils.i(() => '[Cashu - invoice decode]${tag.type}: ${tag.data}');
       }
       return req;
     } catch (_) {
@@ -324,7 +325,7 @@ class CashuAPIGeneralClient {
   static int? amountOfLightningInvoice(String pr) {
     final request = _tryConstructRequestFromPr(pr);
     if (request == null) return null;
-    return (request.amount.toDouble() * 100000000).toInt();
+    return request.satsAmount;
   }
 
   static Future<String?> tryCreateSpendableEcashToken(String ecashToken) async {
