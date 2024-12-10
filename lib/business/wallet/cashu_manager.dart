@@ -75,6 +75,7 @@ class CashuManager {
   }
 
   Future changeDBPassword(String identify, String newPassword) async {
+    if (!await CashuDB.sharedInstance.isExistsDB(dbNameWithIdentify(identify))) return;
     await CashuDB.sharedInstance.execute("PRAGMA rekey = '$newPassword'");
     await CashuDB.sharedInstance.closeDatabase();
     await CashuDB.sharedInstance.open(
@@ -105,14 +106,18 @@ class CashuManager {
         dbName: dbName,
       ),
     ]);
-    await DBMigrateHelper.trySqliteToIsar();
-    await CashuDB.sharedInstance.db.close();
+
+    if (await CashuDB.sharedInstance.isExistsDB(dbNameWithIdentify(dbName))) {
+      await DBMigrateHelper.trySqliteToIsar();
+      await CashuDB.sharedInstance.db.close();
+    }
   }
 
   Future<void> _openSQLiteDB({
     String dbName = 'default',
     String? dbPassword,
   }) async {
+    if (!await CashuDB.sharedInstance.isExistsDB(dbNameWithIdentify(dbName))) return;
     CashuDB.sharedInstance.schemes = [
       KeysetInfo,
       Proof,

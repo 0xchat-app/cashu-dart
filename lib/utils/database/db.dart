@@ -30,6 +30,10 @@ class CashuDB {
     return sharedInstance;
   }
 
+  Future<bool> isExistsDB(String dbPath) {
+    return databaseExists(dbPath);
+  }
+
   Future open(String dbPath, {int? version, String? password}) async {
     if (deleteDBIfNeedMirgration) {
       bool exists = await databaseExists(dbPath);
