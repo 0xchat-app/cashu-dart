@@ -1,5 +1,5 @@
-import 'dart:math';
-import 'dart:typed_data';
+import 'dart:convert';
+import 'package:cashu_dart/utils/crypto_utils.dart';
 import 'package:cashu_dart/utils/tools.dart';
 import 'package:pointycastle/export.dart';
 
@@ -31,61 +31,27 @@ import 'token/proof_isar.dart';
 
 class DHKE {
 
-  static Uint8List randomPrivateKey() {
-    var random = FortunaRandom();
-    var randomSeed = Random.secure();
-    List<int> seeds = List<int>.generate(32, (_) => randomSeed.nextInt(256));
-    random.seed(KeyParameter(Uint8List.fromList(seeds)));
-
-    return random.nextBytes(32);
-  }
-
-  static ECPoint hashToCurve(Uint8List secret) {
-    ECPoint? point;
-    var digest = SHA256Digest();
-
-    while (point == null) {
-      Uint8List hash = digest.process(secret);
-      String hashHex = hash.asHex();
-      String pointXHex = '02$hashHex';
-
-      try {
-        point = pointFromHex(pointXHex);
-      } catch (error) {
-        secret = digest.process(secret);
-      }
-    }
-    return point;
-  }
-
   // blinding: B_ = Y + rG
-  static BlindMessageResult blindMessage(Uint8List secret, [BigInt? r]) {
+  static BlindMessageResult blindMessage(String secret, [BigInt? r]) {
 
-    var Y = hashToCurve(secret);
+    var Y = secret.hashToCurve();
 
     // Random r
-    r ??= randomPrivateKey().asBigInt();
+    r ??= CryptoUtils.randomPrivateKey().asBigInt();
 
     // Calculate the point rG
-    final domainParams = ECCurve_secp256k1();
-    final G = domainParams.G;
+    final G = CryptoUtils.getG();
     final rG = G * r;
     final B_ = Y + rG;
 
-    final bStr = B_ != null ? DHKE.ecPointToHex(B_) : '';
+    final bStr = B_ != null ? B_.ecPointToHex() : '';
     return (bStr, r);
-  }
-
-  static BigInt generateRandomBigInt() {
-    var rnd = Random.secure();
-    var bytes = List<int>.generate(32, (_) => rnd.nextInt(256));
-    return BigInt.parse(Uint8List.fromList(bytes).asHex(), radix: 16);
   }
 
   // unblinding: C_ - rK = kY + krG - krG = kY = C
   static ECPoint? unblindingSignature(String cHex, BigInt r, String kHex) {
-    final C_ = pointFromHex(cHex);
-    final rK = pointFromHex(kHex) * r;
+    final C_ = cHex.pointFromHex();
+    final rK = kHex.pointFromHex() * r;
     if (rK == null) return null;
     return C_ - rK;
   }
@@ -120,8 +86,8 @@ class DHKE {
         keysetId: promise.id,
         amount: promise.amount,
         secret: secret,
-        C: ecPointToHex(C),
         dleq: dleq,
+        C: C.ecPointToHex(),
       );
       proofs.add(unblindingProof);
     }
@@ -129,16 +95,5 @@ class DHKE {
     if (proofs.length != data.length) return null;
 
     return proofs;
-  }
-
-  static String ecPointToHex(ECPoint point, [bool compressed = true]) {
-    return point.getEncoded(compressed).map(
-      (byte) => byte.toRadixString(16).padLeft(2, '0'),
-    ).join();
-  }
-
-  static ECPoint pointFromHex(String hex) {
-    final handler = ECCurve_secp256k1();
-    return handler.curve.decodePoint(hex.hexToBytes())!;
   }
 }

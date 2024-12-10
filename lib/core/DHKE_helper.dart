@@ -2,9 +2,10 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cashu_dart/utils/tools.dart';
 import 'package:crypto/crypto.dart';
 
+import '../utils/crypto_utils.dart';
+import '../utils/tools.dart';
 import 'nuts/DHKE.dart';
 import 'nuts/define.dart';
 import 'nuts/nut_00.dart';
@@ -25,8 +26,8 @@ class DHKEHelper {
 
     for (var i = 0; i < amounts.length; i++) {
       final amount = amounts[i];
-      final secret = secretCreator?.call(amount) ?? DHKE.randomPrivateKey().asBase64String();
-      final (B_, r) = DHKE.blindMessage(secret.asBytes());
+      final secret = secretCreator?.call(amount) ?? CryptoUtils.randomPrivateKey().asBase64String();
+      final (B_, r) = DHKE.blindMessage(secret);
       if (B_.isEmpty) continue;
 
       final blindedMessage = BlindedMessage(
@@ -105,8 +106,8 @@ class DHKEHelper {
       );
       try {
         // will error if point does not lie on curve
-        final point = DHKE.pointFromHex('02${hash.asHex()}');
-        return DHKE.ecPointToHex(point);
+        final point = '02${hash.asHex()}'.pointFromHex();
+        return point.ecPointToHex();
       } catch (e) {
         counter++;
       }

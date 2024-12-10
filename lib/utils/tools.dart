@@ -37,16 +37,13 @@ extension Uint8ListEx on Uint8List {
   }
 
   BigInt asBigInt() {
-    final hexString = map(
-      (byte) => byte.toRadixString(16).padLeft(2, '0'),
-    ).join();
-    return BigInt.parse(hexString, radix: 16);
+    return BigInt.parse(asHex(), radix: 16);
   }
 }
 
 extension StringHexEx on String {
 
-  BigInt asBigInt() => BigInt.tryParse(this) ?? BigInt.zero;
+  BigInt asBigInt({int? radix}) => BigInt.tryParse(this, radix: radix) ?? BigInt.zero;
 
   Uint8List base64AsBytes() {
     return base64.decode(this);

@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../core/nuts/DHKE.dart';
 import '../core/nuts/v1/nut_11.dart';
 import '../model/cashu_token_info.dart';
+import '../utils/crypto_utils.dart';
 import '../utils/tools.dart';
 
 class NutP2PKHelper {
@@ -84,7 +85,7 @@ class NutP2PKHelper {
     ];
 
     return P2PKSecret(
-      nonce: DHKE.randomPrivateKey().asBase64String(),
+      nonce: CryptoUtils.randomPrivateKey().asBase64String(),
       data: p2pkSecretData,
       tags: p2pkSecretTags,
     );
