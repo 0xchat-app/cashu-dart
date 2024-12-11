@@ -52,7 +52,7 @@ class DBMigrateHelper {
       amount: proof.amount,
       secret: proof.secret,
       C: proof.C,
-      dleq: proof.dleq,
+      dleqPlainText: proof.dleqPlainText,
     )).toList();
     await CashuIsarDB.putAll<ProofIsar>(proofsISAR);
   }

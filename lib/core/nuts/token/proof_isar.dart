@@ -14,9 +14,9 @@ class ProofIsar {
     required this.amount,
     required this.secret,
     required this.C,
+    required this.dleqPlainText,
     this.witness = '',
-    this.dleq,
-  });
+  }) : dleq = dleqFromRaw(dleqPlainText);
 
   Id id = Isar.autoIncrement;
 
@@ -36,8 +36,7 @@ class ProofIsar {
   @Ignore()
   String witness;
 
-  @Ignore()
-  String dleqPlainText = '';
+  final String dleqPlainText;
 
   @Ignore()
   Map<String, dynamic>? dleq;
@@ -81,10 +80,10 @@ class ProofIsar {
     }
 
     final dleqRaw = map['dleq'];
-    Map<String, dynamic>? dleq;
-    if (dleqRaw is Map) {
-      dleq = dleqRaw.map((key, value) => MapEntry(key.toString(), value));
-    }
+    var dleqPlainText = '';
+    try {
+      dleqPlainText = json.encode(dleqRaw);
+    } catch (_) {}
 
     return ProofIsar(
       keysetId: Tools.getValueAs<String>(map, 'id', ''),
@@ -92,55 +91,47 @@ class ProofIsar {
       secret: Tools.getValueAs<String>(map, 'secret', ''),
       C: Tools.getValueAs<String>(map, 'C', ''),
       witness: witness,
-      dleq: dleq,
+      dleqPlainText: dleqPlainText,
     );
   }
 
-  factory ProofIsar.fromV4Json(String keysetId, Map json) {
+  factory ProofIsar.fromV4Json(String keysetId, Map map) {
     var amount = '0';
-    final amountRaw = json['a'];
+    final amountRaw = map['a'];
     if (amountRaw is int) {
       amount = amountRaw.toString();
     } else if (amountRaw is String) {
       amount = amountRaw;
     }
 
-    var witness = json['w'];
+    var witness = map['w'];
     if (witness is! String) {
       witness = '';
     }
 
-    final dleqRaw = json['d'];
-    Map<String, dynamic>? dleq;
-    if (dleqRaw is Map) {
-      dleq = dleqRaw.map((key, value) => MapEntry(key.toString(), value));
-    }
+    final dleqRaw = map['d'];
+    var dleqPlainText = '';
+    try {
+      dleqPlainText = json.encode(dleqRaw);
+    } catch (_) {}
 
     return ProofIsar(
       keysetId: keysetId,
       amount: amount,
-      secret: Tools.getValueAs<String>(json, 's', ''),
-      C: Tools.getValueAs<String>(json, 'c', ''),
+      secret: Tools.getValueAs<String>(map, 's', ''),
+      C: Tools.getValueAs<String>(map, 'c', ''),
       witness: witness,
-      dleq: dleq,
+      dleqPlainText: dleqPlainText,
     );
   }
 
   static ProofIsar fromMap(Map<String, Object?> map) {
-    final dleqPlainText = map['dleqPlainText'];
-    Map<String, dynamic>? dleq;
-    if (dleqPlainText is String && dleqPlainText.isNotEmpty) {
-      try {
-        dleq = jsonDecode(dleqPlainText);
-      } catch(_) { }
-    }
-
     return ProofIsar(
       keysetId: Tools.getValueAs<String>(map, 'id', ''),
       amount: Tools.getValueAs<String>(map, 'amount', '0'),
       secret: Tools.getValueAs<String>(map, 'secret', ''),
       C: Tools.getValueAs<String>(map, 'C', ''),
-      dleq: dleq,
+      dleqPlainText: Tools.getValueAs<String>(map, 'dleqPlainText', ''),
     );
   }
 
@@ -153,12 +144,21 @@ class ProofIsar {
         'amount': amount,
         'secret': secret,
         'C': C,
-        'dleqPlainText': jsonEncode(dleq)
+        'dleqPlainText': dleqPlainText
       },
       if (id != null)
         'id': id,
     };
     return ProofIsar.fromMap(newData);
+  }
+
+  static Map<String, dynamic> dleqFromRaw(String dleqPlainText) {
+    try {
+      final decoded = json.decode(dleqPlainText) as Map;
+      return decoded.map((key, value) => MapEntry(key.toString(), value));
+    } catch (_) {
+      return {};
+    }
   }
 
   @override

@@ -74,10 +74,14 @@ class DHKE {
       if (K == null || r == BigInt.zero) {
         throw Exception('[E][Cashu - constructProofs] key not found.');
       }
-      
+
+      var dleqPlainText = '';
       final dleq = promise.dleq?.map((key, value) => MapEntry(key.toString(), value));
       if (dleq != null && dleq.isNotEmpty) {
-        dleq['r'] = r.toString();
+        dleq['r'] = r.toRadixString(16);
+        try {
+          dleqPlainText = json.encode(dleq);
+        } catch (_) {}
       }
 
       final C = unblindingSignature(promise.C_, r, K);
@@ -86,8 +90,8 @@ class DHKE {
         keysetId: promise.id,
         amount: promise.amount,
         secret: secret,
-        dleq: dleq,
         C: C.ecPointToHex(),
+        dleqPlainText: dleqPlainText,
       );
       proofs.add(unblindingProof);
     }

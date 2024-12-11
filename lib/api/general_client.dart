@@ -317,7 +317,8 @@ class CashuAPIGeneralClient {
         LogUtils.i(() => '[Cashu - invoice decode]${tag.type}: ${tag.data}');
       }
       return req;
-    } catch (_) {
+    } catch (e, s) {
+      LogUtils.e(() => '[Cashu - invoice decode] error: $e, $s');
       return null;
     }
   }

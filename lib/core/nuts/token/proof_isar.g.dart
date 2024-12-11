@@ -27,13 +27,18 @@ const ProofIsarSchema = CollectionSchema(
       name: r'amount',
       type: IsarType.string,
     ),
-    r'keysetId': PropertySchema(
+    r'dleqPlainText': PropertySchema(
       id: 2,
+      name: r'dleqPlainText',
+      type: IsarType.string,
+    ),
+    r'keysetId': PropertySchema(
+      id: 3,
       name: r'keysetId',
       type: IsarType.string,
     ),
     r'secret': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'secret',
       type: IsarType.string,
     )
@@ -79,6 +84,7 @@ int _proofIsarEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.C.length * 3;
   bytesCount += 3 + object.amount.length * 3;
+  bytesCount += 3 + object.dleqPlainText.length * 3;
   bytesCount += 3 + object.keysetId.length * 3;
   bytesCount += 3 + object.secret.length * 3;
   return bytesCount;
@@ -92,8 +98,9 @@ void _proofIsarSerialize(
 ) {
   writer.writeString(offsets[0], object.C);
   writer.writeString(offsets[1], object.amount);
-  writer.writeString(offsets[2], object.keysetId);
-  writer.writeString(offsets[3], object.secret);
+  writer.writeString(offsets[2], object.dleqPlainText);
+  writer.writeString(offsets[3], object.keysetId);
+  writer.writeString(offsets[4], object.secret);
 }
 
 ProofIsar _proofIsarDeserialize(
@@ -105,8 +112,9 @@ ProofIsar _proofIsarDeserialize(
   final object = ProofIsar(
     C: reader.readString(offsets[0]),
     amount: reader.readString(offsets[1]),
-    keysetId: reader.readString(offsets[2]),
-    secret: reader.readString(offsets[3]),
+    dleqPlainText: reader.readString(offsets[2]),
+    keysetId: reader.readString(offsets[3]),
+    secret: reader.readString(offsets[4]),
   );
   object.id = id;
   return object;
@@ -126,6 +134,8 @@ P _proofIsarDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -660,6 +670,142 @@ extension ProofIsarQueryFilter
     });
   }
 
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dleqPlainText',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'dleqPlainText',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'dleqPlainText',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'dleqPlainText',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'dleqPlainText',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'dleqPlainText',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'dleqPlainText',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'dleqPlainText',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dleqPlainText',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition>
+      dleqPlainTextIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'dleqPlainText',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<ProofIsar, ProofIsar, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -1006,6 +1152,18 @@ extension ProofIsarQuerySortBy on QueryBuilder<ProofIsar, ProofIsar, QSortBy> {
     });
   }
 
+  QueryBuilder<ProofIsar, ProofIsar, QAfterSortBy> sortByDleqPlainText() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dleqPlainText', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterSortBy> sortByDleqPlainTextDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dleqPlainText', Sort.desc);
+    });
+  }
+
   QueryBuilder<ProofIsar, ProofIsar, QAfterSortBy> sortByKeysetId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'keysetId', Sort.asc);
@@ -1054,6 +1212,18 @@ extension ProofIsarQuerySortThenBy
   QueryBuilder<ProofIsar, ProofIsar, QAfterSortBy> thenByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterSortBy> thenByDleqPlainText() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dleqPlainText', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ProofIsar, ProofIsar, QAfterSortBy> thenByDleqPlainTextDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dleqPlainText', Sort.desc);
     });
   }
 
@@ -1110,6 +1280,14 @@ extension ProofIsarQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ProofIsar, ProofIsar, QDistinct> distinctByDleqPlainText(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'dleqPlainText',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ProofIsar, ProofIsar, QDistinct> distinctByKeysetId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1142,6 +1320,12 @@ extension ProofIsarQueryProperty
   QueryBuilder<ProofIsar, String, QQueryOperations> amountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'amount');
+    });
+  }
+
+  QueryBuilder<ProofIsar, String, QQueryOperations> dleqPlainTextProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'dleqPlainText');
     });
   }
 

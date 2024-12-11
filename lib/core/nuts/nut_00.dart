@@ -70,7 +70,7 @@ class BlindedSignature {
 
   @override
   String toString() {
-    return '${super.toString()}, id: $id, amount: $amount, C_: $C_';
+    return '${super.toString()}, id: $id, amount: $amount, C_: $C_, dleq: $dleq';
   }
 }
 
