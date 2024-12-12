@@ -34,7 +34,7 @@ class IHistoryEntryIsar {
     required this.mints,
     this.fee,
     this.isSpent,
-  });
+  }) : memo = parseMemoFromValue(value, IHistoryType.fromValue(typeRaw));
 
   Id id = Isar.autoIncrement;
 
@@ -58,11 +58,12 @@ class IHistoryEntryIsar {
   /// Whether the token is spent
   bool? isSpent;
 
-  @ignore
-  String? get memo {
+  String memo;
+
+  static String parseMemoFromValue(String value, IHistoryType type) {
     switch (type) {
       case IHistoryType.eCash:
-        return Nut0.decodedToken(value)?.memo;
+        return Nut0.decodedToken(value)?.memo ?? '';
       case IHistoryType.lnInvoice:
         try {
           final req = Bolt11PaymentRequest(value);
@@ -71,11 +72,11 @@ class IHistoryEntryIsar {
               return tag.data == 'enuts' ? 'Cashu deposit' : tag.data;
             }
           }
-          return null;
+          return '';
         } catch (_) {
-          return null;
+          return '';
         }
-      default: return null;
+      default: return '';
     }
   }
 }

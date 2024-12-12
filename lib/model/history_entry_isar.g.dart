@@ -32,23 +32,28 @@ const IHistoryEntryIsarSchema = CollectionSchema(
       name: r'isSpent',
       type: IsarType.bool,
     ),
-    r'mints': PropertySchema(
+    r'memo': PropertySchema(
       id: 3,
+      name: r'memo',
+      type: IsarType.string,
+    ),
+    r'mints': PropertySchema(
+      id: 4,
       name: r'mints',
       type: IsarType.stringList,
     ),
     r'timestamp': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'timestamp',
       type: IsarType.double,
     ),
     r'typeRaw': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'typeRaw',
       type: IsarType.long,
     ),
     r'value': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'value',
       type: IsarType.string,
     )
@@ -73,6 +78,7 @@ int _iHistoryEntryIsarEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.memo.length * 3;
   bytesCount += 3 + object.mints.length * 3;
   {
     for (var i = 0; i < object.mints.length; i++) {
@@ -93,10 +99,11 @@ void _iHistoryEntryIsarSerialize(
   writer.writeDouble(offsets[0], object.amount);
   writer.writeLong(offsets[1], object.fee);
   writer.writeBool(offsets[2], object.isSpent);
-  writer.writeStringList(offsets[3], object.mints);
-  writer.writeDouble(offsets[4], object.timestamp);
-  writer.writeLong(offsets[5], object.typeRaw);
-  writer.writeString(offsets[6], object.value);
+  writer.writeString(offsets[3], object.memo);
+  writer.writeStringList(offsets[4], object.mints);
+  writer.writeDouble(offsets[5], object.timestamp);
+  writer.writeLong(offsets[6], object.typeRaw);
+  writer.writeString(offsets[7], object.value);
 }
 
 IHistoryEntryIsar _iHistoryEntryIsarDeserialize(
@@ -109,12 +116,13 @@ IHistoryEntryIsar _iHistoryEntryIsarDeserialize(
     amount: reader.readDouble(offsets[0]),
     fee: reader.readLongOrNull(offsets[1]),
     isSpent: reader.readBoolOrNull(offsets[2]),
-    mints: reader.readStringList(offsets[3]) ?? [],
-    timestamp: reader.readDouble(offsets[4]),
-    typeRaw: reader.readLong(offsets[5]),
-    value: reader.readString(offsets[6]),
+    mints: reader.readStringList(offsets[4]) ?? [],
+    timestamp: reader.readDouble(offsets[5]),
+    typeRaw: reader.readLong(offsets[6]),
+    value: reader.readString(offsets[7]),
   );
   object.id = id;
+  object.memo = reader.readString(offsets[3]);
   return object;
 }
 
@@ -132,12 +140,14 @@ P _iHistoryEntryIsarDeserializeProp<P>(
     case 2:
       return (reader.readBoolOrNull(offset)) as P;
     case 3:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 5:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 6:
+      return (reader.readLong(offset)) as P;
+    case 7:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -460,6 +470,142 @@ extension IHistoryEntryIsarQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSpent',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'memo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'memo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'memo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'memo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterFilterCondition>
+      memoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'memo',
+        value: '',
       ));
     });
   }
@@ -998,6 +1144,20 @@ extension IHistoryEntryIsarQuerySortBy
   }
 
   QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterSortBy>
+      sortByMemo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterSortBy>
+      sortByMemoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterSortBy>
       sortByTimestamp() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timestamp', Sort.asc);
@@ -1097,6 +1257,20 @@ extension IHistoryEntryIsarQuerySortThenBy
   }
 
   QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterSortBy>
+      thenByMemo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterSortBy>
+      thenByMemoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QAfterSortBy>
       thenByTimestamp() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'timestamp', Sort.asc);
@@ -1162,6 +1336,13 @@ extension IHistoryEntryIsarQueryWhereDistinct
     });
   }
 
+  QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QDistinct> distinctByMemo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memo', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<IHistoryEntryIsar, IHistoryEntryIsar, QDistinct>
       distinctByMints() {
     return QueryBuilder.apply(this, (query) {
@@ -1214,6 +1395,12 @@ extension IHistoryEntryIsarQueryProperty
   QueryBuilder<IHistoryEntryIsar, bool?, QQueryOperations> isSpentProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSpent');
+    });
+  }
+
+  QueryBuilder<IHistoryEntryIsar, String, QQueryOperations> memoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memo');
     });
   }
 
