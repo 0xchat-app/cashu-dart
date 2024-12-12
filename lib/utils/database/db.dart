@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'dart:io';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:reflectable/reflectable.dart';
 import '../log_util.dart';
@@ -30,13 +31,16 @@ class CashuDB {
     return sharedInstance;
   }
 
-  Future<bool> isExistsDB(String dbPath) {
+  Future<bool> isExistsDB(String dbPath) async {
+    if (!Platform.isIOS && !Platform.isAndroid) return false;
     return databaseExists(dbPath);
   }
 
   Future open(String dbPath, {int? version, String? password}) async {
+    if (!Platform.isIOS && !Platform.isAndroid) return ;
+
     if (deleteDBIfNeedMirgration) {
-      bool exists = await databaseExists(dbPath);
+      bool exists = await isExistsDB(dbPath);
       if (exists) {
         LogUtils.e(() => "delete Table");
         await deleteDatabase(dbPath);
