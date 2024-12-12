@@ -57,13 +57,31 @@ class ProofIsar {
       'witness': witness
   };
 
-  Map<String, dynamic> toV4Json() => {
-    'a': int.tryParse(amount) ?? 0,
-    's': secret,
-    'c': C.hexToBytes(),
-    if (witness.isNotEmpty)
-      'w': witness
-  };
+  Map<String, dynamic> toV4Json() {
+    // dleq
+    final e = dleq?['e'];
+    final s = dleq?['s'];
+    final r = dleq?['r'];
+
+    final dleqMap = {
+      if (e is String && e.isNotEmpty)
+        'e': e.hexToBytes(),
+      if (s is String && s.isNotEmpty)
+        's': s.hexToBytes(),
+      if (r is String && r.isNotEmpty)
+        'r': r.hexToBytes(),
+    };
+
+    return {
+      'a': int.tryParse(amount) ?? 0,
+      's': secret,
+      'c': C.hexToBytes(),
+      if (witness.isNotEmpty)
+        'w': witness,
+      if (dleqMap.keys.length == 3)
+        'd': dleqMap,
+    };
+  }
 
   static ProofIsar fromServerJson(Map<String, Object?> map) {
     var amount = '0';
