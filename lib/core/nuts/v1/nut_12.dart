@@ -4,6 +4,7 @@ import 'package:cashu_dart/utils/crypto_utils.dart';
 import 'package:cashu_dart/utils/tools.dart';
 import 'package:pointycastle/digests/sha256.dart';
 import 'package:pointycastle/pointycastle.dart';
+import '../../../utils/log_util.dart';
 import '../DHKE.dart';
 import '../nut_00.dart';
 import '../token/proof_isar.dart';
@@ -60,6 +61,12 @@ class Nut12 {
     final C_ = CPoint + rA;
     if (C_ == null) return false;
 
+    // LogUtils.d(() => '[DLEQ - verify] secret: ${proof.secret}');
+    // LogUtils.d(() => '[DLEQ - verify] e: $eHex');
+    // LogUtils.d(() => '[DLEQ - verify] s: $sHex');
+    // LogUtils.d(() => '[DLEQ - verify] r: $rHex');
+    // LogUtils.d(() => '[DLEQ - verify] B\': $B_Hex');
+    // LogUtils.d(() => '[DLEQ - verify] C\': ${C_.ecPointToHex()}');
     // Verify DLEQ proof
     return DLEQ.verify(
       AHex: publicKey,
@@ -120,11 +127,15 @@ class DLEQ {
       APoint,
       C_Point,
     ]).asHex();
+    // LogUtils.d(() => '[DLEQ - verify] r1: ${r1.ecPointToHex()}');
+    // LogUtils.d(() => '[DLEQ - verify] r2: ${r2.ecPointToHex()}');
+    // LogUtils.d(() => '[DLEQ - verify] A: ${APoint.ecPointToHex()}');
+    // LogUtils.d(() => '[DLEQ - verify] C\': ${C_Point.ecPointToHex()}');
 
     // Compare e with hashE
-    if (eHex != hashEHex) {
-      print("DLEQ verification failed");
-      print("Expected: $eHex, Got: $hashEHex");
+    if (eHex.toLowerCase() != hashEHex.toLowerCase()) {
+      LogUtils.d(() => '[DLEQ - verify] hashEHex: $hashEHex');
+      LogUtils.d(() => '[DLEQ - verify] expect  : $eHex');
       return false;
     }
 

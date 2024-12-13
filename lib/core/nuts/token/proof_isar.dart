@@ -181,6 +181,6 @@ class ProofIsar {
 
   @override
   String toString() {
-    return '${super.toString()}, id: $id, amount: $amount, secret: $secret, C: $C';
+    return '${super.toString()}, id: $id, amount: $amount, secret: $secret, C: $C, dleq: $dleq';
   }
 }
