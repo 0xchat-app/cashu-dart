@@ -1,6 +1,7 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 
+import '../business/proof/keyset_helper.dart';
 import '../business/proof/proof_helper.dart';
 import '../business/proof/proof_store.dart';
 import '../business/transaction/hitstory_store.dart';
@@ -11,16 +12,20 @@ import '../core/nuts/nut_00.dart';
 import '../core/nuts/token/proof_isar.dart';
 import '../core/nuts/token/token_model.dart';
 import '../core/nuts/v1/nut_11.dart';
+import '../core/nuts/v1/nut_12.dart';
 import '../model/cashu_token_info.dart';
 import '../model/history_entry_isar.dart';
 import '../model/lightning_invoice_isar.dart';
 import '../model/mint_model_isar.dart';
+import '../utils/isolate_worker.dart';
 import '../utils/log_util.dart';
 import '../utils/network/response.dart';
 import '../utils/third_party_extensions.dart';
 import 'nut_P2PK_helper.dart';
 
 class CashuAPIGeneralClient {
+
+  static const _useProofDLEQVerify = false;
 
   static const _lnPrefix = [
     'lightning:',
@@ -201,6 +206,33 @@ class CashuAPIGeneralClient {
 
           final mint = await CashuManager.shared.getMint(entry.mint);
           if (mint == null) continue;
+
+          if (_useProofDLEQVerify) {
+            // Keyset info
+            final keysetInfo = await KeysetHelper.tryGetMintKeysetInfo(mint, token.unit);
+            final keyset = keysetInfo?.keyset ?? {};
+            if (keyset.isNotEmpty) {
+              final newProofs = await IsolateWorker.cashuWorker.run(() async {
+                final newProofs = <ProofIsar>[];
+                for (var proof in proofs) {
+                  final pk = keyset[proof.amount] ?? '';
+                  if (pk.isEmpty) continue;
+
+                  final result = Nut12.verifyProof(
+                    proof: proof,
+                    publicKey: pk,
+                  );
+                  if (result == false) {
+                    LogUtils.i(() => '[DLEQ - verify] verification failed, proof: $proof, pk: $pk');
+                  } else {
+                    newProofs.add(proof);
+                  }
+                }
+                return newProofs;
+              });
+              proofs = newProofs;
+            }
+          }
 
           if (isUseSwap) {
             for (var proof in proofs) {
