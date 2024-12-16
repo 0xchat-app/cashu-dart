@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:cbor/cbor.dart';
 
@@ -56,7 +57,7 @@ extension StringHexEx on String {
   Uint8List hexToBytes() {
     List<int> bytes = [];
     for (int i = 0; i < length; i += 2) {
-      bytes.add(int.parse(substring(i, i + 2), radix: 16));
+      bytes.add(int.parse(substring(i, min(i + 2, length)), radix: 16));
     }
     return Uint8List.fromList(bytes);
   }
