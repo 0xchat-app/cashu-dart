@@ -23,6 +23,7 @@ import '../../model/unblinding_data.dart';
 import '../../utils/database/db.dart';
 import '../../utils/database/db_isar.dart';
 import '../../utils/database/db_migrate_helper.dart';
+import '../../utils/isolate_worker.dart';
 import '../../utils/log_util.dart';
 import '../mint/mint_helper.dart';
 import '../mint/mint_info_store.dart';
@@ -65,6 +66,7 @@ class CashuManager {
       await ProofHelper.tryParseProofsToNewestVersion();
       await invoiceHandler.initialize();
       await ProofBlindingManager.shared.initialize();
+      await IsolateWorker.cashuWorker.init();
       invoiceHandler.invoiceOnPaidCallback = notifyListenerForPaidSuccess;
       setupFinish.complete();
       LogUtils.i(() => '[Cashu - setup] Finished');
