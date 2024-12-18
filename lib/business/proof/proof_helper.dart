@@ -380,7 +380,7 @@ class ProofHelper {
     final newProofs = unblindingResponse.data;
     final proofPackage = <List<ProofIsar>>[];
     int start = 0;
-    for (var package in blindedMessages) {
+    for (var package in blindedMessages.sublist(0, amounts.length)) {
       final packageSize = package.length;
       proofPackage.add(newProofs.sublist(start, start + packageSize));
       start += packageSize;
