@@ -1,7 +1,6 @@
 
 import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:cashu_dart/utils/third_party_extensions.dart';
-import 'package:decimal/decimal.dart';
 
 import '../../business/proof/proof_helper.dart';
 import '../../business/transaction/transaction_helper.dart';

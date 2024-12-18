@@ -1,6 +1,4 @@
 
-import '../../../utils/crypto_utils.dart';
-import '../../../utils/tools.dart';
 import 'nut_10.dart';
 
 enum P2PKSecretSigFlag {

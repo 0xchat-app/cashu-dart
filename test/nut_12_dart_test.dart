@@ -1,6 +1,5 @@
 
 import 'package:cashu_dart/cashu_dart.dart';
-import 'package:cashu_dart/core/nuts/nut_00.dart';
 import 'package:cashu_dart/core/nuts/v1/nut_12.dart';
 import 'package:cashu_dart/utils/crypto_utils.dart';
 import 'package:cashu_dart/utils/tools.dart';

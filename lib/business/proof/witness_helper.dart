@@ -12,11 +12,11 @@ class WitnessHelper {
   }) async {
     final pubkeyList = param?.pubkeyList ?? [];
     final defaultKey = CashuManager.shared.defaultSignPubkey?.call() ?? '';
-    final immutablePubkeyList = [
+    final immutablePubkeyList = {
       ...pubkeyList,
       if (defaultKey.isNotEmpty)
         defaultKey
-    ].toSet();
+    };
     try {
       final witnessRaw = proof.witness;
       Map witness = {};
