@@ -4,6 +4,8 @@ import 'package:bolt11_decoder/bolt11_decoder.dart';
 import '../business/proof/keyset_helper.dart';
 import '../business/proof/proof_helper.dart';
 import '../business/proof/proof_store.dart';
+import '../business/proof/secret_helper.dart';
+import '../business/proof/witness_helper.dart';
 import '../business/transaction/hitstory_store.dart';
 import '../business/wallet/cashu_manager.dart';
 import '../core/mint_actions.dart';
@@ -11,8 +13,7 @@ import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
 import '../core/nuts/token/proof_isar.dart';
 import '../core/nuts/token/token_model.dart';
-import '../core/nuts/v1/nut_11.dart';
-import '../core/nuts/v1/nut_12.dart';
+import '../core/nuts/v1/nut.dart';
 import '../model/cashu_token_info.dart';
 import '../model/history_entry_isar.dart';
 import '../model/lightning_invoice_isar.dart';
@@ -21,7 +22,6 @@ import '../utils/isolate_worker.dart';
 import '../utils/log_util.dart';
 import '../utils/network/response.dart';
 import '../utils/third_party_extensions.dart';
-import 'nut_P2PK_helper.dart';
 
 class CashuAPIGeneralClient {
 
@@ -82,7 +82,7 @@ class CashuAPIGeneralClient {
   static Future<CashuResponse<List<String>>> sendEcashList({
     required IMintIsar mint,
     required List<int> amountList,
-    CashuTokenP2PKInfo? p2pkOption,
+    Nut10Secret? customSecret,
     String memo = '',
     String unit = 'sat',
   }) async {
@@ -92,7 +92,7 @@ class CashuAPIGeneralClient {
     final response = await ProofHelper.getProofsWithAmountList(
       mint: mint,
       amounts: amountList,
-      p2pkOption: p2pkOption,
+      customSecret: customSecret,
     );
     if (!response.isSuccess) return response.cast();
 
@@ -147,7 +147,7 @@ class CashuAPIGeneralClient {
     final response = await ProofHelper.getProofsForECash(
       mint: mint,
       proofRequest: ProofRequest.proofs(proofs, amount),
-      p2pkOption: CashuTokenP2PKInfo(
+      customSecret: P2PKSecret.fromOptions(
         receivePubKeys: publicKeys,
         refundPubKeys: refundPubKeys,
         lockTime: locktime,
@@ -182,7 +182,6 @@ class CashuAPIGeneralClient {
 
   static Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
-    List<String> redeemPubkey = const [],
     bool isUseSwap = true,
   }) async {
 
@@ -236,9 +235,8 @@ class CashuAPIGeneralClient {
 
           if (isUseSwap) {
             for (var proof in proofs) {
-              await ProofHelper.addSignatureToProof(
+              await ProofHelper.addWitnessToProof(
                 proof: proof,
-                pubkeyList: redeemPubkey,
               );
             }
 
@@ -412,7 +410,7 @@ class CashuAPIGeneralClient {
       amount: token.sumProofsValue.toInt(),
       unit: token.unit,
       memo: token.memo,
-      p2pkInfo: NutP2PKHelper.getInfoWithSecret(firstProofsSecret),
+      conditionInfo: SecretHelper.createSecretEntry(firstProofsSecret),
     );
   }
 
@@ -421,7 +419,7 @@ class CashuAPIGeneralClient {
     return request != null;
   }
 
-  static Future<String?> addSignatureToToken({
+  static Future<String?> addP2PKSignatureToToken({
     required String ecashString,
     required List<String> pubkeyList,
   }) async {
@@ -431,9 +429,12 @@ class CashuAPIGeneralClient {
     final tokenEntryList = tokenPackage.entries;
     for (var entry in tokenEntryList) {
       for (var proof in entry.proofs) {
-        await ProofHelper.addSignatureToProof(
+        await ProofHelper.addWitnessToProof(
           proof: proof,
-          pubkeyList: pubkeyList,
+          conditionsType: ConditionType.p2pk,
+          exParams: {
+            ConditionType.p2pk: P2PKWitnessParam(pubkeyList: pubkeyList),
+          },
         );
       }
     }

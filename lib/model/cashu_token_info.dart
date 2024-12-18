@@ -1,4 +1,5 @@
 
+import '../core/nuts/v1/nut_10.dart';
 import '../core/nuts/v1/nut_11.dart';
 
 class CashuTokenInfo {
@@ -6,45 +7,20 @@ class CashuTokenInfo {
     required this.amount,
     required this.unit,
     required this.memo,
-    this.p2pkInfo,
+    this.conditionInfo,
   });
+
   final int amount;
   final String unit;
   final String memo;
-  final CashuTokenP2PKInfo? p2pkInfo;
+  final Nut10Secret? conditionInfo;
+
+  P2PKSecret? get p2pkInfo {
+    return conditionInfo is P2PKSecret ? conditionInfo as P2PKSecret : null;
+  }
 
   @override
   String toString() {
     return '${super.toString()}, amount: $amount, unit: $unit, memo: $memo, p2pkInfo: $p2pkInfo';
-  }
-}
-
-class CashuTokenP2PKInfo {
-  CashuTokenP2PKInfo({
-    required this.receivePubKeys,
-    this.refundPubKeys,
-    this.lockTime,
-    this.signNumRequired,
-    this.sigFlag,
-  });
-  List<String> receivePubKeys;
-  List<String>? refundPubKeys;
-  DateTime? lockTime;
-  int? signNumRequired;
-  P2PKSecretSigFlag? sigFlag;
-
-  // Timestamp in seconds
-  String? get lockTimeTimestamp {
-    if (lockTime == null) return null;
-    return (lockTime!.millisecondsSinceEpoch ~/ 1000).toString();
-  }
-
-  @override
-  String toString() {
-    return '${super.toString()}, receivePubKeys: $receivePubKeys, '
-        'refundPubKeys: $refundPubKeys, '
-        'locktime: $lockTime, '
-        'signNumRequired: $signNumRequired, '
-        'sigFlag: $sigFlag';
   }
 }

@@ -1,9 +1,6 @@
 
-import 'dart:convert';
-
 import 'package:cashu_dart/core/nuts/v1/nut_10.dart';
 
-import '../../api/nut_P2PK_helper.dart';
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
@@ -11,16 +8,14 @@ import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/token/proof_isar.dart';
 import '../../core/nuts/v1/nut_02.dart';
-import '../../model/cashu_token_info.dart';
 import '../../model/keyset_info_isar.dart';
 import '../../model/mint_model_isar.dart';
 import '../../model/unblinding_data_isar.dart';
-import '../../utils/log_util.dart';
 import '../../utils/network/response.dart';
-import '../wallet/cashu_manager.dart';
 import '../wallet/proof_blinding_manager.dart';
 import 'keyset_helper.dart';
 import 'proof_store.dart';
+import 'witness_helper.dart';
 
 class ProofRequest {
   final int amount;
@@ -144,7 +139,7 @@ class ProofHelper {
   static Future<CashuResponse<List<ProofIsar>>> getProofsForECash({
     required IMintIsar mint,
     required ProofRequest proofRequest,
-    CashuTokenP2PKInfo? p2pkOption,
+    Nut10Secret? customSecret,
     String unit = 'sat',
   }) async {
     // Keyset info
@@ -157,11 +152,12 @@ class ProofHelper {
       );
     }
 
+    final canUseProofDirectly = customSecret == null;
     final proofResponse = await _getProofsWithRequest(
       mint: mint,
       keysetInfo: keysetInfo,
       proofRequest: proofRequest,
-      canIgnoreInputFee: p2pkOption == null,
+      canIgnoreInputFee: canUseProofDirectly,
     );
     if (!proofResponse.isSuccess) {
       return _parseResponseByECashCheck(
@@ -172,7 +168,7 @@ class ProofHelper {
     final proofs = proofResponse.proofs;
 
     // Can use directly
-    if (p2pkOption == null) {
+    if (canUseProofDirectly) {
       if (proofResponse.targetAmount == proofResponse.proofs.totalAmount) {
         return _parseResponseByECashCheck(
           proofRequest,
@@ -185,8 +181,11 @@ class ProofHelper {
     List<BigInt> rs = [];
 
     SecretCreator? secretCreator;
-    if (p2pkOption != null && p2pkOption.receivePubKeys.isNotEmpty) {
-      secretCreator = (_) => NutP2PKHelper.createSecretFromOption(p2pkOption).toSecretString();
+    if (customSecret != null) {
+      secretCreator = (_) {
+        customSecret.refreshNonce();
+        return customSecret.toSecretString();
+      };
     }
 
     {
@@ -280,7 +279,7 @@ class ProofHelper {
   static Future<CashuResponse<List<List<ProofIsar>>>> getProofsWithAmountList({
     required IMintIsar mint,
     required List<int> amounts,
-    CashuTokenP2PKInfo? p2pkOption,
+    Nut10Secret? customSecret,
     String unit = 'sat',
   }) async {
     // Keyset info
@@ -304,8 +303,11 @@ class ProofHelper {
     List<List<UnblindingOption>> unblindingOptions = [];
 
     SecretCreator? secretCreator;
-    if (p2pkOption != null && p2pkOption.receivePubKeys.isNotEmpty) {
-      secretCreator = (_) => NutP2PKHelper.createSecretFromOption(p2pkOption).toSecretString();
+    if (customSecret != null) {
+      secretCreator = (_) {
+        customSecret.refreshNonce();
+        return customSecret.toSecretString();
+      };
     }
 
     for (var amount in amounts) {
@@ -320,7 +322,7 @@ class ProofHelper {
       unblindingOptions.add(
         List.generate(
           $1.length,
-          (index) => p2pkOption != null
+          (index) => customSecret != null
             ? const UnblindingOption(isSaveToLocal: false)
             : const UnblindingOption()
         ),
@@ -562,49 +564,27 @@ class ProofHelper {
     return null;
   }
 
-  static Future addSignatureToProof({
+  static Future addWitnessToProof({
     required ProofIsar proof,
-    List<String> pubkeyList = const [],
+    ConditionType? conditionsType,
+    Map<ConditionType, WitnessParam> exParams = const {},
   }) async {
 
-    final nut10Data = Nut10.dataFromSecretString(proof.secret);
+    final nut10Data = Nut10Secret.dataFromSecretString(proof.secret);
     if (nut10Data == null) return ;
 
     final (kind, _, _, _) = nut10Data;
     if (kind != ConditionType.p2pk) return ;
 
-    final defaultKey = CashuManager.shared.defaultSignPubkey?.call() ?? '';
-    final immutablePubkeyList = [
-      ...pubkeyList,
-      if (defaultKey.isNotEmpty && !pubkeyList.contains(defaultKey))
-        defaultKey
-    ];
-    try {
-      final witnessRaw = proof.witness;
-      Map witness = {};
-      if (witnessRaw.isNotEmpty) {
-        witness = jsonDecode(witnessRaw) as Map;
-      }
-      var originSign = witness['signatures'];
-      if (originSign is! List) {
-        originSign = [];
-      }
-      final signatures = [...originSign.map((e) => e.toString()).toList().cast<String>()];
-      for (var pubkey in immutablePubkeyList) {
-        final sign = await CashuManager.shared.signFn?.call(pubkey, proof.secret);
-        if (sign != null && sign.isNotEmpty) signatures.add(sign);
-      }
-
-      if (signatures.isNotEmpty) {
-        witness['signatures'] = signatures;
-      }
-
-      if (witness.isNotEmpty) {
-        proof.witness = jsonEncode(witness);
-      }
-    } catch (e, stack) {
-      LogUtils.e(() => '[E][Cashu - addSignatureToProof] $e');
-      LogUtils.e(() => '[E][Cashu - addSignatureToProof] $stack');
+    switch (kind) {
+      case ConditionType.p2pk: WitnessHelper.addP2PKWitnessToProof(
+        proof: proof,
+        param: exParams[kind] as P2PKWitnessParam?,
+      );
+      case ConditionType.htlc: WitnessHelper.addHTLCWitnessToProof(
+        proof: proof,
+        param: exParams[kind] as HTLCWitnessParam?,
+      );
     }
   }
 

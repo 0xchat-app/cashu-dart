@@ -221,7 +221,7 @@ class CashuAPI {
   }) => CashuAPIGeneralClient.sendEcashList(
     mint: mint,
     amountList: amountList,
-    p2pkOption: CashuTokenP2PKInfo(
+    customSecret: P2PKSecret.fromOptions(
       receivePubKeys: publicKeys,
       refundPubKeys: refundPubKeys,
       lockTime: locktime,
@@ -272,10 +272,8 @@ class CashuAPI {
   /// Returns a tuple containing memo and amount if successful.
   Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
-    List<String> redeemPubkey = const [],
   }) => CashuAPIGeneralClient.redeemEcash(
     ecashString: ecashString,
-    redeemPubkey: redeemPubkey,
   );
 
   Future<bool> redeemEcashFromInvoice({
@@ -395,11 +393,11 @@ class CashuAPI {
   /// Strips common URI prefixes before validation.
   bool isLnInvoice(String str) => CashuAPIGeneralClient.isLnInvoice(str);
 
-  Future<String?> addSignatureToToken({
+  Future<String?> addP2PKSignatureToToken({
     required String ecashString,
     required List<String> pukeyList,
   }) =>
-      CashuAPIGeneralClient.addSignatureToToken(
+      CashuAPIGeneralClient.addP2PKSignatureToToken(
         ecashString: ecashString,
         pubkeyList: pukeyList,
       );
