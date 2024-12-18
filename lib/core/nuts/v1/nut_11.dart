@@ -30,7 +30,7 @@ enum P2PKSecretTagKey {
 }
 
 class P2PKSecret with Nut10Secret {
-  P2PKSecret({
+  P2PKSecret._({
     required String data,
     this.tags = const [],
     String? nonce,
@@ -96,7 +96,7 @@ class P2PKSecret with Nut10Secret {
 
   static P2PKSecret fromNut10Data(Nut10Data nut10Data) {
     final (_, String nonce, String data, List<List<String>> tags) = nut10Data;
-    return P2PKSecret(nonce: nonce, data: data, tags: tags);
+    return P2PKSecret._(nonce: nonce, data: data, tags: tags);
   }
 
   static P2PKSecret? fromOptions({
@@ -107,8 +107,10 @@ class P2PKSecret with Nut10Secret {
     P2PKSecretSigFlag? sigFlag,
   }) {
     final publicKeys = <String>[...receivePubKeys ?? []];
-    final lockTimeTimestamp = lockTime != null ? (lockTime.millisecondsSinceEpoch ~/ 1000).toString() : null;
+    if (publicKeys.isEmpty) return null;
 
+    final lockTimeTimestamp = lockTime != null ? (lockTime.millisecondsSinceEpoch ~/ 1000).toString() : null;
+    
     final p2pkSecretData = publicKeys.removeAt(0);
     final p2pkSecretTags = [
       if (publicKeys.isNotEmpty) P2PKSecretTagKey.pubkeys.appendValues(publicKeys),
@@ -118,7 +120,9 @@ class P2PKSecret with Nut10Secret {
       if (sigFlag != null) P2PKSecretTagKey.sigflag.appendValues([sigFlag.value]),
     ];
 
-    return P2PKSecret(data: p2pkSecretData, tags: p2pkSecretTags);
+    if (p2pkSecretData.isEmpty && p2pkSecretTags.isEmpty) return null;
+
+    return P2PKSecret._(data: p2pkSecretData, tags: p2pkSecretTags);
   }
 }
 
