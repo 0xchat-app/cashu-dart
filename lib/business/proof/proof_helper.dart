@@ -1,13 +1,11 @@
 
-import 'package:cashu_dart/core/nuts/v1/nut_10.dart';
-
 import '../../core/DHKE_helper.dart';
 import '../../core/keyset_store.dart';
 import '../../core/mint_actions.dart';
 import '../../core/nuts/define.dart';
 import '../../core/nuts/nut_00.dart';
 import '../../core/nuts/token/proof_isar.dart';
-import '../../core/nuts/v1/nut_02.dart';
+import '../../core/nuts/v1/nut.dart';
 import '../../model/keyset_info_isar.dart';
 import '../../model/mint_model_isar.dart';
 import '../../model/unblinding_data_isar.dart';
@@ -574,15 +572,16 @@ class ProofHelper {
     if (nut10Data == null) return ;
 
     final (kind, _, _, _) = nut10Data;
-    if (kind != ConditionType.p2pk) return ;
 
     switch (kind) {
       case ConditionType.p2pk: WitnessHelper.addP2PKWitnessToProof(
         proof: proof,
+        secret: P2PKSecret.fromNut10Data(nut10Data),
         param: exParams[kind] as P2PKWitnessParam?,
       );
       case ConditionType.htlc: WitnessHelper.addHTLCWitnessToProof(
         proof: proof,
+        secret: HTLCSecret.fromNut10Data(nut10Data),
         param: exParams[kind] as HTLCWitnessParam?,
       );
     }

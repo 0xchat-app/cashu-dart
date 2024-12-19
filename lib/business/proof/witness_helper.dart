@@ -1,13 +1,17 @@
 
 import 'dart:convert';
 
+import 'package:cashu_dart/cashu_dart.dart';
+
 import '../../core/nuts/token/proof_isar.dart';
+import '../../core/nuts/v1/nut_14.dart';
 import '../../utils/log_util.dart';
 import '../wallet/cashu_manager.dart';
 
 class WitnessHelper {
   static Future addP2PKWitnessToProof({
     required ProofIsar proof,
+    required P2PKSecret secret,
     P2PKWitnessParam? param,
   }) async {
     final pubkeyList = param?.pubkeyList ?? [];
@@ -48,6 +52,7 @@ class WitnessHelper {
 
   static Future addHTLCWitnessToProof({
     required ProofIsar proof,
+    required HTLCSecret secret,
     HTLCWitnessParam? param,
   }) async {
 
@@ -55,24 +60,20 @@ class WitnessHelper {
     if (pubkey.isEmpty) {
       pubkey = CashuManager.shared.defaultSignPubkey?.call() ?? '';
     }
+
+    final preimage = param?.preimage ?? '';
+    if (preimage.isEmpty) return ;
+
     try {
-      final witnessRaw = proof.witness;
-      Map witness = {};
-      if (witnessRaw.isNotEmpty) {
-        witness = jsonDecode(witnessRaw) as Map;
-      }
+      final witness = HTLCWitness(preimage: preimage);
 
       // Signature
-      witness['signature'] ??= await CashuManager.shared.signFn?.call(pubkey, proof.secret);
-      final signature = witness['signature'];
-      if (signature is! String || signature.isEmpty) {
-        witness.remove('signature');
+      if (secret.receivePubKeys.contains(pubkey) || secret.refundPubKeys.contains(pubkey)) {
+        final sign = await CashuManager.shared.signFn?.call(pubkey, proof.secret);
+        if (sign != null && sign.isNotEmpty) witness.signature = sign;
       }
 
-      // Preimage
-      if (witness.isNotEmpty) {
-        proof.witness = jsonEncode(witness);
-      }
+      proof.witness = jsonEncode(witness.toJson());
     } catch (e, stack) {
       LogUtils.e(() => '[WitnessHelper - addHTLCWitnessToProof] $e');
       LogUtils.e(() => '[WitnessHelper - addHTLCWitnessToProof] $stack');
@@ -91,7 +92,9 @@ class P2PKWitnessParam extends WitnessParam {
 
 class HTLCWitnessParam extends WitnessParam {
   HTLCWitnessParam({
+    this.preimage = '',
     this.pubkey = '',
   });
+  final String preimage;
   final String pubkey;
 }

@@ -22,7 +22,7 @@ enum HTLCSecretTagKey {
 }
 
 class HTLCSecret with Nut10Secret {
-  HTLCSecret({
+  HTLCSecret._({
     required this.data,
     this.tags = const [],
     String? nonce,
@@ -70,24 +70,63 @@ class HTLCSecret with Nut10Secret {
 
   static HTLCSecret fromNut10Data(Nut10Data nut10Data) {
     final (_, String nonce, String data, List<List<String>> tags) = nut10Data;
-    return HTLCSecret(nonce: nonce, data: data, tags: tags);
+    return HTLCSecret._(nonce: nonce, data: data, tags: tags);
+  }
+
+  static HTLCSecret? fromOptions({
+    required String hash,
+    List<String>? receivePubKeys,
+    List<String>? refundPubKeys,
+    DateTime? lockTime,
+  }) {
+    if (hash.isEmpty) return null;
+
+    final publicKeys = <String>{...receivePubKeys ?? []}.toList();
+    refundPubKeys = refundPubKeys?.toSet().toList();
+
+    final lockTimeTimestamp = lockTime != null ? (lockTime.millisecondsSinceEpoch ~/ 1000).toString() : null;
+
+    final htlcSecretTags = [
+      if (publicKeys.isNotEmpty) HTLCSecretTagKey.pubkeys.appendValues(publicKeys),
+      if (refundPubKeys != null && refundPubKeys.isNotEmpty) HTLCSecretTagKey.refund.appendValues(refundPubKeys),
+      if (lockTimeTimestamp != null) HTLCSecretTagKey.lockTime.appendValues([lockTimeTimestamp]),
+    ];
+
+    return HTLCSecret._(data: hash, tags: htlcSecretTags);
   }
 }
 
 class HTLCWitness {
   HTLCWitness({
-    this.pubkey,
-    this.preimage,
+    required this.preimage,
+    this.signature,
   });
-  final String? pubkey;
-  final String? preimage;
+  final String preimage;
+  String? signature;
+
+  HTLCWitness.fromJson(Map<String, dynamic> json)
+      : preimage = json['preimage'],
+        signature = json['signature'];
+
+  Map<String, dynamic> toJson() {
+    final preimage = this.preimage;
+    final signature = this.signature;
+    return {
+      'preimage': preimage,
+      if (signature != null && signature.isNotEmpty)
+        'signature': signature,
+    };
+  }
 }
 
 class HTLC {
   static (String preimage, String hashString) createHashData([String? preimage]) {
-    preimage ??= CryptoUtils.randomPrivateKey().asBase64String();
-    final hashBytes = sha256.convert(preimage.asBytes()).bytes;
-    final hashString = Uint8List.fromList(hashBytes).asBase64String();
+    if (preimage != null && !preimage.isHexString()) {
+      preimage = preimage.generateToHex();
+    }
+    preimage ??= CryptoUtils.randomPrivateKey().asHex();
+    final hashBytes = sha256.convert(preimage.hexToBytes()).bytes;
+    final hashString = Uint8List.fromList(hashBytes).asHex();
     return (preimage, hashString);
   }
 }

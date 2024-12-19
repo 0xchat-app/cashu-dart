@@ -88,6 +88,15 @@ extension StringHexEx on String {
     String output = replaceAll('+', '-').replaceAll('/', '_');
     return output.split('=')[0];
   }
+
+  bool isHexString() {
+    final hexRegex = RegExp(r'^(0x|0X)?[a-fA-F0-9]+$');
+    return hexRegex.hasMatch(this);
+  }
+
+  String generateToHex() {
+    return asBytes().asHex();
+  }
 }
 
 extension BigIntEx on BigInt {

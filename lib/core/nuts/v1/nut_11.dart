@@ -106,11 +106,12 @@ class P2PKSecret with Nut10Secret {
     int? signNumRequired,
     P2PKSecretSigFlag? sigFlag,
   }) {
-    final publicKeys = <String>[...receivePubKeys ?? []];
+    final publicKeys = <String>{...receivePubKeys ?? []}.toList();
     if (publicKeys.isEmpty) return null;
 
+    refundPubKeys = refundPubKeys?.toSet().toList();
     final lockTimeTimestamp = lockTime != null ? (lockTime.millisecondsSinceEpoch ~/ 1000).toString() : null;
-    
+
     final p2pkSecretData = publicKeys.removeAt(0);
     final p2pkSecretTags = [
       if (publicKeys.isNotEmpty) P2PKSecretTagKey.pubkeys.appendValues(publicKeys),

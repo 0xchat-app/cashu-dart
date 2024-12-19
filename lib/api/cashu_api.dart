@@ -13,6 +13,7 @@ import '../core/nuts/define.dart';
 import '../core/nuts/nut_00.dart';
 import '../core/nuts/token/proof_isar.dart';
 import '../core/nuts/v1/nut_11.dart';
+import '../core/nuts/v1/nut_14.dart';
 import '../model/cashu_token_info.dart';
 import '../model/history_entry_isar.dart';
 import '../model/invoice_isar.dart';
@@ -267,6 +268,26 @@ class CashuAPI {
     proofs: proofs,
   );
 
+  Future<CashuResponse<String>> createEcashWithHTLC({
+    required IMintIsar mint,
+    required int amount,
+    required String hash,
+    List<String>? receivePubKeys,
+    List<String>? refundPubKeys,
+    String memo = '',
+    String unit = 'sat',
+    List<ProofIsar>? proofs,
+  }) => CashuAPIGeneralClient.createEcashWithHTLC(
+    mint: mint,
+    amount: amount,
+    hash: hash,
+    receivePubKeys: receivePubKeys,
+    refundPubKeys: refundPubKeys,
+    memo: memo,
+    unit: unit,
+    proofs: proofs,
+  );
+
   /// Redeems e-cash from the given string.
   /// [ecashString]: The string representing the e-cash.
   /// Returns a tuple containing memo and amount if successful.
@@ -367,6 +388,11 @@ class CashuAPI {
         ecashString: token,
         isUseSwap: false,
       );
+
+  String createHTLCHash(String preimage) {
+    final (_, String hashString) = HTLC.createHashData(preimage);
+    return hashString;
+  }
 
   /**************************** Tools ****************************/
   /// Converts the amount in a Lightning Network payment request to satoshis.

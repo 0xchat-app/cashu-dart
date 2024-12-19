@@ -180,6 +180,57 @@ class CashuAPIGeneralClient {
     return CashuResponse.fromSuccessData(encodedToken);
   }
 
+  static Future<CashuResponse<String>> createEcashWithHTLC({
+    required IMintIsar mint,
+    required int amount,
+    required String hash,
+    List<String>? receivePubKeys,
+    List<String>? refundPubKeys,
+    String memo = '',
+    String unit = 'sat',
+    List<ProofIsar>? proofs,
+  }) async {
+    await CashuManager.shared.setupFinish.future;
+
+    if (hash.isEmpty) {
+      return CashuResponse.fromErrorMsg('hash is empty.');
+    }
+
+    // get proofs
+    final response = await ProofHelper.getProofsForECash(
+      mint: mint,
+      proofRequest: ProofRequest.proofs(proofs, amount),
+      customSecret: HTLCSecret.fromOptions(
+        hash: hash,
+        receivePubKeys: receivePubKeys,
+        refundPubKeys: refundPubKeys,
+      ),
+    );
+    if (!response.isSuccess) return response.cast();
+
+    final htlcProofs = response.data;
+    final encodedToken = Nut0.encodedToken(
+      Token(
+        entries: [TokenEntry(mint: mint.mintURL, proofs: htlcProofs)],
+        memo: memo,
+        unit: unit,
+      ),
+    );
+
+    await HistoryStore.addToHistory(
+      amount: -(htlcProofs.totalAmount),
+      type: IHistoryType.eCash,
+      value: encodedToken,
+      mints: [mint.mintURL],
+    );
+
+    await ProofHelper.deleteProofs(proofs: htlcProofs);
+    await CashuManager.shared.updateMintBalance(mint);
+
+    LogUtils.e(() => '[I][Cashu - sendEcash] Create Ecash: $encodedToken');
+    return CashuResponse.fromSuccessData(encodedToken);
+  }
+
   static Future<CashuResponse<(String memo, int amount)>> redeemEcash({
     required String ecashString,
     bool isUseSwap = true,
