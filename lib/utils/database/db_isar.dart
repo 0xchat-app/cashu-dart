@@ -24,7 +24,7 @@ class CashuIsarDB {
     } else if (Platform.isIOS || Platform.isMacOS) {
       directory = await getApplicationSupportDirectory();
     } else {
-      directory = await getLibraryDirectory();
+      directory = await getApplicationDocumentsDirectory();
     }
     final dbPath = directory.path;
     isar = Isar.getInstance(dbName) ?? await Isar.open(
