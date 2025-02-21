@@ -20,7 +20,7 @@ dependencies:
   crypto: ^3.0.2
   bolt11_decoder: ^1.0.2
   pointycastle: ^3.3.0
-  uuid: ^3.0.6
+  uuid: ^4.3.3
   decimal: ^2.3.3
   bip32: ^2.0.0
   bip39: ^1.0.6
