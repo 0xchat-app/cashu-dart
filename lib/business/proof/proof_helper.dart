@@ -574,12 +574,12 @@ class ProofHelper {
     final (kind, _, _, _) = nut10Data;
 
     switch (kind) {
-      case ConditionType.p2pk: WitnessHelper.addP2PKWitnessToProof(
+      case ConditionType.p2pk: await WitnessHelper.addP2PKWitnessToProof(
         proof: proof,
         secret: P2PKSecret.fromNut10Data(nut10Data),
         param: exParams[kind] as P2PKWitnessParam?,
       );
-      case ConditionType.htlc: WitnessHelper.addHTLCWitnessToProof(
+      case ConditionType.htlc: await WitnessHelper.addHTLCWitnessToProof(
         proof: proof,
         secret: HTLCSecret.fromNut10Data(nut10Data),
         param: exParams[kind] as HTLCWitnessParam?,
