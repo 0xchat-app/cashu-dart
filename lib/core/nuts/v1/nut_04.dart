@@ -15,7 +15,7 @@ class Nut4 {
     return HTTPClient.post(
       nutURLJoin(mintURL, 'mint/quote/$method'),
       params: {
-        'amount': amount.toString(),
+        'amount': amount,
         'unit': unit,
       },
       modelBuilder: (json) {
